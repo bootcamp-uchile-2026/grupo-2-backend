@@ -1,10 +1,33 @@
 export class Producto {
   id: number;
+
   subcategoriaId: number;
+
+  marca: string;
+
   nombre: string;
+
   descripcion: string;
+
   precio: number;
-  imagenUrl?: string;
+
+  precioOferta: number | null;
+
+  imagenUrl: string;
+
+  imagenes: string[];
+
   stock: number;
+
+  puntuacion: number | null;
+
   ventasUltimoMes: number;
+
+  fechaCreacion: Date;
+
+  colores?: string[];
+
+  tallas?: string[];
+
+  constructor(){};
 }
