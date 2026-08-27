@@ -31,4 +31,6 @@ export class ProductoSubCategoriaDto {
     example: 25,
   })
   stock: number;
+
+  constructor(){};
 }

@@ -25,4 +25,6 @@ export class SubCategoriaDto {
     required: false,
   })
   imagenUrl?: string;
+
+  constructor(){};
 }

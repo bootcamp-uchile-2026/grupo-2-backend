@@ -21,4 +21,6 @@ export class PopularSubCategoriaDto {
     required: false,
   })
   imagenUrl?: string;
+
+  constructor(){};
 }
