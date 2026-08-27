@@ -7,6 +7,7 @@ import { ProductoDetalleDto } from 'src/model/dtos/ProductoDetalle.dto';
 import { ProductoMasVendidoDto } from 'src/model/dtos/ProductoMasVendido.dto';
 import { ProductoOfertaDto } from 'src/model/dtos/ProductoOferta.dto';
 import { ProductoRelacionadoDto } from 'src/model/dtos/ProductoRelacionado.dto';
+import { ProductoResumenDto } from 'src/model/dtos/ProductoResumen.dto';
 import { ProductoResumenNuevosDto } from 'src/model/dtos/ProductoResumenNuevos.dto';
 import { ValoracionDetalleDto } from 'src/model/dtos/ValoracionDetalleProducto.dto';
 import { HuellaVerde } from 'src/model/huella-verde.model';
@@ -19,16 +20,17 @@ export class ProductosService {
   {
     id: 1,
     subcategoriaId: 1,
+    emprendedorId:1,
     marca: 'EcoWear',
     nombre: 'Polera de algodón orgánico',
     descripcion: 'Polera confeccionada con algodón orgánico.',
     precio: 12990,
     precioOferta: 9990,
     imagenUrl:
-      'https://ejemplo.cl/imagenes/productos/polera.jpg',
+      'https:polera.jpg',
     imagenes: [
-      'https://ejemplo.cl/imagenes/productos/polera.jpg',
-      'https://ejemplo.cl/imagenes/productos/polera-2.jpg',
+      'https:polera.jpg',
+      'https:polera-2.jpg',
     ],
     stock: 25,
     puntuacion: 4.7,
@@ -40,15 +42,16 @@ export class ProductosService {
   {
     id: 2,
     subcategoriaId: 1,
+    emprendedorId:1,
     marca: 'EcoWear',
     nombre: 'Polera manga larga',
     descripcion: 'Polera de algodón de manga larga.',
     precio: 15990,
     precioOferta: null,
     imagenUrl:
-      'https://ejemplo.cl/imagenes/productos/polera-larga.jpg',
+      'https:polera-larga.jpg',
     imagenes: [
-      'https://ejemplo.cl/imagenes/productos/polera-larga.jpg',
+      'https:olera-larga.jpg',
     ],
     stock: 15,
     puntuacion: 4.5,
@@ -60,15 +63,16 @@ export class ProductosService {
   {
     id: 3,
     subcategoriaId: 2,
+    emprendedorId:2,
     marca: 'VerdeVida',
     nombre: 'Polera básica',
     descripcion: 'Polera básica de algodón.',
     precio: 9990,
     precioOferta: 7990,
     imagenUrl:
-      'https://ejemplo.cl/imagenes/productos/polera-basica.jpg',
+      'https:polera-basica.jpg',
     imagenes: [
-      'https://ejemplo.cl/imagenes/productos/polera-basica.jpg',
+      'https:polera-basica.jpg',
     ],
     stock: 20,
     puntuacion: 4.2,
@@ -80,15 +84,16 @@ export class ProductosService {
   {
     id: 4,
     subcategoriaId: 2,
+    emprendedorId:2,
     marca: 'NaturalFit',
     nombre: 'Polera deportiva',
     descripcion: 'Polera para actividades deportivas.',
     precio: 18990,
     precioOferta: null,
     imagenUrl:
-      'https://ejemplo.cl/imagenes/productos/polera-deportiva.jpg',
+      'https:polera-deportiva.jpg',
     imagenes: [
-      'https://ejemplo.cl/imagenes/productos/polera-deportiva.jpg',
+      'https:polera-deportiva.jpg',
     ],
     stock: 10,
     puntuacion: 4.8,
@@ -100,16 +105,17 @@ export class ProductosService {
   {
     id: 5,
     subcategoriaId: 3,
+    emprendedorId:2,
     marca: 'VerdeVida',
     nombre: 'Polera estampada',
     descripcion: 'Polera estampada de algodón.',
     precio: 14990,
     precioOferta: 11990,
     imagenUrl:
-      'https://ejemplo.cl/imagenes/productos/polera-estampada.jpg',
+      'https:polera-estampada.jpg',
     imagenes: [
-      'https://ejemplo.cl/imagenes/productos/polera-estampada.jpg',
-      'https://ejemplo.cl/imagenes/productos/polera-estampada-2.jpg',
+      'https:polera-estampada.jpg',
+      'https:polera-estampada-2.jpg',
     ],
     stock: 8,
     puntuacion: null,
@@ -426,4 +432,21 @@ obtenerProductosRelacionados(productoId: number,cantidad: number): ProductoRelac
   return productosDto;
 }
 
+obtenerProductosPorEmprendedor(
+  emprendedorId: number,
+): ProductoResumenDto[] {
+  const productosEmprendedor = this.productos.filter(
+    (producto) => producto.emprendedorId === emprendedorId,
+  );
+
+  const productosDto = productosEmprendedor.map((producto) => ({
+    id: producto.id,
+    marca: producto.marca,
+    nombre: producto.nombre,
+    precio: producto.precio,
+    imagenUrl: producto.imagenUrl,
+  }));
+
+  return productosDto;
+}
 }
