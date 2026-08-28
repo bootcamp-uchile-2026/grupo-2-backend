@@ -169,25 +169,13 @@ La documentación detallada de las funcionalidades se encuentra disponible en la
 
 Frontend y Backend se integrarán mediante una **API REST**, utilizando peticiones HTTP y respuestas en formato JSON.
 
-```text
-Frontend
-   |
-   | HTTP Request
-   v
-Backend NestJS
-   |
-   v
-Controller
-   |
-   v
-Service
-   |
-   v
-DTO
-   |
-   | JSON Response
-   v
-Frontend
+```mermaid
+flowchart TD
+    A["Frontend"] -->|HTTP Request| B["Backend NestJS"]
+    B --> C["Controller"]
+    C --> D["Service"]
+    D --> E["DTO"]
+    E -->|JSON Response| A
 ```
 
 Los contratos de integración se encuentran documentados mediante **Swagger / OpenAPI**.
@@ -238,10 +226,13 @@ repite el flujo de validación.
 ### Flujo de ramas
 
 ```mermaid
-flowchart LR
-    A["feature/* / fix/*"] -->|Pull Request| B["develop"]
-    B -->|Pull Request| C["qa"]
+flowchart TD
+    A["develop"] --> B["feature/* o fix/*"]
+    B -->|Pull Request| A
+    A -->|Pull Request| C["qa"]
     C -->|QA aprobado + Pull Request| D["main"]
+    C -->|Problema detectado| E["Nueva rama fix/* desde develop"]
+    E -->|Corrección + Pull Request| A
 ```
 
 **Ejemplo:**
@@ -277,7 +268,7 @@ git switch develop
 git pull origin develop
 ```
 
-Crear una nueva rama:
+Crear una nueva rama para una nueva funcionalidad:
 
 ```bash
 git switch -c feature/nombre-funcionalidad
@@ -300,7 +291,9 @@ Finalmente se deberá crear un **Pull Request hacia `develop`**.
 
 - No desarrollar directamente sobre `main`.
 - Evitar realizar cambios directamente sobre `develop`.
+- Evitar realizar cambios directamente sobre `qa`.
 - Utilizar ramas `feature/*` para nuevas funcionalidades.
+- Utilizar ramas `fix/*` para correcciones.
 - Integrar los cambios mediante Pull Request.
 - Utilizar mensajes de commit claros y descriptivos.
 
