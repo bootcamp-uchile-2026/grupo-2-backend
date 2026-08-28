@@ -1,98 +1,329 @@
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+  <img
+    src="https://drive.google.com/thumbnail?id=10uSzFualz9I89UUehPdV6E7CJ81EpDZj&sz=w1000"
+    alt="Logo BuenOrigen"
+    width="280"
+  >
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+<h1 align="center">BuenOrigen Backend</h1>
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+<p align="center">
+  API REST desarrollada con NestJS para la plataforma e-commerce BuenOrigen.
 </p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Descripción
 
-## Project setup
+**BuenOrigen** es una plataforma e-commerce orientada a la comercialización de productos sustentables ofrecidos por distintos emprendedores.
 
-```bash
-$ npm install
-```
+Este repositorio contiene el **Backend** de la aplicación, desarrollado utilizando **NestJS y TypeScript**.
 
-## Compile and run the project
+El Backend proporciona una API REST que permitirá la integración con las aplicaciones Frontend y Mobile.
 
-```bash
-# development
-$ npm run start
+---
 
-# watch mode
-$ npm run start:dev
+## Tecnologías utilizadas
 
-# production mode
-$ npm run start:prod
-```
+- Node.js
+- TypeScript
+- NestJS
+- Swagger / OpenAPI
+- Git
+- GitHub
 
-## Run tests
+---
 
-```bash
-# unit tests
-$ npm run test
+## Descarga del proyecto
 
-# e2e tests
-$ npm run test:e2e
+El proyecto puede obtenerse de dos formas.
 
-# test coverage
-$ npm run test:cov
-```
+### Opción 1: Clonar el repositorio con Git
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Esta es la opción recomendada para los integrantes del equipo, ya que permite trabajar con ramas y mantener el proyecto sincronizado con GitHub.
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+git clone https://github.com/bootcamp-uchile-2026/grupo-2-backend.git
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Luego ingresar a la carpeta del proyecto:
 
-## Resources
+```bash
+cd grupo-2-backend
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+---
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### Opción 2: Descargar como ZIP
 
-## Support
+También es posible descargar una copia del proyecto directamente desde GitHub.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+1. Ingresar al repositorio.
+2. Presionar el botón **Code**.
+3. Seleccionar **Download ZIP**.
+4. Descomprimir el archivo descargado.
+5. Abrir una terminal dentro de la carpeta del proyecto.
 
-## Stay in touch
+> La descarga mediante ZIP permite ejecutar el proyecto, pero para desarrollo colaborativo se recomienda utilizar `git clone`.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+---
 
-## License
+## Instalación
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Una vez descargado o clonado el proyecto, instalar las dependencias(recuerda hacerlo desde el cmd o VScode):
+
+```bash
+npm install
+```
+
+Las dependencias utilizadas por la aplicación se encuentran definidas en el archivo:
+
+```text
+package.json
+```
+
+---
+
+## Ejecución
+
+Para iniciar el Backend en modo desarrollo:
+
+```bash
+npm run start:dev
+```
+
+Por defecto, la API estará disponible en:
+
+```text
+http://localhost:3000/api
+```
+
+---
+
+## Swagger / OpenAPI
+
+La API se encuentra documentada mediante **Swagger / OpenAPI**.
+
+Una vez iniciado el proyecto, la documentación puede consultarse en:
+
+```text
+http://localhost:3000/api
+```
+
+Swagger permite visualizar:
+
+- Endpoints disponibles.
+- Métodos HTTP.
+- Parámetros de ruta.
+- Query parameters.
+- DTOs.
+- Respuestas HTTP.
+
+---
+
+## Módulos implementados
+
+Actualmente el Backend cuenta con los siguientes dominios principales:
+
+```text
+Productos
+Subcategorías
+Emprendedores
+```
+
+### Productos
+
+Se encuentran implementadas funcionalidades para:
+
+- Búsqueda de productos.
+- Productos en oferta.
+- Productos más vendidos.
+- Nuevos productos.
+- Detalle de producto.
+- Huella Verde.
+- Valoraciones.
+- Productos relacionados.
+
+### Subcategorías
+
+Permite:
+
+- Consultar subcategorías pertenecientes a una categoría.
+- Consultar productos de una subcategoría.
+- Consultar productos populares de una subcategoría.
+
+### Emprendedores
+
+Permite:
+
+- Consultar el directorio de emprendedores.
+- Consultar el perfil público de un emprendedor.
+- Consultar los productos asociados a un emprendedor.
+
+La documentación detallada de las funcionalidades se encuentra disponible en la **Wiki del repositorio**. https://github.com/bootcamp-uchile-2026/grupo-2-backend/wiki
+
+---
+
+## Integración con Frontend
+
+Frontend y Backend se integrarán mediante una **API REST**, utilizando peticiones HTTP y respuestas en formato JSON.
+
+```text
+Frontend
+   |
+   | HTTP Request
+   v
+Backend NestJS
+   |
+   v
+Controller
+   |
+   v
+Service
+   |
+   v
+DTO
+   |
+   | JSON Response
+   v
+Frontend
+```
+
+Los contratos de integración se encuentran documentados mediante **Swagger / OpenAPI**.
+
+Algunas de las primeras interfaces de integración son:
+
+```http
+GET /productos/ofertas
+```
+
+```http
+GET /productos/mas-vendidos?cantidad={n}
+```
+
+```http
+GET /productos/nuevos
+```
+
+```http
+GET /productos?buscar={texto}
+```
+
+```http
+GET /emprendedores?cantidad={n}
+```
+
+---
+
+## Estrategia de ramas
+
+El proyecto utiliza la siguiente estrategia:
+
+```text
+main
+  |
+  v
+develop
+  |
+  v
+feature/*
+```
+
+Las nuevas funcionalidades deberán desarrollarse en ramas:
+
+```text
+feature/nombre-funcionalidad
+```
+
+y posteriormente integrarse a:
+
+```text
+develop
+```
+
+mediante **Pull Request**.
+
+---
+
+## Flujo básico de Git
+
+Actualizar la rama `develop`:
+
+```bash
+git switch develop
+git pull origin develop
+```
+
+Crear una nueva rama:
+
+```bash
+git switch -c feature/nombre-funcionalidad
+```
+
+Después de realizar los cambios:
+
+```bash
+git status
+git add .
+git commit -m "feature: descripción del cambio"
+git push -u origin feature/nombre-funcionalidad
+```
+
+Finalmente se deberá crear un **Pull Request hacia `develop`**.
+
+---
+
+## Reglas básicas de trabajo
+
+- No desarrollar directamente sobre `main`.
+- Evitar realizar cambios directamente sobre `develop`.
+- Utilizar ramas `feature/*` para nuevas funcionalidades.
+- Integrar los cambios mediante Pull Request.
+- Utilizar mensajes de commit claros y descriptivos.
+
+Ejemplos:
+
+```text
+feature: se implementa funcionalidad de emprendedores
+fix: se corrige validación de producto
+docs: se actualiza documentación Swagger
+refactor: se reorganiza lógica de productos
+chore: se actualizan dependencias
+```
+
+---
+
+## Próximas funcionalidades
+
+Entre las funcionalidades identificadas para siguientes etapas se encuentran:
+
+```text
+Usuarios
+Autenticación
+Favoritos
+Carrito de compras
+Artículos
+Cuenta de Emprendedor
+```
+
+---
+
+## Documentación
+
+La documentación técnica detallada del proyecto se encuentra disponible en la **Wiki de GitHub**, incluyendo:
+
+- Funcionalidades Backend.
+- Módulos y dominios.
+- Servicios.
+- Endpoints.
+- DTOs.
+- Swagger / OpenAPI.
+- Flujo de Git.
+- Reglas de negocio.
+
+---
+
+## Equipo
+
+Proyecto desarrollado por el equipo **BuenOrigen** en el contexto del **Bootcamp de Desarrollo Backend del DCC de la Universidad de Chile**.
