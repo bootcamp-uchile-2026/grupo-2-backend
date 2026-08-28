@@ -218,31 +218,52 @@ GET /emprendedores?cantidad={n}
 
 ## Estrategia de ramas
 
-El proyecto utiliza la siguiente estrategia:
+El proyecto utiliza tres ramas principales:
+
+- **`develop`**: rama de integración de los desarrollos del equipo.
+- **`qa`**: rama destinada a la validación funcional, visual e integrada.
+- **`main`**: contiene la versión estable del proyecto.
+
+Las ramas de desarrollo (`feature/*` y `fix/*`) se crean siempre desde
+`develop`. Una vez finalizado el desarrollo, se solicita un Pull Request hacia
+`develop`.
+
+Cuando `develop` se encuentra estable, se realiza un Pull Request hacia `qa`
+para efectuar las validaciones correspondientes. Si QA aprueba la versión,
+se realiza un Pull Request desde `qa` hacia `main`.
+
+Si QA detecta problemas, se crea una nueva rama `fix/*` desde `develop` y se
+repite el flujo de validación.
+
+### Flujo de ramas
+
+```mermaid
+flowchart LR
+    A["feature/* / fix/*"] -->|Pull Request| B["develop"]
+    B -->|Pull Request| C["qa"]
+    C -->|QA aprobado + Pull Request| D["main"]
+
+**Ejemplo:**
+
+Se desea crear un nuevo servicio para el catálogo de productos. Para ello, se
+crea una rama desde `develop`:
 
 ```text
-main
-  |
-  v
-develop
-  |
-  v
-feature/*
+feature/catalogo-productos
 ```
 
-Las nuevas funcionalidades deberán desarrollarse en ramas:
+Una vez finalizado el desarrollo y realizadas las pruebas locales, se realiza
+un Pull Request hacia develop.
+
+Posteriormente, cuando develop se encuentra estable, se realiza un Pull
+Request hacia qa para efectuar las validaciones correspondientes.
+
+Si durante la validación en QA se detecta un error, se crea una nueva rama
+fix/* desde develop:
 
 ```text
-feature/nombre-funcionalidad
+fix/error-carrito
 ```
-
-y posteriormente integrarse a:
-
-```text
-develop
-```
-
-mediante **Pull Request**.
 
 ---
 
