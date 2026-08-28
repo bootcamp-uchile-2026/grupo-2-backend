@@ -242,6 +242,7 @@ flowchart LR
     A["feature/* / fix/*"] -->|Pull Request| B["develop"]
     B -->|Pull Request| C["qa"]
     C -->|QA aprobado + Pull Request| D["main"]
+```
 
 **Ejemplo:**
 
