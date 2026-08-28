@@ -3,11 +3,12 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
+
   const app = await NestFactory.create(AppModule);
 
   const config = new DocumentBuilder()
-    .setTitle('EcoTienda API')
-    .setDescription('API de Ecotienda')
+    .setTitle('BuenOrigen API')
+    .setDescription('API de BuenOrigen')
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, config);
