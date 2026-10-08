@@ -1,4 +1,4 @@
-import { orderItem } from "./orderItem.model";
+import { OrderItem } from "./order-item.model";
 import { PaymentMethod } from "./payment-method.model";
 
 export class Order {
@@ -6,7 +6,7 @@ export class Order {
     customerId: number
     orderDate: Date;
     totalAmount: number;
-    orderItems: orderItem[];
+    orderItems: OrderItem[];
     paymentMethod: PaymentMethod;
 
     constructor() {};

@@ -1,7 +1,6 @@
 import { Producto } from "./producto.model";
 
-export class orderItem {
-    date: string;
+export class OrderItem {
     product: Producto;
     quantity: number;
     unitPrice: number;
