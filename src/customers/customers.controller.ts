@@ -7,6 +7,10 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
+  ////////////////////////////
+  // Crear un nuevo cliente //
+  ////////////////////////////
+  
   @Post()
   create(@Body() createCustomerDto: CreateCustomerDto) {
     return this.customersService.create(createCustomerDto);
