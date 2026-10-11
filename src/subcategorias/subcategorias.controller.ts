@@ -1,5 +1,5 @@
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags, ApiNotFoundResponse } from '@nestjs/swagger';
 import { SubcategoriasService } from './subcategorias.service';
 import { SubCategoriaDto } from 'src/model/dtos/subcategoria.dto';
 import { ProductoSubCategoriaDto } from 'src/model/dtos/producto-subcategoria.dto';
@@ -10,7 +10,7 @@ import { PopularSubCategoriaDto } from 'src/model/dtos/popular-subcategoria.dto'
 export class SubcategoriasController {
   constructor(
     private readonly subcategoriasService: SubcategoriasService,
-  ) {}
+  ) { }
 
   @Get('categorias/:categoriaId/subcategorias')
   @ApiOperation({
@@ -48,6 +48,9 @@ export class SubcategoriasController {
     type: ProductoSubCategoriaDto,
     isArray: true,
   })
+  @ApiNotFoundResponse({
+    description: 'Subcategoría no encontrada.',
+  })
   obtenerProductos(
     @Param('subcategoriaId', ParseIntPipe) subcategoriaId: number,
   ): ProductoSubCategoriaDto[] {
@@ -77,6 +80,9 @@ export class SubcategoriasController {
     status: 200,
     type: PopularSubCategoriaDto,
     isArray: true,
+  })
+  @ApiNotFoundResponse({
+    description: 'Subcategoría no encontrada.',
   })
   obtenerProductosPopulares(
     @Param('subcategoriaId', ParseIntPipe) subcategoriaId: number,
