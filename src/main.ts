@@ -1,10 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { RecursoNoEncontradoFilter } from './filters/recurso-no-encontrado/recurso-no-encontrado.filter';
 
 async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
+
+  app.useGlobalFilters(new RecursoNoEncontradoFilter());
 
   const config = new DocumentBuilder()
     .setTitle('BuenOrigen API')
