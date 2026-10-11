@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable } from '@nestjs/common';
+import { SubcategoriaNoEncontradaError } from '../errors/subcategoria-no-encontrada.error';
 import { PopularSubCategoriaDto } from "src/model/dtos/popular-subcategoria.dto";
 import { ProductoSubCategoriaDto } from "src/model/dtos/producto-subcategoria.dto";
 import { SubCategoriaDto } from "src/model/dtos/subcategoria.dto";
@@ -97,15 +98,15 @@ export class SubcategoriasService {
     },
   ];
 
-  validarExistenciaSubcategoria(subcategoriaId: number): void {
-    const subcategoriaExiste = this.subcategorias.some(
-      (subcategoria) => subcategoria.id === subcategoriaId,
-    );
+validarExistenciaSubcategoria(subcategoriaId: number): void {
+  const subcategoriaExiste = this.subcategorias.some(
+    (subcategoria) => subcategoria.id === subcategoriaId,
+  );
 
-    if (!subcategoriaExiste) {
-      throw new NotFoundException('Subcategoría no encontrada.');
-    }
+  if (!subcategoriaExiste) {
+    throw new SubcategoriaNoEncontradaError();
   }
+}
 
   obtenerSubcategorias(categoriaId: number): SubCategoriaDto[] {
     return this.subcategorias

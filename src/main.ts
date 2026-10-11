@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { RecursoNoEncontradoFilter } from './filters/recurso-no-encontrado/recurso-no-encontrado.filter';
 import { LoggingInterceptor } from './interceptors/logging/logging.interceptor';
 
 async function bootstrap() {
@@ -8,6 +9,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
   app.useGlobalInterceptors(new LoggingInterceptor());
+
+  app.useGlobalFilters(new RecursoNoEncontradoFilter());
 
   const config = new DocumentBuilder()
     .setTitle('BuenOrigen API')

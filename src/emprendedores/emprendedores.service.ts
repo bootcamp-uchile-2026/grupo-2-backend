@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable} from '@nestjs/common';
 import { Emprendedor } from '../model/emprendedor.model';
 import { EmprendedorResumenDto } from 'src/model/dtos/EmprendedorResumen.dto';
 import { EmprendedorDetalleDto } from 'src/model/dtos/EmprendedorDetalle.dto';
 import { ProductosService } from 'src/productos/productos.service';
 import { ProductoResumenDto } from 'src/model/dtos/ProductoResumen.dto';
+import { EmprendedorNoEncontradoError } from '../errors/emprendedor-no-encontrado.error';
 
 @Injectable()
 export class EmprendedoresService {
@@ -64,7 +65,7 @@ export class EmprendedoresService {
             (emprendedor) => emprendedor.id === emprendedorId);
 
         if (!emprendedorEncontrado) {
-            throw new NotFoundException('Emprendedor no encontrado');
+            throw new EmprendedorNoEncontradoError();
         }
 
         const emprendedorDto: EmprendedorDetalleDto = {
@@ -83,7 +84,7 @@ export class EmprendedoresService {
             (emprendedor) => emprendedor.id === emprendedorId);
 
         if (!emprendedorEncontrado) {
-            throw new NotFoundException('Emprendedor no encontrado');
+            throw new EmprendedorNoEncontradoError();
         }
 
         const productosDto =
