@@ -41,21 +41,19 @@ export class EmprendedoresService {
         },
     ];
 
-    obtenerEmprendedores(cantidad?: string): EmprendedorResumenDto[] {
+    obtenerEmprendedores(cantidad?: number): EmprendedorResumenDto[] {
         let emprendedoresSeleccionados = this.emprendedores;
 
         if (cantidad !== undefined) {
-            const cantidadNumero = Number(cantidad);
-
-            emprendedoresSeleccionados = this.emprendedores.slice(0,cantidadNumero);
+            emprendedoresSeleccionados = this.emprendedores.slice(0, cantidad);
         }
 
         const emprendedoresDto = emprendedoresSeleccionados.map((emprendedor) => ({
-                id: emprendedor.id,
-                nombre: emprendedor.nombre,
-                descripcion: emprendedor.descripcion,
-                imagenUrl: emprendedor.imagenUrl,
-            }),
+            id: emprendedor.id,
+            nombre: emprendedor.nombre,
+            descripcion: emprendedor.descripcion,
+            imagenUrl: emprendedor.imagenUrl,
+        }),
         );
 
         return emprendedoresDto;
