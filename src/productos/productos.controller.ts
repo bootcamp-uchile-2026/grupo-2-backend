@@ -21,6 +21,7 @@ export class ProductosController {
   @Get()
   @ApiOperation({
     summary: 'Buscar productos',
+    description: 'Busca productos del catálogo mediante un término de búsqueda obligatorio. Devuelve los productos coincidentes o un arreglo vacío si no encuentra resultados.',
   })
   @ApiQuery({
     name: 'buscar',
@@ -76,7 +77,8 @@ export class ProductosController {
     type: Number,
     required: true,
     example: 5,
-    description: 'Cantidad máxima de productos. Debe ser un número entero positivo.',
+    description:
+      'Cantidad de productos más vendidos que se desea obtener. Debe ser un número entero positivo.',
   })
   @ApiOkResponse({
     description: 'Productos más vendidos obtenidos correctamente.',
@@ -100,7 +102,7 @@ export class ProductosController {
   @ApiOperation({
     summary: 'Obtener productos nuevos',
     description:
-      'Obtiene los productos recientemente incorporados al catálogo de EcoTienda.',
+      'Obtiene los productos recientemente incorporados al catálogo de BuenOrigen.',
   })
   @ApiOkResponse({
     description: 'Productos nuevos obtenidos correctamente.',
@@ -126,6 +128,9 @@ export class ProductosController {
   @ApiOkResponse({
     description: 'Producto obtenido correctamente.',
     type: ProductoDetalleDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Producto no encontrado.',
   })
   obtenerProductoPorId(
     @Param('productoId', ParseIntPipe) productoId: number,
@@ -208,7 +213,7 @@ export class ProductosController {
     type: Number,
     required: true,
     example: 4,
-    description: 'Cantidad máxima de productos. Debe ser un número entero positivo.',
+    description:'Cantidad máxima de productos relacionados que se desea obtener. Debe ser un número entero positivo.',
   })
   @ApiOkResponse({
     description: 'Productos relacionados obtenidos correctamente.',
