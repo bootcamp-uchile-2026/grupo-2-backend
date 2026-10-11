@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Customer } from './../model/customer.model';
@@ -43,7 +43,9 @@ export class CustomersService {
 
     const AllCustomers = this.customers.map(customer => {
 
+      //Se crea un nuevo objeto sin la propiedad password
       const { password, ...customerWithoutPassword } = customer;
+      
       return customerWithoutPassword;
     
     });
@@ -66,6 +68,7 @@ export class CustomersService {
     
     }
 
+    //Se crea un nuevo objeto sin la propiedad password
     const { password, ...customerWithoutPassword } = customer;
     
     return customerWithoutPassword;
@@ -80,13 +83,15 @@ export class CustomersService {
 
     const customer = this.customers.find(c => c.id === id);
     if (!customer) {
-      return `Customer with ID ${id} not found`;
+    throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
     }
-    const updatedCustomer = { ...customer, ...updateCustomerDto };
+
+    Object.assign(customer, updateCustomerDto);
+
+    //Se crea un nuevo objeto sin la propiedad password
+    const { password, ...customerWithoutPassword } = customer; 
     
-
-
-    return `This action updates a #${id} customer`;
+    return customerWithoutPassword;
   }
 
 }
