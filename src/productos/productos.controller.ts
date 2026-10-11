@@ -21,6 +21,7 @@ export class ProductosController {
   @Get()
   @ApiOperation({
     summary: 'Buscar productos',
+    description: 'Busca productos del catálogo mediante un término de búsqueda obligatorio. Devuelve los productos coincidentes o un arreglo vacío si no encuentra resultados.',
   })
   @ApiQuery({
     name: 'buscar',

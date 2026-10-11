@@ -16,7 +16,7 @@ export class EmprendedoresController {
     @ApiOperation({
         summary: 'Obtener emprendedores',
         description:
-            'Obtiene los emprendedores registrados en EcoTienda. Opcionalmente permite limitar la cantidad de resultados.',
+            'Obtiene los emprendedores registrados en BuenOrigen. Opcionalmente permite limitar la cantidad de resultados.',
     })
     @ApiQuery({
         name: 'cantidad',
