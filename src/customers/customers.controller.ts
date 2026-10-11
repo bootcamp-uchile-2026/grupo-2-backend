@@ -16,23 +16,35 @@ export class CustomersController {
     return this.customersService.create(createCustomerDto);
   }
 
+  ////////////////////////
+  // Consultar clientes //
+  ////////////////////////
+
+  //
+  //Consultar todos los clientes
+  //
+
   @Get()
   findAll() {
     return this.customersService.findAll();
   }
+
+  //
+  //Consultar un cliente por su ID
+  //
 
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.customersService.findOne(+id);
   }
 
+  ////////////////////////////////////
+  // Modificar un cliente por su ID //
+  ////////////////////////////////////
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateCustomerDto: UpdateCustomerDto) {
     return this.customersService.update(+id, updateCustomerDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.customersService.remove(+id);
-  }
 }

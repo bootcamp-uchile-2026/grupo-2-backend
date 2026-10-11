@@ -1,26 +1,92 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { Customer } from './../model/customer.model';
 
 @Injectable()
 export class CustomersService {
-  create(createCustomerDto: CreateCustomerDto) {
-    return 'This action adds a new customer';
+
+  private customers: Customer[] = [];
+  private siguienteId = 1;
+
+  ////////////////////////////
+  // Crear un nuevo cliente //
+  ////////////////////////////
+
+  create(createCustomerDto: CreateCustomerDto): Customer {
+
+    const newCustomer = new Customer();
+    
+    newCustomer.email = createCustomerDto.email;
+    newCustomer.password = createCustomerDto.password;
+
+    newCustomer.id = this.siguienteId++;
+    newCustomer.greenPoints = 0;
+    newCustomer.addresses = [];
+    newCustomer.paymentMethods = [];
+    newCustomer.orders = [];
+
+    this.customers.push(newCustomer);
+
+    return newCustomer;
   }
+
+  ////////////////////////
+  // Consultar clientes //
+  ////////////////////////
+  
+  //
+  //Consultar todos los clientes
+  //
 
   findAll() {
-    return `This action returns all customers`;
+
+    const AllCustomers = this.customers.map(customer => {
+
+      const { password, ...customerWithoutPassword } = customer;
+      return customerWithoutPassword;
+    
+    });
+    
+    return AllCustomers;
+  
   }
+
+  //
+  //Consultar un cliente por su ID  
+  //
 
   findOne(id: number) {
-    return `This action returns a #${id} customer`;
+
+    const customer = this.customers.find(c => c.id === id);
+    
+    if (!customer) {
+
+      return `Customer with ID ${id} not found`;
+    
+    }
+
+    const { password, ...customerWithoutPassword } = customer;
+    
+    return customerWithoutPassword;
+  
   }
 
+  ////////////////////////////////////
+  // Modificar un cliente por su ID //
+  ////////////////////////////////////
+
   update(id: number, updateCustomerDto: UpdateCustomerDto) {
+
+    const customer = this.customers.find(c => c.id === id);
+    if (!customer) {
+      return `Customer with ID ${id} not found`;
+    }
+    const updatedCustomer = { ...customer, ...updateCustomerDto };
+    
+
+
     return `This action updates a #${id} customer`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} customer`;
-  }
 }
