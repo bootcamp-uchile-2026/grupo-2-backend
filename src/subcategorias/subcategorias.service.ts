@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { ProductosService } from '../productos/productos.service';
+import { ProductsService } from '../productos/productos.service';
 import { SubcategoryNotFoundError } from '../common/errors/subcategory-not-found.error';
-import { SubcategoryProductDto } from '../model/dtos/subcategory-product.dto';
-import { Subcategory } from '../model/subcategory.model';
-import { SubcategoryDto } from '../model/dtos/subcategory.dto';
-import { PopularSubcategoryProductDto } from '../model/dtos/popular-subcategory-product.dto';
+import { SubcategoryProductDto } from '../dto/subcategory-product.dto';
+import { Subcategory } from '../models/subcategory.model';
+import { SubcategoryDto } from '../dto/subcategory.dto';
+import { PopularSubcategoryProductDto } from '../dto/popular-subcategory-product.dto';
 
 @Injectable()
-export class SubcategoriasService {
+export class SubcategoriesService {
 
-  constructor(private readonly productosService: ProductosService) {}
+  constructor(private readonly productsService: ProductsService) {}
 
   private readonly subcategories: Subcategory[] = [
     {
@@ -64,7 +64,7 @@ export class SubcategoriasService {
   findProductsBySubcategory(subcategoryId: number): SubcategoryProductDto[] {
     this.validateSubcategoryExists(subcategoryId);
 
-    return this.productosService
+    return this.productsService
       .findProductsBySubcategory(subcategoryId)
       .map((product) => ({
         id: product.id,
@@ -81,7 +81,7 @@ export class SubcategoriasService {
 
     const maxQuantity = Math.min(quantity, 4);
 
-    return this.productosService
+    return this.productsService
       .findProductsBySubcategory(subcategoryId)
       .filter((product) => product.stock > 0)
       .sort((a, b) => b.salesLastMonth - a.salesLastMonth)

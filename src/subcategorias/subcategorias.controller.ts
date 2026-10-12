@@ -1,15 +1,15 @@
 import {BadRequestException, Controller, Get, Param, ParseIntPipe, Query} from '@nestjs/common';
 import {ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags} from '@nestjs/swagger';
-import { SubcategoriasService } from './subcategorias.service';
-import { SubcategoryDto } from '../model/dtos/subcategory.dto';
-import { SubcategoryProductDto } from '../model/dtos/subcategory-product.dto';
-import { PopularSubcategoryProductDto } from '../model/dtos/popular-subcategory-product.dto';
+import { SubcategoriesService } from './subcategorias.service';
+import { SubcategoryDto } from '../dto/subcategory.dto';
+import { SubcategoryProductDto } from '../dto/subcategory-product.dto';
+import { PopularSubcategoryProductDto } from '../dto/popular-subcategory-product.dto';
 
 @ApiTags('Subcategorías')
 @Controller()
-export class SubcategoriasController {
+export class SubcategoriesController {
   constructor(
-    private readonly subcategoriasService: SubcategoriasService,
+    private readonly subcategoriesService: SubcategoriesService,
   ) {}
 
   @Get('categorias/:categoriaId/subcategorias')
@@ -33,7 +33,7 @@ export class SubcategoriasController {
     description: 'El identificador debe ser un número entero.',
   })
   findByCategory(@Param('categoriaId', ParseIntPipe) categoryId: number): SubcategoryDto[] {
-    return this.subcategoriasService.findByCategory(
+    return this.subcategoriesService.findByCategory(
       categoryId,
     );
   }
@@ -63,7 +63,7 @@ export class SubcategoriasController {
     description: 'Subcategoría no encontrada.',
   })
   findProductsBySubcategory(@Param('subcategoriaId', ParseIntPipe)subcategoryId: number): SubcategoryProductDto[] {
-    return this.subcategoriasService.findProductsBySubcategory(
+    return this.subcategoriesService.findProductsBySubcategory(
       subcategoryId,
     );
   }
@@ -116,7 +116,7 @@ export class SubcategoriasController {
       }
     }
 
-    return this.subcategoriasService.findPopularProducts(
+    return this.subcategoriesService.findPopularProducts(
       subcategoryId,
       quantity,
     );

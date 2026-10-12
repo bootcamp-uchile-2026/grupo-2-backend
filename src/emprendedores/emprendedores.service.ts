@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { Entrepreneur } from '../model/entrepreneur.model';
-import { EntrepreneurSummaryDto } from '../model/dtos/entrepreneur-summary.dto';
-import { EntrepreneurDetailDto } from '../model/dtos/entrepreneur-detail.dto';
-import { ProductSummaryDto } from '../model/dtos/product-summary.dto';
-import { ProductosService } from '../productos/productos.service';
+import { Entrepreneur } from '../models/entrepreneur.model';
+import { EntrepreneurSummaryDto } from '../dto/entrepreneur-summary.dto';
+import { EntrepreneurDetailDto } from '../dto/entrepreneur-detail.dto';
+import { ProductSummaryDto } from '../dto/product-summary.dto';
+import { ProductsService } from '../productos/productos.service';
 import { EntrepreneurNotFoundError } from '../common/errors/entrepreneur-not-found.error';
 
 @Injectable()
-export class EmprendedoresService {
+export class EntrepreneursService {
   
-  constructor(private readonly productosService: ProductosService) {}
+  constructor(private readonly productsService: ProductsService) {}
 
   private readonly entrepreneurs: Entrepreneur[] = [
     {
@@ -82,7 +82,7 @@ export class EmprendedoresService {
       throw new EntrepreneurNotFoundError();
     }
 
-    return this.productosService.findProductsByEntrepreneur(
+    return this.productsService.findProductsByEntrepreneur(
       entrepreneurId,
     );
   }

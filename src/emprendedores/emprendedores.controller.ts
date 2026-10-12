@@ -1,15 +1,15 @@
 import {BadRequestException, Controller, Get, Param, ParseIntPipe, Query} from '@nestjs/common';
 import {ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags} from '@nestjs/swagger';
-import { EmprendedoresService } from './emprendedores.service';
-import { EntrepreneurSummaryDto } from '../model/dtos/entrepreneur-summary.dto';
-import { EntrepreneurDetailDto } from '../model/dtos/entrepreneur-detail.dto';
-import { ProductSummaryDto } from '../model/dtos/product-summary.dto';
+import { EntrepreneursService } from './emprendedores.service';
+import { EntrepreneurSummaryDto } from '../dto/entrepreneur-summary.dto';
+import { EntrepreneurDetailDto } from '../dto/entrepreneur-detail.dto';
+import { ProductSummaryDto } from '../dto/product-summary.dto';
 
 @ApiTags('Emprendedores')
 @Controller('emprendedores')
-export class EmprendedoresController {
+export class EntrepreneursController {
 
-  constructor(private readonly emprendedoresService: EmprendedoresService) {}
+  constructor(private readonly entrepreneursService: EntrepreneursService) {}
 
   @Get()
   @ApiOperation({
@@ -36,7 +36,7 @@ export class EmprendedoresController {
   })
   findAll(@Query('cantidad') quantity?: string): EntrepreneurSummaryDto[] {
     if (quantity === undefined) {
-      return this.emprendedoresService.findAll();
+      return this.entrepreneursService.findAll();
     }
 
     const parsedQuantity = Number(quantity);
@@ -50,7 +50,7 @@ export class EmprendedoresController {
       );
     }
 
-    return this.emprendedoresService.findAll(
+    return this.entrepreneursService.findAll(
       parsedQuantity,
     );
   }
@@ -75,7 +75,7 @@ export class EmprendedoresController {
     description: 'Emprendedor no encontrado.',
   })
   findOne(@Param('emprendedorId', ParseIntPipe)entrepreneurId: number): EntrepreneurDetailDto {
-    return this.emprendedoresService.findOne(
+    return this.entrepreneursService.findOne(
       entrepreneurId,
     );
   }
@@ -102,7 +102,7 @@ export class EmprendedoresController {
     description: 'Emprendedor no encontrado.',
   })
   findProductsByEntrepreneur(@Param('emprendedorId', ParseIntPipe)entrepreneurId: number): ProductSummaryDto[] {
-    return this.emprendedoresService.findProductsByEntrepreneur(
+    return this.entrepreneursService.findProductsByEntrepreneur(
       entrepreneurId,
     );
   }

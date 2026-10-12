@@ -1,20 +1,20 @@
 import {BadRequestException, Controller, Get, Param, ParseIntPipe, Query} from '@nestjs/common';
 import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags} from '@nestjs/swagger';
-import { ProductosService } from './productos.service';
-import { ProductSearchDto } from '../model/dtos/product-search.dto';
-import { ProductOfferDto } from '../model/dtos/product-offer.dto';
-import { BestSellingProductDto } from '../model/dtos/best-selling-product.dto';
-import { NewProductSummaryDto } from '../model/dtos/new-product-summary.dto';
-import { ProductDetailDto } from '../model/dtos/product-detail.dto';
-import { ProductGreenFootprintDto } from '../model/dtos/product-green-footprint.dto';
-import { ProductReviewDto } from '../model/dtos/product-review.dto';
-import { RelatedProductDto } from '../model/dtos/related-product.dto';
+import { ProductsService } from './productos.service';
+import { ProductSearchDto } from '../dto/product-search.dto';
+import { ProductOfferDto } from '../dto/product-offer.dto';
+import { BestSellingProductDto } from '../dto/best-selling-product.dto';
+import { NewProductSummaryDto } from '../dto/new-product-summary.dto';
+import { ProductDetailDto } from '../dto/product-detail.dto';
+import { ProductGreenFootprintDto } from '../dto/product-green-footprint.dto';
+import { ProductReviewDto } from '../dto/product-review.dto';
+import { RelatedProductDto } from '../dto/related-product.dto';
 
 @ApiTags('Productos')
 @Controller('productos')
-export class ProductosController {
+export class ProductsController {
 
-  constructor(private readonly productosService: ProductosService) {}
+  constructor(private readonly productsService: ProductsService) {}
 
   @Get()
   @ApiOperation({
@@ -44,7 +44,7 @@ export class ProductosController {
         'El término de búsqueda es obligatorio',
       );
     }
-    return this.productosService.searchProducts(search);
+    return this.productsService.searchProducts(search);
   }
 
   @Get('ofertas')
@@ -59,7 +59,7 @@ export class ProductosController {
     isArray: true,
   })
   findProductsOnSale(): ProductOfferDto[] {
-    return this.productosService.findProductsOnSale();
+    return this.productsService.findProductsOnSale();
   }
 
   @Get('mas-vendidos')
@@ -92,7 +92,7 @@ export class ProductosController {
         'La cantidad debe ser un número entero positivo.',
       );
     }
-    return this.productosService.findBestSellingProducts(
+    return this.productsService.findBestSellingProducts(
       quantity,
     );
   }
@@ -109,7 +109,7 @@ export class ProductosController {
     isArray: true,
   })
   findNewProducts(): NewProductSummaryDto[] {
-    return this.productosService.findNewProducts();
+    return this.productsService.findNewProducts();
   }
 
   @Get(':productoId')
@@ -136,7 +136,7 @@ export class ProductosController {
   })
   findOne(
     @Param('productoId', ParseIntPipe) productId: number): ProductDetailDto {
-    return this.productosService.findOne(productId);
+    return this.productsService.findOne(productId);
   }
 
   @Get(':productoId/huella-verde')
@@ -164,7 +164,7 @@ export class ProductosController {
   })
   findGreenFootprint(
     @Param('productoId', ParseIntPipe) productId: number): ProductGreenFootprintDto {
-    return this.productosService.findGreenFootprint(
+    return this.productsService.findGreenFootprint(
       productId,
     );
   }
@@ -194,7 +194,7 @@ export class ProductosController {
   })
   findReviews(
     @Param('productoId', ParseIntPipe) productId: number): ProductReviewDto[] {
-    return this.productosService.findReviews(productId);
+    return this.productsService.findReviews(productId);
   }
 
   @Get(':productoId/relacionados')
@@ -238,7 +238,7 @@ export class ProductosController {
         'La cantidad debe ser un número entero positivo.',
       );
     }
-    return this.productosService.findRelatedProducts(
+    return this.productsService.findRelatedProducts(
       productId,
       quantity,
     );

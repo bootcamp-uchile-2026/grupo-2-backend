@@ -2,8 +2,9 @@ import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards
 import { ApiBadRequestResponse, ApiBody, ApiCreatedResponse, ApiForbiddenResponse, ApiHeader, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { CustomersService } from './customers.service';
-import { CreateCustomerDto } from './dto/create-customer.dto';
-import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { CreateCustomerDto } from '../dto/create-customer.dto';
+import { UpdateCustomerDto } from '../dto/update-customer.dto';
+import { CustomerResponseDto } from '../dto/customer-response.dto';
 import { AdminGuard } from '../common/guards/admin-access/admin.guard';
 import { CustomerAccessGuard } from '../common/guards/customer-access/customer-access.guard';
 
@@ -25,6 +26,7 @@ export class CustomersController {
   @ApiBody({ type: CreateCustomerDto })
   @ApiCreatedResponse({
     description: 'Cliente creado correctamente.',
+    type: CustomerResponseDto,
   })
   @ApiBadRequestResponse({
     description: 'Los datos del cliente no son válidos.',
@@ -46,6 +48,8 @@ export class CustomersController {
   })
   @ApiOkResponse({
     description: 'Listado de clientes obtenido correctamente.',
+    type: CustomerResponseDto,
+    isArray: true,
   })
   @ApiForbiddenResponse({
     description: 'Acceso denegado.',
@@ -67,8 +71,9 @@ export class CustomersController {
     required: true,
   })
   @ApiOkResponse({
-    description: 'Perfil obtenido correctamente.',
-  })
+  description: 'Cliente obtenido correctamente.',
+  type: CustomerResponseDto,
+})
   @ApiForbiddenResponse({
     description: 'Acceso denegado.',
   })
@@ -97,8 +102,9 @@ export class CustomersController {
     required: true,
   })
   @ApiOkResponse({
-    description: 'Cliente obtenido correctamente.',
-  })
+  description: 'Cliente obtenido correctamente.',
+  type: CustomerResponseDto,
+})
   @ApiBadRequestResponse({
     description: 'El identificador debe ser un número entero.',
   })

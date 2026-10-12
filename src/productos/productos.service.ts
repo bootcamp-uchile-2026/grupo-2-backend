@@ -1,20 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { ProductNotFoundError } from '../common/errors/product-not-found.error';
-import { Product } from '../model/product.model';
-import { GreenFootprint } from '../model/green-footprint.model';
-import { Review } from '../model/review.model';
-import { ProductSearchDto } from '../model/dtos/product-search.dto';
-import { ProductOfferDto } from '../model/dtos/product-offer.dto';
-import { BestSellingProductDto } from '../model/dtos/best-selling-product.dto';
-import { NewProductSummaryDto } from '../model/dtos/new-product-summary.dto';
-import { ProductDetailDto } from '../model/dtos/product-detail.dto';
-import { ProductGreenFootprintDto } from '../model/dtos/product-green-footprint.dto';
-import { ProductReviewDto } from '../model/dtos/product-review.dto';
-import { RelatedProductDto } from '../model/dtos/related-product.dto';
-import { ProductSummaryDto } from '../model/dtos/product-summary.dto';
+import { Product } from '../models/product.model';
+import { GreenFootprint } from '../models/green-footprint.model';
+import { Review } from '../models/review.model';
+import { ProductSearchDto } from '../dto/product-search.dto';
+import { ProductOfferDto } from '../dto/product-offer.dto';
+import { BestSellingProductDto } from '../dto/best-selling-product.dto';
+import { NewProductSummaryDto } from '../dto/new-product-summary.dto';
+import { ProductDetailDto } from '../dto/product-detail.dto';
+import { ProductGreenFootprintDto } from '../dto/product-green-footprint.dto';
+import { ProductReviewDto } from '../dto/product-review.dto';
+import { RelatedProductDto } from '../dto/related-product.dto';
+import { ProductSummaryDto } from '../dto/product-summary.dto';
 
 @Injectable()
-export class ProductosService {
+export class ProductsService {
   private readonly products: Product[] = [
     {
       id: 1,

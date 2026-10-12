@@ -8,7 +8,7 @@ export class Customer {
     email: string;
     password: string;
     greenPoints: number;
-    profile: Profile;
+    profile?: Profile;
     addresses: Address[];
     paymentMethods: PaymentMethod[];
     orders: Order[];
