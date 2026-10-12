@@ -1,9 +1,8 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-
 import { AppModule } from './app.module';
-import { LoggingInterceptor } from './interceptors/logging/logging.interceptor';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { RecursoNoEncontradoFilter } from './filters/recurso-no-encontrado/recurso-no-encontrado.filter';
 
 async function bootstrap() {
