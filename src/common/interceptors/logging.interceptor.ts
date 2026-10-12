@@ -1,11 +1,5 @@
-import {
-  CallHandler,
-  ExecutionContext,
-  HttpException,
-  Injectable,
-  NestInterceptor,
-} from '@nestjs/common';
-import { Observable, tap, finalize } from 'rxjs';
+import {CallHandler,ExecutionContext,Injectable,NestInterceptor} from '@nestjs/common';
+import { Observable } from 'rxjs';
 import { Request, Response } from 'express';
 
 @Injectable()
@@ -15,31 +9,19 @@ export class LoggingInterceptor implements NestInterceptor {
     const response = context.switchToHttp().getResponse<Response>();
 
     const requestId = request.headers['x-request-id'];
-    const method = request.method;
-    const url = request.originalUrl;
     const startTime = Date.now();
 
-    let statusCode = response.statusCode;
+    response.once('finish', () => {
+      console.log({
+        requestId,
+        method: request.method,
+        url: request.originalUrl,
+        statusCode: response.statusCode,
+        durationMs: Date.now() - startTime,
+        timestamp: new Date().toISOString(),
+      });
+    });
 
-    return next.handle().pipe(
-      tap({
-        error: (error: unknown) => {
-          statusCode =
-            error instanceof HttpException
-              ? error.getStatus()
-              : 500;
-        },
-      }),
-      finalize(() => {
-        console.log({
-          requestId,
-          method,
-          url,
-          statusCode,
-          durationMs: Date.now() - startTime,
-          timestamp: new Date().toISOString(),
-        });
-      }),
-    );
+    return next.handle();
   }
 }
