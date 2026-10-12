@@ -1,15 +1,15 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { SubcategoriasModule } from './subcategorias/subcategorias.module';
-import { ProductosModule } from './productos/productos.module';
-import { EmprendedoresModule } from './emprendedores/emprendedores.module';
+import { SubcategoriesModule } from './subcategorias/subcategorias.module';
+import { ProductsModule } from './productos/productos.module';
+import { EntrepreneursModule } from './emprendedores/emprendedores.module';
 import { CustomersModule } from './customers/customers.module';
 import { RequestTracingMiddleware } from './common/middleware/request-tracing.middleware';
 
 @Module({
   imports: [
-    SubcategoriasModule,
-    ProductosModule,
-    EmprendedoresModule,
+    SubcategoriesModule,
+    ProductsModule,
+    EntrepreneursModule,
     CustomersModule,
   ],
   controllers: [],

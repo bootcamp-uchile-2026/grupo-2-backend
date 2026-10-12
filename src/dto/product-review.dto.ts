@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class ValoracionDetalleDto {
+export class ProductReviewDto {
   @ApiProperty({
     example: 1,
     description: 'Identificador único de la valoración',
@@ -11,19 +11,17 @@ export class ValoracionDetalleDto {
     example: 'María',
     description: 'Nombre público del autor de la valoración',
   })
-  autor: string;
+  author: string;
 
   @ApiProperty({
     example: 'Muy buen producto y excelente calidad.',
     description: 'Comentario realizado sobre el producto',
   })
-  comentario: string;
+  comment: string;
 
   @ApiProperty({
     example: 5,
     description: 'Puntuación otorgada al producto en una escala de 1 a 5',
   })
-  puntuacion: number;
-
-  constructor(){};
+  rating: number;
 }

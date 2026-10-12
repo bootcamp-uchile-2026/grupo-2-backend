@@ -1,412 +1,360 @@
 import { Injectable } from '@nestjs/common';
 import { ProductNotFoundError } from '../common/errors/product-not-found.error';
-import { HuellaVerdeProductoDto } from 'src/model/dtos/HuellaVerdeProducto.dto';
-import { ProductoBusquedaDto } from 'src/model/dtos/ProductoBusqueda.dto';
-import { ProductoDetalleDto } from 'src/model/dtos/ProductoDetalle.dto';
-import { ProductoMasVendidoDto } from 'src/model/dtos/ProductoMasVendido.dto';
-import { ProductoOfertaDto } from 'src/model/dtos/ProductoOferta.dto';
-import { ProductoRelacionadoDto } from 'src/model/dtos/ProductoRelacionado.dto';
-import { ProductoResumenDto } from 'src/model/dtos/ProductoResumen.dto';
-import { ProductoResumenNuevosDto } from 'src/model/dtos/ProductoResumenNuevos.dto';
-import { ValoracionDetalleDto } from 'src/model/dtos/ValoracionDetalleProducto.dto';
-import { HuellaVerde } from 'src/model/huella-verde.model';
-import { Producto } from 'src/model/producto.model';
-import { Valoracion } from 'src/model/valoracion.model';
+import { Product } from '../models/product.model';
+import { GreenFootprint } from '../models/green-footprint.model';
+import { Review } from '../models/review.model';
+import { ProductSearchDto } from '../dto/product-search.dto';
+import { ProductOfferDto } from '../dto/product-offer.dto';
+import { BestSellingProductDto } from '../dto/best-selling-product.dto';
+import { NewProductSummaryDto } from '../dto/new-product-summary.dto';
+import { ProductDetailDto } from '../dto/product-detail.dto';
+import { ProductGreenFootprintDto } from '../dto/product-green-footprint.dto';
+import { ProductReviewDto } from '../dto/product-review.dto';
+import { RelatedProductDto } from '../dto/related-product.dto';
+import { ProductSummaryDto } from '../dto/product-summary.dto';
 
 @Injectable()
-export class ProductosService {
-  private readonly productos: Producto[] = [
+export class ProductsService {
+  private readonly products: Product[] = [
     {
       id: 1,
-      subcategoriaId: 1,
-      emprendedorId: 1,
-      marca: 'EcoWear',
-      nombre: 'Polera de algodón orgánico',
-      descripcion: 'Polera confeccionada con algodón orgánico.',
-      precio: 12990,
-      precioOferta: 9990,
-      imagenUrl:
-        'https:polera.jpg',
-      imagenes: [
-        'https:polera.jpg',
-        'https:polera-2.jpg',
-      ],
+      subcategoryId: 1,
+      entrepreneurId: 1,
+      brand: 'EcoWear',
+      name: 'Polera de algodón orgánico',
+      description: 'Polera confeccionada con algodón orgánico.',
+      price: 12990,
+      salePrice: 9990,
+      imageUrl: 'https:polera.jpg',
+      images: ['https:polera.jpg', 'https:polera-2.jpg'],
       stock: 25,
-      puntuacion: 4.7,
-      ventasUltimoMes: 50,
-      fechaCreacion: new Date('2026-08-20'),
-      colores: ['Blanco', 'Negro', 'Verde'],
-      tallas: ['S', 'M', 'L', 'XL'],
+      rating: 4.7,
+      salesLastMonth: 50,
+      createdAt: new Date('2026-08-20'),
+      colors: ['Blanco', 'Negro', 'Verde'],
+      sizes: ['S', 'M', 'L', 'XL'],
     },
     {
       id: 2,
-      subcategoriaId: 1,
-      emprendedorId: 1,
-      marca: 'EcoWear',
-      nombre: 'Polera manga larga',
-      descripcion: 'Polera de algodón de manga larga.',
-      precio: 15990,
-      precioOferta: null,
-      imagenUrl:
-        'https:polera-larga.jpg',
-      imagenes: [
-        'https:olera-larga.jpg',
-      ],
+      subcategoryId: 1,
+      entrepreneurId: 1,
+      brand: 'EcoWear',
+      name: 'Polera manga larga',
+      description: 'Polera de algodón de manga larga.',
+      price: 15990,
+      salePrice: null,
+      imageUrl: 'https:polera-larga.jpg',
+      images: ['https:olera-larga.jpg'],
       stock: 15,
-      puntuacion: 4.5,
-      ventasUltimoMes: 35,
-      fechaCreacion: new Date('2026-08-18'),
-      colores: ['Negro', 'Gris'],
-      tallas: ['S', 'M', 'L'],
+      rating: 4.5,
+      salesLastMonth: 35,
+      createdAt: new Date('2026-08-18'),
+      colors: ['Negro', 'Gris'],
+      sizes: ['S', 'M', 'L'],
     },
     {
       id: 3,
-      subcategoriaId: 2,
-      emprendedorId: 2,
-      marca: 'VerdeVida',
-      nombre: 'Polera básica',
-      descripcion: 'Polera básica de algodón.',
-      precio: 9990,
-      precioOferta: 7990,
-      imagenUrl:
-        'https:polera-basica.jpg',
-      imagenes: [
-        'https:polera-basica.jpg',
-      ],
+      subcategoryId: 2,
+      entrepreneurId: 2,
+      brand: 'VerdeVida',
+      name: 'Polera básica',
+      description: 'Polera básica de algodón.',
+      price: 9990,
+      salePrice: 7990,
+      imageUrl: 'https:polera-basica.jpg',
+      images: ['https:polera-basica.jpg'],
       stock: 20,
-      puntuacion: 4.2,
-      ventasUltimoMes: 25,
-      fechaCreacion: new Date('2026-08-15'),
-      colores: ['Blanco', 'Negro'],
-      tallas: ['S', 'M', 'L', 'XL'],
+      rating: 4.2,
+      salesLastMonth: 25,
+      createdAt: new Date('2026-08-15'),
+      colors: ['Blanco', 'Negro'],
+      sizes: ['S', 'M', 'L', 'XL'],
     },
     {
       id: 4,
-      subcategoriaId: 2,
-      emprendedorId: 2,
-      marca: 'NaturalFit',
-      nombre: 'Polera deportiva',
-      descripcion: 'Polera para actividades deportivas.',
-      precio: 18990,
-      precioOferta: null,
-      imagenUrl:
-        'https:polera-deportiva.jpg',
-      imagenes: [
-        'https:polera-deportiva.jpg',
-      ],
+      subcategoryId: 2,
+      entrepreneurId: 2,
+      brand: 'NaturalFit',
+      name: 'Polera deportiva',
+      description: 'Polera para actividades deportivas.',
+      price: 18990,
+      salePrice: null,
+      imageUrl: 'https:polera-deportiva.jpg',
+      images: ['https:polera-deportiva.jpg'],
       stock: 10,
-      puntuacion: 4.8,
-      ventasUltimoMes: 20,
-      fechaCreacion: new Date('2026-08-10'),
-      colores: ['Negro', 'Azul'],
-      tallas: ['M', 'L', 'XL'],
+      rating: 4.8,
+      salesLastMonth: 20,
+      createdAt: new Date('2026-08-10'),
+      colors: ['Negro', 'Azul'],
+      sizes: ['M', 'L', 'XL'],
     },
     {
       id: 5,
-      subcategoriaId: 3,
-      emprendedorId: 2,
-      marca: 'VerdeVida',
-      nombre: 'Polera estampada',
-      descripcion: 'Polera estampada de algodón.',
-      precio: 14990,
-      precioOferta: 11990,
-      imagenUrl:
-        'https:polera-estampada.jpg',
-      imagenes: [
+      subcategoryId: 3,
+      entrepreneurId: 2,
+      brand: 'VerdeVida',
+      name: 'Polera estampada',
+      description: 'Polera estampada de algodón.',
+      price: 14990,
+      salePrice: 11990,
+      imageUrl: 'https:polera-estampada.jpg',
+      images: [
         'https:polera-estampada.jpg',
         'https:polera-estampada-2.jpg',
       ],
       stock: 8,
-      puntuacion: null,
-      ventasUltimoMes: 15,
-      fechaCreacion: new Date('2026-08-05'),
-      colores: ['Blanco', 'Verde'],
-      tallas: ['S', 'M', 'L'],
+      rating: null,
+      salesLastMonth: 15,
+      createdAt: new Date('2026-08-05'),
+      colors: ['Blanco', 'Verde'],
+      sizes: ['S', 'M', 'L'],
     },
   ];
 
-  private readonly huellasVerdes: HuellaVerde[] = [
+  private readonly greenFootprints: GreenFootprint[] = [
     {
-      productoId: 1,
-      calificacionSustentable: 4.8,
-      materiales: ['Algodón orgánico', 'Tintes naturales'],
-      elaboracion:
+      productId: 1,
+      sustainabilityRating: 4.8,
+      materials: ['Algodón orgánico', 'Tintes naturales'],
+      productionProcess:
         'Producto confeccionado utilizando algodón orgánico y procesos de bajo impacto ambiental.',
     },
     {
-      productoId: 2,
-      calificacionSustentable: 4.5,
-      materiales: ['Algodón orgánico'],
-      elaboracion:
+      productId: 2,
+      sustainabilityRating: 4.5,
+      materials: ['Algodón orgánico'],
+      productionProcess:
         'Producto elaborado con materiales de origen sustentable.',
     },
     {
-      productoId: 3,
-      calificacionSustentable: null,
-      materiales: ['Algodón'],
-      elaboracion: null,
+      productId: 3,
+      sustainabilityRating: null,
+      materials: ['Algodón'],
+      productionProcess: null,
     },
   ];
 
-  private readonly valoraciones: Valoracion[] = [
+  private readonly reviews: Review[] = [
     {
       id: 1,
-      productoId: 1,
-      autor: 'María',
-      comentario: 'Muy buen producto y excelente calidad.',
-      puntuacion: 5,
-      publicada: true,
+      productId: 1,
+      author: 'María',
+      comment: 'Muy buen producto y excelente calidad.',
+      rating: 5,
+      published: true,
     },
     {
       id: 2,
-      productoId: 1,
-      autor: 'Carlos',
-      comentario: 'Buena calidad y materiales.',
-      puntuacion: 4,
-      publicada: true,
+      productId: 1,
+      author: 'Carlos',
+      comment: 'Buena calidad y materiales.',
+      rating: 4,
+      published: true,
     },
     {
       id: 3,
-      productoId: 1,
-      autor: 'Andrea',
-      comentario: 'Comentario pendiente de moderación.',
-      puntuacion: 3,
-      publicada: false,
+      productId: 1,
+      author: 'Andrea',
+      comment: 'Comentario pendiente de moderación.',
+      rating: 3,
+      published: false,
     },
     {
       id: 4,
-      productoId: 2,
-      autor: 'Pedro',
-      comentario: 'Producto cómodo y de buena terminación.',
-      puntuacion: 4,
-      publicada: true,
+      productId: 2,
+      author: 'Pedro',
+      comment: 'Producto cómodo y de buena terminación.',
+      rating: 4,
+      published: true,
     },
   ];
 
-
-  buscarProductos(buscar: string): ProductoBusquedaDto[] {
-    const productosFiltrados = this.productos.filter((producto) =>
-      producto.nombre
-        .toLowerCase()
-        .includes(buscar.toLowerCase()),
+  searchProducts(search: string): ProductSearchDto[] {
+    const filteredProducts = this.products.filter((product) =>
+      product.name.toLowerCase().includes(search.toLowerCase()),
     );
 
-    const productosDto = productosFiltrados.map((producto) => ({
-      id: producto.id,
-      marca: producto.marca,
-      nombre: producto.nombre,
-      precio: producto.precio,
-      imagenUrl: producto.imagenUrl ?? '',
+    return filteredProducts.map((product) => ({
+      id: product.id,
+      brand: product.brand,
+      name: product.name,
+      price: product.price,
+      imageUrl: product.imageUrl ?? '',
     }));
-
-    return productosDto;
   }
 
-  obtenerProductosEnOferta(): ProductoOfertaDto[] {
-    const productosEnOferta = this.productos.filter(
-      (producto) => producto.precioOferta !== null,
+  findProductsOnSale(): ProductOfferDto[] {
+    const productsOnSale = this.products.filter(
+      (product) => product.salePrice !== null,
     );
 
-    const productosDto = productosEnOferta.map((producto) => ({
-      id: producto.id,
-      marca: producto.marca,
-      nombre: producto.nombre,
-      precioOriginal: producto.precio,
-      precioDescuento: producto.precioOferta as number,
-      descuentoPorcentaje: Math.round(
-        ((producto.precio - (producto.precioOferta as number)) /
-          producto.precio) *
-        100,
-      ),
-      imagenUrl: producto.imagenUrl ?? '',
-    }));
+    return productsOnSale.map((product) => {
+      const discountedPrice = product.salePrice as number;
 
-    return productosDto;
-  }
-
-  obtenerProductosMasVendidos(
-    cantidad: number,
-  ): ProductoMasVendidoDto[] {
-    const productosOrdenados = this.productos.sort(
-      (a, b) => b.ventasUltimoMes - a.ventasUltimoMes,
-    );
-
-    const productosLimitados = productosOrdenados.slice(
-      0,
-      cantidad,
-    );
-
-    const productosDto = productosLimitados.map((producto) => ({
-      id: producto.id,
-      marca: producto.marca,
-      nombre: producto.nombre,
-      precio: producto.precio,
-      puntuacion: producto.puntuacion,
-      imagenUrl: producto.imagenUrl,
-    }));
-
-    return productosDto;
-  }
-
-  obtenerProductosNuevos(): ProductoResumenNuevosDto[] {
-    const productosOrdenados = this.productos.sort(
-      (a, b) =>
-        b.fechaCreacion.getTime() - a.fechaCreacion.getTime(),
-    );
-
-    const productosDto = productosOrdenados.map((producto) => ({
-      id: producto.id,
-      nombre: producto.nombre,
-      precio: producto.precio,
-      precioOferta: producto.precioOferta,
-      imagenUrl: producto.imagenUrl,
-    }));
-
-    return productosDto;
-  }
-
-  obtenerProductoPorId(productoId: number): ProductoDetalleDto {
-    const productoEncontrado = this.productos.find(
-      (producto) => producto.id === productoId,
-    );
-
-    if (!productoEncontrado) {
-      throw new ProductNotFoundError();
-    }
-
-    const productoDto: ProductoDetalleDto = {
-      id: productoEncontrado.id,
-      nombre: productoEncontrado.nombre,
-      precio: productoEncontrado.precio,
-      descripcion: productoEncontrado.descripcion,
-      imagenes: productoEncontrado.imagenes,
-      colores: productoEncontrado.colores,
-      tallas: productoEncontrado.tallas,
-    };
-
-    return productoDto;
-  }
-
-  obtenerHuellaVerde(
-    productoId: number,
-  ): HuellaVerdeProductoDto {
-    const productoEncontrado = this.productos.find(
-      (producto) => producto.id === productoId,
-    );
-
-    if (!productoEncontrado) {
-      throw new ProductNotFoundError();
-    }
-
-    const huellaEncontrada = this.huellasVerdes.find(
-      (huella) => huella.productoId === productoId,
-    );
-
-    if (!huellaEncontrada) {
-      const huellaVacia: HuellaVerdeProductoDto = {
-        calificacionSustentable: null,
-        materiales: [],
-        elaboracion: null,
+      return {
+        id: product.id,
+        brand: product.brand,
+        name: product.name,
+        originalPrice: product.price,
+        discountedPrice,
+        discountPercentage: Math.round(
+          ((product.price - discountedPrice) / product.price) * 100,
+        ),
+        imageUrl: product.imageUrl ?? '',
       };
-
-      return huellaVacia;
-    }
-
-    const huellaDto: HuellaVerdeProductoDto = {
-      calificacionSustentable:
-        huellaEncontrada.calificacionSustentable,
-      materiales: huellaEncontrada.materiales,
-      elaboracion: huellaEncontrada.elaboracion,
-    };
-
-    return huellaDto;
+    });
   }
 
-  obtenerValoraciones(productoId: number): ValoracionDetalleDto[] {
-    const productoEncontrado = this.productos.find(
-      (producto) => producto.id === productoId);
-
-    if (!productoEncontrado) {
-      throw new ProductNotFoundError();
-    }
-
-    const valoracionesProducto = this.valoraciones.filter(
-      (valoracion) =>
-        valoracion.productoId === productoId &&
-        valoracion.publicada === true);
-
-    const valoracionesDto = valoracionesProducto.map(
-      (valoracion) => ({
-        id: valoracion.id,
-        autor: valoracion.autor,
-        comentario: valoracion.comentario,
-        puntuacion: valoracion.puntuacion
-      }),
+  findBestSellingProducts(quantity: number): BestSellingProductDto[] {
+    const sortedProducts = [...this.products].sort(
+      (a, b) => b.salesLastMonth - a.salesLastMonth,
     );
 
-    return valoracionesDto;
-  }
-
-  obtenerProductosRelacionados(productoId: number, cantidad: number): ProductoRelacionadoDto[] {
-    const productoEncontrado = this.productos.find(
-      (producto) => producto.id === productoId,
-    );
-
-    if (!productoEncontrado) {
-      throw new ProductNotFoundError();
-    }
-
-    const productosRelacionados = this.productos.filter(
-      (producto) =>
-        producto.subcategoriaId === productoEncontrado.subcategoriaId &&
-        producto.id !== productoId,
-    );
-
-    const productosOrdenados = productosRelacionados.sort(
-      (a, b) => b.ventasUltimoMes - a.ventasUltimoMes,
-    );
-
-    const productosLimitados = productosOrdenados.slice(
-      0,
-      cantidad,
-    );
-
-    const productosDto = productosLimitados.map(
-      (producto) => ({
-        id: producto.id,
-        marca: producto.marca,
-        nombre: producto.nombre,
-        precio: producto.precio,
-        imagenUrl: producto.imagenUrl,
-      }),
-    );
-
-    return productosDto;
-  }
-
-  obtenerProductosPorSubcategoria(
-    subcategoriaId: number,
-  ): Producto[] {
-    return this.productos.filter(
-      (producto) => producto.subcategoriaId === subcategoriaId,
-    );
-  }
-
-  obtenerProductosPorEmprendedor(
-    emprendedorId: number,
-  ): ProductoResumenDto[] {
-    const productosEmprendedor = this.productos.filter(
-      (producto) => producto.emprendedorId === emprendedorId,
-    );
-
-    const productosDto = productosEmprendedor.map((producto) => ({
-      id: producto.id,
-      marca: producto.marca,
-      nombre: producto.nombre,
-      precio: producto.precio,
-      imagenUrl: producto.imagenUrl,
+    return sortedProducts.slice(0, quantity).map((product) => ({
+      id: product.id,
+      brand: product.brand,
+      name: product.name,
+      price: product.price,
+      rating: product.rating,
+      imageUrl: product.imageUrl,
     }));
+  }
 
-    return productosDto;
+  findNewProducts(): NewProductSummaryDto[] {
+    const sortedProducts = [...this.products].sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    );
+
+    return sortedProducts.map((product) => ({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      salePrice: product.salePrice,
+      imageUrl: product.imageUrl,
+    }));
+  }
+
+  findOne(productId: number): ProductDetailDto {
+    const product = this.products.find(
+      (item) => item.id === productId,
+    );
+
+    if (!product) {
+      throw new ProductNotFoundError();
+    }
+
+    return {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      description: product.description,
+      images: product.images,
+      colors: product.colors,
+      sizes: product.sizes,
+    };
+  }
+
+  findGreenFootprint(productId: number): ProductGreenFootprintDto {
+    const product = this.products.find(
+      (item) => item.id === productId,
+    );
+
+    if (!product) {
+      throw new ProductNotFoundError();
+    }
+
+    const footprint = this.greenFootprints.find(
+      (item) => item.productId === productId,
+    );
+
+    if (!footprint) {
+      return {
+        sustainabilityRating: null,
+        materials: [],
+        productionProcess: null,
+      };
+    }
+
+    return {
+      sustainabilityRating: footprint.sustainabilityRating,
+      materials: footprint.materials,
+      productionProcess: footprint.productionProcess,
+    };
+  }
+
+  findReviews(productId: number): ProductReviewDto[] {
+    const product = this.products.find(
+      (item) => item.id === productId,
+    );
+
+    if (!product) {
+      throw new ProductNotFoundError();
+    }
+
+    const publishedReviews = this.reviews.filter(
+      (review) =>
+        review.productId === productId && review.published,
+    );
+
+    return publishedReviews.map((review) => ({
+      id: review.id,
+      author: review.author,
+      comment: review.comment,
+      rating: review.rating,
+    }));
+  }
+
+  findRelatedProducts(
+    productId: number,
+    quantity: number,
+  ): RelatedProductDto[] {
+    const product = this.products.find(
+      (item) => item.id === productId,
+    );
+
+    if (!product) {
+      throw new ProductNotFoundError();
+    }
+
+    const relatedProducts = this.products
+      .filter(
+        (item) =>
+          item.subcategoryId === product.subcategoryId &&
+          item.id !== productId,
+      )
+      .sort(
+        (a, b) => b.salesLastMonth - a.salesLastMonth,
+      )
+      .slice(0, quantity);
+
+    return relatedProducts.map((item) => ({
+      id: item.id,
+      brand: item.brand,
+      name: item.name,
+      price: item.price,
+      imageUrl: item.imageUrl,
+    }));
+  }
+
+  findProductsBySubcategory(subcategoryId: number): Product[] {
+    return this.products.filter(
+      (product) => product.subcategoryId === subcategoryId,
+    );
+  }
+
+  findProductsByEntrepreneur(
+    entrepreneurId: number,
+  ): ProductSummaryDto[] {
+    const entrepreneurProducts = this.products.filter(
+      (product) => product.entrepreneurId === entrepreneurId,
+    );
+
+    return entrepreneurProducts.map((product) => ({
+      id: product.id,
+      brand: product.brand,
+      name: product.name,
+      price: product.price,
+      imageUrl: product.imageUrl,
+    }));
   }
 }

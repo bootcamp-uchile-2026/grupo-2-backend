@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { ProductosModule } from '../productos/productos.module';
-import { SubcategoriasController } from './subcategorias.controller';
-import { SubcategoriasService } from './subcategorias.service';
+import { ProductsModule } from '../productos/productos.module';
+import { SubcategoriesController } from './subcategorias.controller';
+import { SubcategoriesService } from './subcategorias.service';
 
 @Module({
-  imports: [ProductosModule],
-  controllers: [SubcategoriasController],
-  providers: [SubcategoriasService],
+  imports: [ProductsModule],
+  controllers: [SubcategoriesController],
+  providers: [SubcategoriesService],
 })
-export class SubcategoriasModule {}
+export class SubcategoriesModule {}

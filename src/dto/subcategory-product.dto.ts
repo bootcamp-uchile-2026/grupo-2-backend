@@ -1,6 +1,6 @@
-import { ApiProperty } from "@nestjs/swagger";
+import {ApiProperty, ApiPropertyOptional} from '@nestjs/swagger';
 
-export class ProductoSubCategoriaDto {
+export class SubcategoryProductDto {
   @ApiProperty({
     description: 'Identificador único del producto.',
     example: 15,
@@ -11,32 +11,29 @@ export class ProductoSubCategoriaDto {
     description: 'Nombre del producto.',
     example: 'Polera de algodón orgánico',
   })
-  nombre: string;
+  name: string;
 
   @ApiProperty({
     description: 'Descripción detallada del producto.',
     example: 'Polera confeccionada con algodón orgánico.',
   })
-  descripcion: string;
+  description: string;
 
   @ApiProperty({
     description: 'Precio del producto expresado en pesos chilenos.',
     example: 12990,
   })
-  precio: number;
+  price: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'URL de la imagen representativa del producto.',
     example: 'https://ejemplo.cl/imagenes/productos/polera.jpg',
-    required: false,
   })
-  imagenUrl?: string;
+  imageUrl?: string;
 
   @ApiProperty({
     description: 'Cantidad de unidades disponibles del producto.',
     example: 25,
   })
   stock: number;
-
-  constructor(){};
 }

@@ -1,35 +1,33 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class ProductoRelacionadoDto {
+export class ProductSummaryDto {
   @ApiProperty({
-    example: 2,
+    example: 10,
     description: 'Identificador único del producto',
   })
   id: number;
 
   @ApiProperty({
-    example: 'EcoWear',
+    example: 'EcoRaíz',
     description: 'Marca del producto',
   })
-  marca: string;
+  brand: string;
 
   @ApiProperty({
-    example: 'Polera orgánica',
+    example: 'Bolsa Reutilizable de Algodón',
     description: 'Nombre del producto',
   })
-  nombre: string;
+  name: string;
 
   @ApiProperty({
-    example: 15990,
+    example: 5990,
     description: 'Precio actual del producto',
   })
-  precio: number;
+  price: number;
 
   @ApiProperty({
-    example: 'https://ejemplo.cl/productos/polera-organica.jpg',
+    example: 'https://imagen.jpg',
     description: 'URL de la imagen principal del producto',
   })
-  imagenUrl: string;
-
-  constructor(){};
+  imageUrl: string;
 }

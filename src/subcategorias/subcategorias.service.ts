@@ -1,96 +1,96 @@
 import { Injectable } from '@nestjs/common';
-import { ProductosService } from '../productos/productos.service';
+import { ProductsService } from '../productos/productos.service';
 import { SubcategoryNotFoundError } from '../common/errors/subcategory-not-found.error';
-import { PopularSubCategoriaDto } from "src/model/dtos/popular-subcategoria.dto";
-import { ProductoSubCategoriaDto } from "src/model/dtos/producto-subcategoria.dto";
-import { SubCategoriaDto } from "src/model/dtos/subcategoria.dto";
-import { SubCategoria } from "src/model/subcategoria.model";
+import { SubcategoryProductDto } from '../dto/subcategory-product.dto';
+import { Subcategory } from '../models/subcategory.model';
+import { SubcategoryDto } from '../dto/subcategory.dto';
+import { PopularSubcategoryProductDto } from '../dto/popular-subcategory-product.dto';
 
 @Injectable()
-export class SubcategoriasService {
+export class SubcategoriesService {
 
-  constructor(private readonly productosService: ProductosService) { }
+  constructor(private readonly productsService: ProductsService) {}
 
-  private readonly subcategorias: SubCategoria[] = [
+  private readonly subcategories: Subcategory[] = [
     {
       id: 1,
-      categoriaId: 3,
-      nombre: 'Poleras',
+      categoryId: 3,
+      name: 'Poleras',
       slug: 'poleras',
-      imagenUrl:
+      imageUrl:
         'https://ejemplo.cl/imagenes/subcategorias/poleras.jpg',
     },
     {
       id: 2,
-      categoriaId: 3,
-      nombre: 'Pantalones',
+      categoryId: 3,
+      name: 'Pantalones',
       slug: 'pantalones',
-      imagenUrl:
+      imageUrl:
         'https://ejemplo.cl/imagenes/subcategorias/pantalones.jpg',
     },
     {
       id: 3,
-      categoriaId: 3,
-      nombre: 'Polerones',
+      categoryId: 3,
+      name: 'Polerones',
       slug: 'polerones',
-      imagenUrl:
+      imageUrl:
         'https://ejemplo.cl/imagenes/subcategorias/polerones.jpg',
     },
   ];
 
-
-
-  validarExistenciaSubcategoria(subcategoriaId: number): void {
-    const subcategoriaExiste = this.subcategorias.some(
-      (subcategoria) => subcategoria.id === subcategoriaId,
+  validateSubcategoryExists(subcategoryId: number): void {
+    const subcategoryExists = this.subcategories.some(
+      (subcategory) => subcategory.id === subcategoryId,
     );
 
-    if (!subcategoriaExiste) {
+    if (!subcategoryExists) {
       throw new SubcategoryNotFoundError();
     }
   }
 
-  obtenerSubcategorias(categoriaId: number): SubCategoriaDto[] {
-    return this.subcategorias
+  findByCategory(categoryId: number): SubcategoryDto[] {
+    return this.subcategories
       .filter(
-        (subcategoria) => subcategoria.categoriaId === categoriaId,
+        (subcategory) => subcategory.categoryId === categoryId,
       )
-      .map((subcategoria) => ({
-        id: subcategoria.id,
-        nombre: subcategoria.nombre,
-        slug: subcategoria.slug,
-        imagenUrl: subcategoria.imagenUrl,
+      .map((subcategory) => ({
+        id: subcategory.id,
+        name: subcategory.name,
+        slug: subcategory.slug,
+        imageUrl: subcategory.imageUrl,
       }));
   }
 
-  obtenerProductosPorSubcategoria(subcategoriaId: number): ProductoSubCategoriaDto[] {
-    this.validarExistenciaSubcategoria(subcategoriaId);
+  findProductsBySubcategory(subcategoryId: number): SubcategoryProductDto[] {
+    this.validateSubcategoryExists(subcategoryId);
 
-    return this.productosService.obtenerProductosPorSubcategoria(subcategoriaId)
-      .map((producto) => ({
-        id: producto.id,
-        nombre: producto.nombre,
-        descripcion: producto.descripcion,
-        precio: producto.precio,
-        imagenUrl: producto.imagenUrl,
-        stock: producto.stock,
+    return this.productsService
+      .findProductsBySubcategory(subcategoryId)
+      .map((product) => ({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        imageUrl: product.imageUrl,
+        stock: product.stock,
       }));
   }
 
-  obtenerProductosPopulares(subcategoriaId: number, cantidad = 4): PopularSubCategoriaDto[] {
-    this.validarExistenciaSubcategoria(subcategoriaId);
+  findPopularProducts(subcategoryId: number, quantity = 4): PopularSubcategoryProductDto[] {
+    this.validateSubcategoryExists(subcategoryId);
 
-    const cantidadMaxima = Math.min(cantidad, 4);
+    const maxQuantity = Math.min(quantity, 4);
 
-    return this.productosService.obtenerProductosPorSubcategoria(subcategoriaId)
-      .filter((producto) => producto.stock > 0)
-      .sort((a, b) => b.ventasUltimoMes - a.ventasUltimoMes)
-      .slice(0, cantidadMaxima)
-      .map((producto) => ({
-        id: producto.id,
-        nombre: producto.nombre,
-        precio: producto.precio,
-        imagenUrl: producto.imagenUrl,
+    return this.productsService
+      .findProductsBySubcategory(subcategoryId)
+      .filter((product) => product.stock > 0)
+      .sort((a, b) => b.salesLastMonth - a.salesLastMonth)
+      .slice(0, maxQuantity)
+      .map((product) => ({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        imageUrl: product.imageUrl,
       }));
   }
 }

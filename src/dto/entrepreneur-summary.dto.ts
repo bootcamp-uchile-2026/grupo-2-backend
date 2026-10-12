@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class EmprendedorResumenDto {
+export class EntrepreneurSummaryDto {
   @ApiProperty({
     example: 1,
     description: 'Identificador único del emprendedor',
@@ -11,19 +11,18 @@ export class EmprendedorResumenDto {
     example: 'EcoRaíz',
     description: 'Nombre público del emprendimiento',
   })
-  nombre: string;
+  name: string;
 
   @ApiProperty({
-    example: 'Emprendimiento dedicado a la elaboración de productos sustentables.',
+    example:
+      'Emprendimiento dedicado a la elaboración de productos sustentables.',
     description: 'Breve descripción del emprendedor o de su actividad',
   })
-  descripcion: string;
+  description: string;
 
   @ApiProperty({
     example: 'https://imagen.jpg',
     description: 'URL de la imagen o fotografía del emprendedor',
   })
-  imagenUrl: string;
-
-  constructor(){};
+  imageUrl: string;
 }

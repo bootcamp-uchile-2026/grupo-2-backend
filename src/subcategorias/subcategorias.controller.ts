@@ -1,15 +1,16 @@
-import { BadRequestException, Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { SubcategoriasService } from './subcategorias.service';
-import { SubCategoriaDto } from 'src/model/dtos/subcategoria.dto';
-import { ProductoSubCategoriaDto } from 'src/model/dtos/producto-subcategoria.dto';
-import { PopularSubCategoriaDto } from 'src/model/dtos/popular-subcategoria.dto';
+import {BadRequestException, Controller, Get, Param, ParseIntPipe, Query} from '@nestjs/common';
+import {ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags} from '@nestjs/swagger';
+import { SubcategoriesService } from './subcategorias.service';
+import { SubcategoryDto } from '../dto/subcategory.dto';
+import { SubcategoryProductDto } from '../dto/subcategory-product.dto';
+import { PopularSubcategoryProductDto } from '../dto/popular-subcategory-product.dto';
 
 @ApiTags('Subcategorías')
 @Controller()
-export class SubcategoriasController {
-
-  constructor(private readonly subcategoriasService: SubcategoriasService) { }
+export class SubcategoriesController {
+  constructor(
+    private readonly subcategoriesService: SubcategoriesService,
+  ) {}
 
   @Get('categorias/:categoriaId/subcategorias')
   @ApiOperation({
@@ -25,17 +26,15 @@ export class SubcategoriasController {
   })
   @ApiOkResponse({
     description: 'Subcategorías obtenidas correctamente.',
-    type: SubCategoriaDto,
+    type: SubcategoryDto,
     isArray: true,
   })
   @ApiBadRequestResponse({
     description: 'El identificador debe ser un número entero.',
   })
-  findByCategory(
-    @Param('categoriaId', ParseIntPipe) categoriaId: number,
-  ): SubCategoriaDto[] {
-    return this.subcategoriasService.obtenerSubcategorias(
-      categoriaId,
+  findByCategory(@Param('categoriaId', ParseIntPipe) categoryId: number): SubcategoryDto[] {
+    return this.subcategoriesService.findByCategory(
+      categoryId,
     );
   }
 
@@ -52,8 +51,9 @@ export class SubcategoriasController {
     example: 1,
   })
   @ApiOkResponse({
-    description: 'Productos de la subcategoría obtenidos correctamente.',
-    type: ProductoSubCategoriaDto,
+    description:
+      'Productos de la subcategoría obtenidos correctamente.',
+    type: SubcategoryProductDto,
     isArray: true,
   })
   @ApiBadRequestResponse({
@@ -62,17 +62,16 @@ export class SubcategoriasController {
   @ApiNotFoundResponse({
     description: 'Subcategoría no encontrada.',
   })
-  findProductsBySubcategory(
-    @Param('subcategoriaId', ParseIntPipe) subcategoriaId: number,
-  ): ProductoSubCategoriaDto[] {
-    return this.subcategoriasService.obtenerProductosPorSubcategoria(
-      subcategoriaId,
+  findProductsBySubcategory(@Param('subcategoriaId', ParseIntPipe)subcategoryId: number): SubcategoryProductDto[] {
+    return this.subcategoriesService.findProductsBySubcategory(
+      subcategoryId,
     );
   }
 
   @Get('subcategorias/:subcategoriaId/productos/populares')
   @ApiOperation({
-    summary: 'Obtener productos populares de una subcategoría',
+    summary:
+      'Obtener productos populares de una subcategoría',
     description:
       'Obtiene los productos populares asociados a una subcategoría y permite limitar la cantidad de resultados.',
   })
@@ -91,8 +90,9 @@ export class SubcategoriasController {
       'Cantidad máxima de productos. Debe ser un número entero positivo. Por defecto es 4.',
   })
   @ApiOkResponse({
-    description: 'Productos populares obtenidos correctamente.',
-    type: PopularSubCategoriaDto,
+    description:
+      'Productos populares obtenidos correctamente.',
+    type: PopularSubcategoryProductDto,
     isArray: true,
   })
   @ApiBadRequestResponse({
@@ -102,14 +102,12 @@ export class SubcategoriasController {
   @ApiNotFoundResponse({
     description: 'Subcategoría no encontrada.',
   })
-  findPopularProducts(
-    @Param('subcategoriaId', ParseIntPipe) subcategoriaId: number,
-    @Query('cantidad') cantidad?: string,
-  ): PopularSubCategoriaDto[] {
+  findPopularProducts(@Param('subcategoriaId', ParseIntPipe)subcategoryId: number,
+    @Query('cantidad') quantityParam?: string): PopularSubcategoryProductDto[] {
     let quantity = 4;
 
-    if (cantidad !== undefined) {
-      quantity = Number(cantidad);
+    if (quantityParam !== undefined) {
+      quantity = Number(quantityParam);
 
       if (!Number.isInteger(quantity) || quantity <= 0) {
         throw new BadRequestException(
@@ -118,8 +116,8 @@ export class SubcategoriasController {
       }
     }
 
-    return this.subcategoriasService.obtenerProductosPopulares(
-      subcategoriaId,
+    return this.subcategoriesService.findPopularProducts(
+      subcategoryId,
       quantity,
     );
   }
