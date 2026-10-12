@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ProductoNoEncontradoError } from 'src/errors/producto-no-encontrado.error';
+import { ProductNotFoundError } from '../common/errors/product-not-found.error';
 import { HuellaVerdeProductoDto } from 'src/model/dtos/HuellaVerdeProducto.dto';
 import { ProductoBusquedaDto } from 'src/model/dtos/ProductoBusqueda.dto';
 import { ProductoDetalleDto } from 'src/model/dtos/ProductoDetalle.dto';
@@ -271,7 +271,7 @@ export class ProductosService {
     );
 
     if (!productoEncontrado) {
-      throw new ProductoNoEncontradoError();
+      throw new ProductNotFoundError();
     }
 
     const productoDto: ProductoDetalleDto = {
@@ -295,7 +295,7 @@ export class ProductosService {
     );
 
     if (!productoEncontrado) {
-      throw new ProductoNoEncontradoError();
+      throw new ProductNotFoundError();
     }
 
     const huellaEncontrada = this.huellasVerdes.find(
@@ -327,7 +327,7 @@ export class ProductosService {
       (producto) => producto.id === productoId);
 
     if (!productoEncontrado) {
-      throw new ProductoNoEncontradoError();
+      throw new ProductNotFoundError();
     }
 
     const valoracionesProducto = this.valoraciones.filter(
@@ -353,7 +353,7 @@ export class ProductosService {
     );
 
     if (!productoEncontrado) {
-      throw new ProductoNoEncontradoError();
+      throw new ProductNotFoundError();
     }
 
     const productosRelacionados = this.productos.filter(

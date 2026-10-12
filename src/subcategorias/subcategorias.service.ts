@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SubcategoriaNoEncontradaError } from '../errors/subcategoria-no-encontrada.error';
+import { SubcategoryNotFoundError } from '../common/errors/subcategory-not-found.error';
 import { PopularSubCategoriaDto } from "src/model/dtos/popular-subcategoria.dto";
 import { ProductoSubCategoriaDto } from "src/model/dtos/producto-subcategoria.dto";
 import { SubCategoriaDto } from "src/model/dtos/subcategoria.dto";
@@ -104,7 +104,7 @@ validarExistenciaSubcategoria(subcategoriaId: number): void {
   );
 
   if (!subcategoriaExiste) {
-    throw new SubcategoriaNoEncontradaError();
+    throw new SubcategoryNotFoundError();
   }
 }
 

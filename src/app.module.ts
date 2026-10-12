@@ -3,7 +3,7 @@ import { SubcategoriasModule } from './subcategorias/subcategorias.module';
 import { ProductosModule } from './productos/productos.module';
 import { EmprendedoresModule } from './emprendedores/emprendedores.module';
 import { CustomersModule } from './customers/customers.module';
-import { RequestTracingMiddleware } from './middleware/request-tracing/request-tracing.middleware';
+import { RequestTracingMiddleware } from './common/middleware/request-tracing.middleware';
 
 @Module({
   imports: [

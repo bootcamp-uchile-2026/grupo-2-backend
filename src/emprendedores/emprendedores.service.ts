@@ -4,7 +4,7 @@ import { EmprendedorResumenDto } from 'src/model/dtos/EmprendedorResumen.dto';
 import { EmprendedorDetalleDto } from 'src/model/dtos/EmprendedorDetalle.dto';
 import { ProductosService } from 'src/productos/productos.service';
 import { ProductoResumenDto } from 'src/model/dtos/ProductoResumen.dto';
-import { EmprendedorNoEncontradoError } from '../errors/emprendedor-no-encontrado.error';
+import { EntrepreneurNotFoundError } from '../common/errors/entrepreneur-not-found.error';
 
 @Injectable()
 export class EmprendedoresService {
@@ -65,7 +65,7 @@ export class EmprendedoresService {
             (emprendedor) => emprendedor.id === emprendedorId);
 
         if (!emprendedorEncontrado) {
-            throw new EmprendedorNoEncontradoError();
+            throw new EntrepreneurNotFoundError();
         }
 
         const emprendedorDto: EmprendedorDetalleDto = {
@@ -84,7 +84,7 @@ export class EmprendedoresService {
             (emprendedor) => emprendedor.id === emprendedorId);
 
         if (!emprendedorEncontrado) {
-            throw new EmprendedorNoEncontradoError();
+            throw new EntrepreneurNotFoundError();
         }
 
         const productosDto =
