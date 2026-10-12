@@ -8,9 +8,8 @@ import { ProductoResumenDto } from 'src/model/dtos/ProductoResumen.dto';
 @ApiTags('Emprendedores')
 @Controller('emprendedores')
 export class EmprendedoresController {
-    constructor(
-        private readonly emprendedoresService: EmprendedoresService,
-    ) { }
+
+    constructor(private readonly emprendedoresService: EmprendedoresService) { }
 
     @Get()
     @ApiOperation({
@@ -23,7 +22,8 @@ export class EmprendedoresController {
         required: false,
         type: Number,
         example: 4,
-        description: 'Cantidad máxima de emprendedores. Debe ser un número entero positivo.',
+        description:
+            'Cantidad máxima de emprendedores. Debe ser un número entero positivo.',
     })
     @ApiOkResponse({
         description: 'Emprendedores obtenidos correctamente.',
@@ -31,12 +31,12 @@ export class EmprendedoresController {
         isArray: true,
     })
     @ApiBadRequestResponse({
-        description: 'El parámetro cantidad debe ser un número entero positivo.',
+        description:
+            'El parámetro cantidad debe ser un número entero positivo.',
     })
-    obtenerEmprendedores(
+    findAll(
         @Query('cantidad') cantidad?: string,
     ): EmprendedorResumenDto[] {
-
         if (cantidad === undefined) {
             return this.emprendedoresService.obtenerEmprendedores();
         }
@@ -49,9 +49,10 @@ export class EmprendedoresController {
             );
         }
 
-        return this.emprendedoresService.obtenerEmprendedores(cantidadNumero);
+        return this.emprendedoresService.obtenerEmprendedores(
+            cantidadNumero,
+        );
     }
-
 
     @Get(':emprendedorId')
     @ApiOperation({
@@ -72,10 +73,12 @@ export class EmprendedoresController {
     @ApiNotFoundResponse({
         description: 'Emprendedor no encontrado.',
     })
-    obtenerEmprendedorPorId(
+    findOne(
         @Param('emprendedorId', ParseIntPipe) emprendedorId: number,
     ): EmprendedorDetalleDto {
-        return this.emprendedoresService.obtenerEmprendedorPorId(emprendedorId);
+        return this.emprendedoresService.obtenerEmprendedorPorId(
+            emprendedorId,
+        );
     }
 
     @Get(':emprendedorId/productos')
@@ -98,8 +101,11 @@ export class EmprendedoresController {
     @ApiNotFoundResponse({
         description: 'Emprendedor no encontrado.',
     })
-    obtenerProductosPorEmprendedor(
-        @Param('emprendedorId', ParseIntPipe) emprendedorId: number): ProductoResumenDto[] {
-        return this.emprendedoresService.obtenerProductosPorEmprendedor(emprendedorId);
+    findProductsByEntrepreneur(
+        @Param('emprendedorId', ParseIntPipe) emprendedorId: number,
+    ): ProductoResumenDto[] {
+        return this.emprendedoresService.obtenerProductosPorEmprendedor(
+            emprendedorId,
+        );
     }
 }

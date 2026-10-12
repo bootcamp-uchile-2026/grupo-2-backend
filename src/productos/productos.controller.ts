@@ -12,42 +12,38 @@ import { ProductoRelacionadoDto } from 'src/model/dtos/ProductoRelacionado.dto';
 
 @ApiTags('Productos')
 @Controller('productos')
-
 export class ProductosController {
-  constructor(
-    private readonly productosService: ProductosService,
-  ) { }
+  constructor(private readonly productosService: ProductosService) { }
 
   @Get()
   @ApiOperation({
     summary: 'Buscar productos',
-    description: 'Busca productos del catálogo mediante un término de búsqueda obligatorio. Devuelve los productos coincidentes o un arreglo vacío si no encuentra resultados.',
+    description:
+      'Busca productos del catálogo mediante un término de búsqueda obligatorio. Devuelve los productos coincidentes o un arreglo vacío si no encuentra resultados.',
   })
   @ApiQuery({
     name: 'buscar',
     type: String,
     required: true,
     description: 'Texto utilizado para buscar productos',
-    example: 'bolsa',
+    example: 'polera',
   })
   @ApiOkResponse({
-    description: 'Productos encontrados',
+    description: 'Productos encontrados.',
     type: ProductoBusquedaDto,
     isArray: true,
   })
   @ApiBadRequestResponse({
-    description: 'El término de búsqueda es obligatorio',
+    description: 'El término de búsqueda es obligatorio.',
   })
-  buscarProductos(
+  searchProducts(
     @Query('buscar') buscar: string,
   ): ProductoBusquedaDto[] {
-
     if (!buscar || buscar.trim() === '') {
       throw new BadRequestException(
         'El término de búsqueda es obligatorio',
       );
     }
-
     return this.productosService.buscarProductos(buscar);
   }
 
@@ -58,15 +54,15 @@ export class ProductosController {
       'Obtiene los productos que actualmente poseen una oferta vigente.',
   })
   @ApiOkResponse({
-    description: 'Productos en oferta obtenidos correctamente',
+    description: 'Productos en oferta obtenidos correctamente.',
     type: ProductoOfertaDto,
     isArray: true,
   })
-  obtenerProductosEnOferta(): ProductoOfertaDto[] {
+  findProductsOnSale(): ProductoOfertaDto[] {
     return this.productosService.obtenerProductosEnOferta();
   }
 
-  @Get("mas-vendidos")
+  @Get('mas-vendidos')
   @ApiOperation({
     summary: 'Obtener productos más vendidos',
     description:
@@ -86,16 +82,21 @@ export class ProductosController {
     isArray: true,
   })
   @ApiBadRequestResponse({
-    description: 'El parámetro cantidad debe ser un número entero positivo.',
+    description:
+      'El parámetro cantidad debe ser un número entero positivo.',
   })
-  obtenerProductosMasVendidos(
-    @Query('cantidad', ParseIntPipe) cantidad: number): ProductoMasVendidoDto[] {
+  findBestSellingProducts(
+    @Query('cantidad', ParseIntPipe) cantidad: number,
+  ): ProductoMasVendidoDto[] {
     if (cantidad <= 0) {
       throw new BadRequestException(
         'La cantidad debe ser un número entero positivo.',
       );
     }
-    return this.productosService.obtenerProductosMasVendidos(cantidad);
+
+    return this.productosService.obtenerProductosMasVendidos(
+      cantidad,
+    );
   }
 
   @Get('nuevos')
@@ -109,7 +110,7 @@ export class ProductosController {
     type: ProductoResumenNuevosDto,
     isArray: true,
   })
-  obtenerProductosNuevos(): ProductoResumenNuevosDto[] {
+  findNewProducts(): ProductoResumenNuevosDto[] {
     return this.productosService.obtenerProductosNuevos();
   }
 
@@ -123,19 +124,24 @@ export class ProductosController {
     name: 'productoId',
     type: Number,
     example: 1,
-    description: 'Identificador único del producto',
+    description: 'Identificador único del producto.',
   })
   @ApiOkResponse({
     description: 'Producto obtenido correctamente.',
     type: ProductoDetalleDto,
   })
+  @ApiBadRequestResponse({
+    description: 'El identificador debe ser un número entero.',
+  })
   @ApiNotFoundResponse({
     description: 'Producto no encontrado.',
   })
-  obtenerProductoPorId(
+  findOne(
     @Param('productoId', ParseIntPipe) productoId: number,
   ): ProductoDetalleDto {
-    return this.productosService.obtenerProductoPorId(productoId);
+    return this.productosService.obtenerProductoPorId(
+      productoId,
+    );
   }
 
   @Get(':productoId/huella-verde')
@@ -148,19 +154,20 @@ export class ProductosController {
     name: 'productoId',
     type: Number,
     example: 1,
-    description: 'Identificador único del producto',
+    description: 'Identificador único del producto.',
   })
   @ApiOkResponse({
-    description:
-      'Información de Huella Verde obtenida correctamente.',
+    description: 'Información de Huella Verde obtenida correctamente.',
     type: HuellaVerdeProductoDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'El identificador debe ser un número entero.',
   })
   @ApiNotFoundResponse({
     description: 'Producto no encontrado.',
   })
-  obtenerHuellaVerde(
-    @Param('productoId', ParseIntPipe)
-    productoId: number,
+  findGreenFootprint(
+    @Param('productoId', ParseIntPipe) productoId: number,
   ): HuellaVerdeProductoDto {
     return this.productosService.obtenerHuellaVerde(
       productoId,
@@ -177,19 +184,21 @@ export class ProductosController {
     name: 'productoId',
     type: Number,
     example: 1,
-    description: 'Identificador único del producto',
+    description: 'Identificador único del producto.',
   })
   @ApiOkResponse({
     description: 'Valoraciones obtenidas correctamente.',
     type: ValoracionDetalleDto,
     isArray: true,
   })
+  @ApiBadRequestResponse({
+    description: 'El identificador debe ser un número entero.',
+  })
   @ApiNotFoundResponse({
     description: 'Producto no encontrado.',
   })
-  obtenerValoraciones(
-    @Param('productoId', ParseIntPipe)
-    productoId: number,
+  findReviews(
+    @Param('productoId', ParseIntPipe) productoId: number,
   ): ValoracionDetalleDto[] {
     return this.productosService.obtenerValoraciones(
       productoId,
@@ -206,34 +215,38 @@ export class ProductosController {
     name: 'productoId',
     type: Number,
     example: 1,
-    description: 'Identificador único del producto',
+    description: 'Identificador único del producto.',
   })
   @ApiQuery({
     name: 'cantidad',
     type: Number,
     required: true,
     example: 4,
-    description:'Cantidad máxima de productos relacionados que se desea obtener. Debe ser un número entero positivo.',
+    description:
+      'Cantidad máxima de productos relacionados que se desea obtener. Debe ser un número entero positivo.',
   })
   @ApiOkResponse({
     description: 'Productos relacionados obtenidos correctamente.',
     type: ProductoRelacionadoDto,
     isArray: true,
   })
+  @ApiBadRequestResponse({
+    description:
+      'El identificador y la cantidad deben ser números enteros válidos. La cantidad debe ser positiva.',
+  })
   @ApiNotFoundResponse({
     description: 'Producto no encontrado.',
   })
-  @ApiBadRequestResponse({
-    description: 'El parámetro cantidad debe ser un número entero positivo.',
-  })
-  obtenerProductosRelacionados(
+  findRelatedProducts(
     @Param('productoId', ParseIntPipe) productoId: number,
-    @Query('cantidad', ParseIntPipe) cantidad: number): ProductoRelacionadoDto[] {
+    @Query('cantidad', ParseIntPipe) cantidad: number,
+  ): ProductoRelacionadoDto[] {
     if (cantidad <= 0) {
       throw new BadRequestException(
         'La cantidad debe ser un número entero positivo.',
       );
     }
+
     return this.productosService.obtenerProductosRelacionados(
       productoId,
       cantidad,
