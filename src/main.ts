@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import { RecursoNoEncontradoFilter } from './filters/recurso-no-encontrado/recurso-no-encontrado.filter';
+import { ResourceNotFoundFilter } from './common/filters/resource-not-found.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -21,7 +21,7 @@ async function bootstrap() {
   );
 
   // Filtro existente en develop
-  app.useGlobalFilters(new RecursoNoEncontradoFilter());
+  app.useGlobalFilters(new ResourceNotFoundFilter());
 
   // Swagger
   const config = new DocumentBuilder()
