@@ -384,6 +384,14 @@ export class ProductosService {
     return productosDto;
   }
 
+  obtenerProductosPorSubcategoria(
+    subcategoriaId: number,
+  ): Producto[] {
+    return this.productos.filter(
+      (producto) => producto.subcategoriaId === subcategoriaId,
+    );
+  }
+
   obtenerProductosPorEmprendedor(
     emprendedorId: number,
   ): ProductoResumenDto[] {
