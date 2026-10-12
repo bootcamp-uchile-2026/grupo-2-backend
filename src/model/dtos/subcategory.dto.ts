@@ -1,6 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class SubCategoriaDto {
+export class SubcategoryDto {
   @ApiProperty({
     description: 'ID de la subcategoría',
     example: 1,
@@ -11,7 +11,7 @@ export class SubCategoriaDto {
     description: 'Nombre de la subcategoría',
     example: 'Poleras',
   })
-  nombre: string;
+  name: string;
 
   @ApiProperty({
     description: 'Identificador de texto amigable para la URL',
@@ -19,12 +19,9 @@ export class SubCategoriaDto {
   })
   slug: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'URL de la imagen representativa de la subcategoría',
     example: 'https://ejemplo.cl/imagenes/subcategorias/poleras.jpg',
-    required: false,
   })
-  imagenUrl?: string;
-
-  constructor(){};
+  imageUrl?: string;
 }

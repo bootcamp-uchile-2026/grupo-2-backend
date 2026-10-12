@@ -1,10 +1,7 @@
-import { Producto } from "./producto.model";
+import { Product } from './product.model';
 
 export class OrderItem {
-    product: Producto;
-    quantity: number;
-    unitPrice: number;
-
-    constructor() {};
+  product: Product;
+  quantity: number;
+  unitPrice: number;
 }
-

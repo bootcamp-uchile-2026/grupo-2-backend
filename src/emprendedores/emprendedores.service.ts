@@ -1,95 +1,89 @@
-import { Injectable} from '@nestjs/common';
-import { Emprendedor } from '../model/emprendedor.model';
-import { EmprendedorResumenDto } from 'src/model/dtos/EmprendedorResumen.dto';
-import { EmprendedorDetalleDto } from 'src/model/dtos/EmprendedorDetalle.dto';
-import { ProductosService } from 'src/productos/productos.service';
-import { ProductoResumenDto } from 'src/model/dtos/ProductoResumen.dto';
+import { Injectable } from '@nestjs/common';
+import { Entrepreneur } from '../model/entrepreneur.model';
+import { EntrepreneurSummaryDto } from '../model/dtos/entrepreneur-summary.dto';
+import { EntrepreneurDetailDto } from '../model/dtos/entrepreneur-detail.dto';
+import { ProductSummaryDto } from '../model/dtos/product-summary.dto';
+import { ProductosService } from '../productos/productos.service';
 import { EntrepreneurNotFoundError } from '../common/errors/entrepreneur-not-found.error';
 
 @Injectable()
 export class EmprendedoresService {
+  
+  constructor(private readonly productosService: ProductosService) {}
 
-    constructor(private readonly productosService: ProductosService) { };
+  private readonly entrepreneurs: Entrepreneur[] = [
+    {
+      id: 1,
+      name: 'EcoRaíz',
+      description:
+        'Emprendimiento dedicado a la elaboración de productos sustentables.',
+      imageUrl: 'https:ecoraiz.jpg',
+      story:
+        'EcoRaíz nació con el objetivo de crear alternativas sustentables para el uso cotidiano.',
+    },
+    {
+      id: 2,
+      name: 'Verde Hogar',
+      description:
+        'Emprendimiento enfocado en productos ecológicos para el hogar.',
+      imageUrl: 'https:verdehogar.jpg',
+      story:
+        'Verde Hogar surge como una iniciativa familiar orientada a reducir el uso de productos desechables.',
+    },
+    {
+      id: 3,
+      name: 'Naturaleza Viva',
+      description:
+        'Emprendimiento dedicado al bienestar y cuidado personal sustentable.',
+      imageUrl: 'https:naturaleza.jpg',
+      story:
+        'Naturaleza Viva desarrolla productos de cuidado personal utilizando materiales y procesos de bajo impacto ambiental.',
+    },
+  ];
 
-    private readonly emprendedores: Emprendedor[] = [
-        {
-            id: 1,
-            nombre: 'EcoRaíz',
-            descripcion:
-                'Emprendimiento dedicado a la elaboración de productos sustentables.',
-            imagenUrl: 'https:ecoraiz.jpg',
-            historia:
-                'EcoRaíz nació con el objetivo de crear alternativas sustentables para el uso cotidiano.',
-        },
-        {
-            id: 2,
-            nombre: 'Verde Hogar',
-            descripcion:
-                'Emprendimiento enfocado en productos ecológicos para el hogar.',
-            imagenUrl: 'https:verdehogar.jpg',
-            historia:
-                'Verde Hogar surge como una iniciativa familiar orientada a reducir el uso de productos desechables.',
-        },
-        {
-            id: 3,
-            nombre: 'Naturaleza Viva',
-            descripcion:
-                'Emprendimiento dedicado al bienestar y cuidado personal sustentable.',
-            imagenUrl:
-                'https:naturaleza.jpg',
-            historia:
-                'Naturaleza Viva desarrolla productos de cuidado personal utilizando materiales y procesos de bajo impacto ambiental.',
-        },
-    ];
+  findAll(quantity?: number): EntrepreneurSummaryDto[] {
+    const selectedEntrepreneurs =
+      quantity === undefined
+        ? this.entrepreneurs
+        : this.entrepreneurs.slice(0, quantity);
 
-    obtenerEmprendedores(cantidad?: number): EmprendedorResumenDto[] {
-        let emprendedoresSeleccionados = this.emprendedores;
+    return selectedEntrepreneurs.map((entrepreneur) => ({
+      id: entrepreneur.id,
+      name: entrepreneur.name,
+      description: entrepreneur.description,
+      imageUrl: entrepreneur.imageUrl,
+    }));
+  }
 
-        if (cantidad !== undefined) {
-            emprendedoresSeleccionados = this.emprendedores.slice(0, cantidad);
-        }
+  findOne(entrepreneurId: number): EntrepreneurDetailDto {
+    const entrepreneur = this.entrepreneurs.find(
+      (item) => item.id === entrepreneurId,
+    );
 
-        const emprendedoresDto = emprendedoresSeleccionados.map((emprendedor) => ({
-            id: emprendedor.id,
-            nombre: emprendedor.nombre,
-            descripcion: emprendedor.descripcion,
-            imagenUrl: emprendedor.imagenUrl,
-        }),
-        );
-
-        return emprendedoresDto;
+    if (!entrepreneur) {
+      throw new EntrepreneurNotFoundError();
     }
 
-    obtenerEmprendedorPorId(emprendedorId: number): EmprendedorDetalleDto {
-        const emprendedorEncontrado = this.emprendedores.find(
-            (emprendedor) => emprendedor.id === emprendedorId);
+    return {
+      id: entrepreneur.id,
+      name: entrepreneur.name,
+      description: entrepreneur.description,
+      imageUrl: entrepreneur.imageUrl,
+      story: entrepreneur.story,
+    };
+  }
 
-        if (!emprendedorEncontrado) {
-            throw new EntrepreneurNotFoundError();
-        }
+  findProductsByEntrepreneur(entrepreneurId: number): ProductSummaryDto[] {
+    const entrepreneur = this.entrepreneurs.find(
+      (item) => item.id === entrepreneurId,
+    );
 
-        const emprendedorDto: EmprendedorDetalleDto = {
-            id: emprendedorEncontrado.id,
-            nombre: emprendedorEncontrado.nombre,
-            descripcion: emprendedorEncontrado.descripcion,
-            imagenUrl: emprendedorEncontrado.imagenUrl,
-            historia: emprendedorEncontrado.historia
-        };
-
-        return emprendedorDto;
+    if (!entrepreneur) {
+      throw new EntrepreneurNotFoundError();
     }
 
-    obtenerProductosPorEmprendedor(emprendedorId: number): ProductoResumenDto[] {
-        const emprendedorEncontrado = this.emprendedores.find(
-            (emprendedor) => emprendedor.id === emprendedorId);
-
-        if (!emprendedorEncontrado) {
-            throw new EntrepreneurNotFoundError();
-        }
-
-        const productosDto =
-            this.productosService.obtenerProductosPorEmprendedor(emprendedorId);
-
-        return productosDto;
-    }
+    return this.productosService.findProductsByEntrepreneur(
+      entrepreneurId,
+    );
+  }
 }

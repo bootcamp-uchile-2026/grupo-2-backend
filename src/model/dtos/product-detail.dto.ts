@@ -1,9 +1,6 @@
-import {
-  ApiProperty,
-  ApiPropertyOptional,
-} from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class ProductoDetalleDto {
+export class ProductDetailDto {
   @ApiProperty({
     example: 25,
     description: 'Identificador único del producto',
@@ -14,20 +11,19 @@ export class ProductoDetalleDto {
     example: 'Polera Sustentable',
     description: 'Nombre del producto',
   })
-  nombre: string;
+  name: string;
 
   @ApiProperty({
     example: 18990,
     description: 'Precio actual del producto',
   })
-  precio: number;
+  price: number;
 
   @ApiProperty({
-    example:
-      'Polera confeccionada con materiales de origen sustentable.',
+    example: 'Polera confeccionada con materiales de origen sustentable.',
     description: 'Descripción del producto',
   })
-  descripcion: string;
+  description: string;
 
   @ApiProperty({
     type: [String],
@@ -37,21 +33,19 @@ export class ProductoDetalleDto {
     ],
     description: 'Imágenes asociadas al producto',
   })
-  imagenes: string[];
+  images: string[];
 
   @ApiPropertyOptional({
     type: [String],
     example: ['Negro', 'Blanco'],
     description: 'Colores disponibles del producto cuando corresponda',
   })
-  colores?: string[];
+  colors?: string[];
 
   @ApiPropertyOptional({
     type: [String],
     example: ['S', 'M', 'L'],
     description: 'Tallas disponibles del producto cuando corresponda',
   })
-  tallas?: string[];
-
-  constructor(){};
+  sizes?: string[];
 }

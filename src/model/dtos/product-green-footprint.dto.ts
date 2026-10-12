@@ -1,19 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class HuellaVerdeProductoDto {
+export class ProductGreenFootprintDto {
   @ApiProperty({
     example: 4.8,
     nullable: true,
     description: 'Calificación sustentable del producto en una escala de 1 a 5',
   })
-  calificacionSustentable: number | null;
+  sustainabilityRating: number | null;
 
   @ApiProperty({
     type: [String],
     example: ['Algodón orgánico', 'Tintes naturales'],
     description: 'Materiales utilizados en la elaboración del producto',
   })
-  materiales: string[];
+  materials: string[];
 
   @ApiProperty({
     example:
@@ -21,7 +21,5 @@ export class HuellaVerdeProductoDto {
     nullable: true,
     description: 'Descripción resumida del proceso de elaboración',
   })
-  elaboracion: string | null;
-
-  constructor(){};
+  productionProcess: string | null;
 }

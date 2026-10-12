@@ -1,19 +1,20 @@
-import { BadRequestException, Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {BadRequestException, Controller, Get, Param, ParseIntPipe, Query} from '@nestjs/common';
+import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags} from '@nestjs/swagger';
 import { ProductosService } from './productos.service';
-import { ProductoBusquedaDto } from 'src/model/dtos/ProductoBusqueda.dto';
-import { ProductoOfertaDto } from 'src/model/dtos/ProductoOferta.dto';
-import { ProductoMasVendidoDto } from 'src/model/dtos/ProductoMasVendido.dto';
-import { ProductoResumenNuevosDto } from 'src/model/dtos/ProductoResumenNuevos.dto';
-import { ProductoDetalleDto } from 'src/model/dtos/ProductoDetalle.dto';
-import { HuellaVerdeProductoDto } from 'src/model/dtos/HuellaVerdeProducto.dto';
-import { ValoracionDetalleDto } from 'src/model/dtos/ValoracionDetalleProducto.dto';
-import { ProductoRelacionadoDto } from 'src/model/dtos/ProductoRelacionado.dto';
+import { ProductSearchDto } from '../model/dtos/product-search.dto';
+import { ProductOfferDto } from '../model/dtos/product-offer.dto';
+import { BestSellingProductDto } from '../model/dtos/best-selling-product.dto';
+import { NewProductSummaryDto } from '../model/dtos/new-product-summary.dto';
+import { ProductDetailDto } from '../model/dtos/product-detail.dto';
+import { ProductGreenFootprintDto } from '../model/dtos/product-green-footprint.dto';
+import { ProductReviewDto } from '../model/dtos/product-review.dto';
+import { RelatedProductDto } from '../model/dtos/related-product.dto';
 
 @ApiTags('Productos')
 @Controller('productos')
 export class ProductosController {
-  constructor(private readonly productosService: ProductosService) { }
+
+  constructor(private readonly productosService: ProductosService) {}
 
   @Get()
   @ApiOperation({
@@ -30,21 +31,20 @@ export class ProductosController {
   })
   @ApiOkResponse({
     description: 'Productos encontrados.',
-    type: ProductoBusquedaDto,
+    type: ProductSearchDto,
     isArray: true,
   })
   @ApiBadRequestResponse({
     description: 'El término de búsqueda es obligatorio.',
   })
   searchProducts(
-    @Query('buscar') buscar: string,
-  ): ProductoBusquedaDto[] {
-    if (!buscar || buscar.trim() === '') {
+    @Query('buscar') search: string): ProductSearchDto[] {
+    if (!search || search.trim() === '') {
       throw new BadRequestException(
         'El término de búsqueda es obligatorio',
       );
     }
-    return this.productosService.buscarProductos(buscar);
+    return this.productosService.searchProducts(search);
   }
 
   @Get('ofertas')
@@ -55,11 +55,11 @@ export class ProductosController {
   })
   @ApiOkResponse({
     description: 'Productos en oferta obtenidos correctamente.',
-    type: ProductoOfertaDto,
+    type: ProductOfferDto,
     isArray: true,
   })
-  findProductsOnSale(): ProductoOfertaDto[] {
-    return this.productosService.obtenerProductosEnOferta();
+  findProductsOnSale(): ProductOfferDto[] {
+    return this.productosService.findProductsOnSale();
   }
 
   @Get('mas-vendidos')
@@ -78,7 +78,7 @@ export class ProductosController {
   })
   @ApiOkResponse({
     description: 'Productos más vendidos obtenidos correctamente.',
-    type: ProductoMasVendidoDto,
+    type: BestSellingProductDto,
     isArray: true,
   })
   @ApiBadRequestResponse({
@@ -86,16 +86,14 @@ export class ProductosController {
       'El parámetro cantidad debe ser un número entero positivo.',
   })
   findBestSellingProducts(
-    @Query('cantidad', ParseIntPipe) cantidad: number,
-  ): ProductoMasVendidoDto[] {
-    if (cantidad <= 0) {
+    @Query('cantidad', ParseIntPipe) quantity: number): BestSellingProductDto[] {
+    if (quantity <= 0) {
       throw new BadRequestException(
         'La cantidad debe ser un número entero positivo.',
       );
     }
-
-    return this.productosService.obtenerProductosMasVendidos(
-      cantidad,
+    return this.productosService.findBestSellingProducts(
+      quantity,
     );
   }
 
@@ -107,11 +105,11 @@ export class ProductosController {
   })
   @ApiOkResponse({
     description: 'Productos nuevos obtenidos correctamente.',
-    type: ProductoResumenNuevosDto,
+    type: NewProductSummaryDto,
     isArray: true,
   })
-  findNewProducts(): ProductoResumenNuevosDto[] {
-    return this.productosService.obtenerProductosNuevos();
+  findNewProducts(): NewProductSummaryDto[] {
+    return this.productosService.findNewProducts();
   }
 
   @Get(':productoId')
@@ -128,7 +126,7 @@ export class ProductosController {
   })
   @ApiOkResponse({
     description: 'Producto obtenido correctamente.',
-    type: ProductoDetalleDto,
+    type: ProductDetailDto,
   })
   @ApiBadRequestResponse({
     description: 'El identificador debe ser un número entero.',
@@ -137,11 +135,8 @@ export class ProductosController {
     description: 'Producto no encontrado.',
   })
   findOne(
-    @Param('productoId', ParseIntPipe) productoId: number,
-  ): ProductoDetalleDto {
-    return this.productosService.obtenerProductoPorId(
-      productoId,
-    );
+    @Param('productoId', ParseIntPipe) productId: number): ProductDetailDto {
+    return this.productosService.findOne(productId);
   }
 
   @Get(':productoId/huella-verde')
@@ -157,8 +152,9 @@ export class ProductosController {
     description: 'Identificador único del producto.',
   })
   @ApiOkResponse({
-    description: 'Información de Huella Verde obtenida correctamente.',
-    type: HuellaVerdeProductoDto,
+    description:
+      'Información de Huella Verde obtenida correctamente.',
+    type: ProductGreenFootprintDto,
   })
   @ApiBadRequestResponse({
     description: 'El identificador debe ser un número entero.',
@@ -167,10 +163,9 @@ export class ProductosController {
     description: 'Producto no encontrado.',
   })
   findGreenFootprint(
-    @Param('productoId', ParseIntPipe) productoId: number,
-  ): HuellaVerdeProductoDto {
-    return this.productosService.obtenerHuellaVerde(
-      productoId,
+    @Param('productoId', ParseIntPipe) productId: number): ProductGreenFootprintDto {
+    return this.productosService.findGreenFootprint(
+      productId,
     );
   }
 
@@ -188,7 +183,7 @@ export class ProductosController {
   })
   @ApiOkResponse({
     description: 'Valoraciones obtenidas correctamente.',
-    type: ValoracionDetalleDto,
+    type: ProductReviewDto,
     isArray: true,
   })
   @ApiBadRequestResponse({
@@ -198,11 +193,8 @@ export class ProductosController {
     description: 'Producto no encontrado.',
   })
   findReviews(
-    @Param('productoId', ParseIntPipe) productoId: number,
-  ): ValoracionDetalleDto[] {
-    return this.productosService.obtenerValoraciones(
-      productoId,
-    );
+    @Param('productoId', ParseIntPipe) productId: number): ProductReviewDto[] {
+    return this.productosService.findReviews(productId);
   }
 
   @Get(':productoId/relacionados')
@@ -226,8 +218,9 @@ export class ProductosController {
       'Cantidad máxima de productos relacionados que se desea obtener. Debe ser un número entero positivo.',
   })
   @ApiOkResponse({
-    description: 'Productos relacionados obtenidos correctamente.',
-    type: ProductoRelacionadoDto,
+    description:
+      'Productos relacionados obtenidos correctamente.',
+    type: RelatedProductDto,
     isArray: true,
   })
   @ApiBadRequestResponse({
@@ -238,18 +231,16 @@ export class ProductosController {
     description: 'Producto no encontrado.',
   })
   findRelatedProducts(
-    @Param('productoId', ParseIntPipe) productoId: number,
-    @Query('cantidad', ParseIntPipe) cantidad: number,
-  ): ProductoRelacionadoDto[] {
-    if (cantidad <= 0) {
+    @Param('productoId', ParseIntPipe) productId: number,
+    @Query('cantidad', ParseIntPipe) quantity: number): RelatedProductDto[] {
+    if (quantity <= 0) {
       throw new BadRequestException(
         'La cantidad debe ser un número entero positivo.',
       );
     }
-
-    return this.productosService.obtenerProductosRelacionados(
-      productoId,
-      cantidad,
+    return this.productosService.findRelatedProducts(
+      productId,
+      quantity,
     );
   }
 }
