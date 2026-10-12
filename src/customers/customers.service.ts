@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Customer } from './../model/customer.model';
+import { CustomerNotFoundError } from '../common/errors/customer-not-found.error';
 
 @Injectable()
 export class CustomersService {
@@ -9,14 +10,10 @@ export class CustomersService {
   private customers: Customer[] = [];
   private siguienteId = 1;
 
-  ////////////////////////////
-  // Crear un nuevo cliente //
-  ////////////////////////////
-
   create(createCustomerDto: CreateCustomerDto): Customer {
 
     const newCustomer = new Customer();
-    
+
     newCustomer.email = createCustomerDto.email;
     newCustomer.password = createCustomerDto.password;
 
@@ -31,66 +28,42 @@ export class CustomersService {
     return newCustomer;
   }
 
-  ////////////////////////
-  // Consultar clientes //
-  ////////////////////////
-  
-  //
-  //Consultar todos los clientes
-  //
-
   findAll() {
 
     const AllCustomers = this.customers.map(customer => {
-
-      //Se crea un nuevo objeto sin la propiedad password
       const { password, ...customerWithoutPassword } = customer;
-      
-      return customerWithoutPassword;
-    
-    });
-    
-    return AllCustomers;
-  
-  }
 
-  //
-  //Consultar un cliente por su ID  
-  //
+      return customerWithoutPassword;
+
+    });
+
+    return AllCustomers;
+
+  }
 
   findOne(id: number) {
 
     const customer = this.customers.find(c => c.id === id);
-    
+
     if (!customer) {
-
-      return `Customer with ID ${id} not found`;
-    
+      throw new CustomerNotFoundError();
     }
-
-    //Se crea un nuevo objeto sin la propiedad password
     const { password, ...customerWithoutPassword } = customer;
-    
+
     return customerWithoutPassword;
-  
+
   }
 
-  ////////////////////////////////////
-  // Modificar un cliente por su ID //
-  ////////////////////////////////////
 
   update(id: number, updateCustomerDto: UpdateCustomerDto) {
 
     const customer = this.customers.find(c => c.id === id);
     if (!customer) {
-    throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+      throw new CustomerNotFoundError();
     }
-
     Object.assign(customer, updateCustomerDto);
+    const { password, ...customerWithoutPassword } = customer;
 
-    //Se crea un nuevo objeto sin la propiedad password
-    const { password, ...customerWithoutPassword } = customer; 
-    
     return customerWithoutPassword;
   }
 
