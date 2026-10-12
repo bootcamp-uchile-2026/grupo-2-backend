@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import {ValidationPipe} from '@nestjs/common';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { HttpExceptionFilter } from './common/filters/http-exception/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -19,6 +20,12 @@ async function bootstrap() {
 
   );
 
+  ///////////////////////////////////////////////////////////
+  // Exception Filter global para manejar excepciones HTTP //
+  /////////////////////////////////////////////////////////////////
+
+  app.useGlobalFilters(new HttpExceptionFilter());  
+
   //////////////////////////////////////////////////////////////
   // Configuración de Swagger para la documentación de la API //
   //////////////////////////////////////////////////////////////
@@ -33,6 +40,7 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   await app.listen(process.env.PORT ?? 3000);
+
 }
 
 bootstrap();
