@@ -4,8 +4,8 @@ import { EmprendedoresController } from './emprendedores.controller';
 import { ProductosModule } from 'src/productos/productos.module';
 
 @Module({
-  providers: [EmprendedoresService, ProductosModule],
+  imports: [ProductosModule],
   controllers: [EmprendedoresController],
-  imports:[ProductosModule]
+  providers: [EmprendedoresService],
 })
 export class EmprendedoresModule {}

@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable} from '@nestjs/common';
 import { Emprendedor } from '../model/emprendedor.model';
 import { EmprendedorResumenDto } from 'src/model/dtos/EmprendedorResumen.dto';
 import { EmprendedorDetalleDto } from 'src/model/dtos/EmprendedorDetalle.dto';
 import { ProductosService } from 'src/productos/productos.service';
 import { ProductoResumenDto } from 'src/model/dtos/ProductoResumen.dto';
+import { EmprendedorNoEncontradoError } from '../errors/emprendedor-no-encontrado.error';
 
 @Injectable()
 export class EmprendedoresService {
@@ -41,21 +42,19 @@ export class EmprendedoresService {
         },
     ];
 
-    obtenerEmprendedores(cantidad?: string): EmprendedorResumenDto[] {
+    obtenerEmprendedores(cantidad?: number): EmprendedorResumenDto[] {
         let emprendedoresSeleccionados = this.emprendedores;
 
         if (cantidad !== undefined) {
-            const cantidadNumero = Number(cantidad);
-
-            emprendedoresSeleccionados = this.emprendedores.slice(0,cantidadNumero);
+            emprendedoresSeleccionados = this.emprendedores.slice(0, cantidad);
         }
 
         const emprendedoresDto = emprendedoresSeleccionados.map((emprendedor) => ({
-                id: emprendedor.id,
-                nombre: emprendedor.nombre,
-                descripcion: emprendedor.descripcion,
-                imagenUrl: emprendedor.imagenUrl,
-            }),
+            id: emprendedor.id,
+            nombre: emprendedor.nombre,
+            descripcion: emprendedor.descripcion,
+            imagenUrl: emprendedor.imagenUrl,
+        }),
         );
 
         return emprendedoresDto;
@@ -66,7 +65,7 @@ export class EmprendedoresService {
             (emprendedor) => emprendedor.id === emprendedorId);
 
         if (!emprendedorEncontrado) {
-            throw new NotFoundException('Emprendedor no encontrado');
+            throw new EmprendedorNoEncontradoError();
         }
 
         const emprendedorDto: EmprendedorDetalleDto = {
@@ -85,7 +84,7 @@ export class EmprendedoresService {
             (emprendedor) => emprendedor.id === emprendedorId);
 
         if (!emprendedorEncontrado) {
-            throw new NotFoundException('Emprendedor no encontrado');
+            throw new EmprendedorNoEncontradoError();
         }
 
         const productosDto =
