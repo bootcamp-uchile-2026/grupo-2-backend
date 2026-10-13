@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ResourceNotFoundFilter } from './common/filters/resource-not-found.filter';
+import { DuplicateEmailFilter } from './common/filters/duplicate-email.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,9 +16,10 @@ async function bootstrap() {
     }),
   );
 
-
-  app.useGlobalFilters(new ResourceNotFoundFilter());
-
+  app.useGlobalFilters(
+    new ResourceNotFoundFilter(),
+    new DuplicateEmailFilter(),
+  );
   const config = new DocumentBuilder()
     .setTitle('BuenOrigen API')
     .setDescription('API de BuenOrigen')

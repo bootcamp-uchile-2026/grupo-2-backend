@@ -1,6 +1,8 @@
-import {Body, Controller, Get, Param, ParseIntPipe, Patch, Post, UseGuards} from '@nestjs/common';
-import {ApiBadRequestResponse, ApiBody, ApiCreatedResponse, ApiForbiddenResponse, ApiHeader, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam,
-  ApiTags} from '@nestjs/swagger';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  ApiBadRequestResponse, ApiBody, ApiConflictResponse, ApiCreatedResponse, ApiForbiddenResponse, ApiHeader, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam,
+  ApiTags
+} from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
 import { UpdateCustomerDto } from '../dto/update-customer.dto';
@@ -10,7 +12,7 @@ import { AdminGuard } from '../common/guards/admin-access/admin.guard';
 @ApiTags('Customers')
 @Controller('customers')
 export class CustomersController {
-  constructor(private readonly customersService: CustomersService) {}
+  constructor(private readonly customersService: CustomersService) { }
 
   @Post()
   @ApiOperation({
@@ -24,6 +26,9 @@ export class CustomersController {
   })
   @ApiBadRequestResponse({
     description: 'Los datos del cliente no son válidos.',
+  })
+  @ApiConflictResponse({
+    description: 'El correo electrónico ya está registrado.',
   })
   create(@Body() createCustomerDto: CreateCustomerDto) {
     return this.customersService.create(createCustomerDto);
@@ -118,6 +123,9 @@ export class CustomersController {
   })
   @ApiNotFoundResponse({
     description: 'Cliente no encontrado.',
+  })
+  @ApiConflictResponse({
+    description: 'El correo electrónico ya está registrado.',
   })
   update(
     @Param('id', ParseIntPipe) id: number,

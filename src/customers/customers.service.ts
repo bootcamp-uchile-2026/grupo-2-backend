@@ -4,6 +4,7 @@ import { UpdateCustomerDto } from '../dto/update-customer.dto';
 import { CustomerResponseDto } from '../dto/customer-response.dto';
 import { Customer } from '../models/customer.model';
 import { CustomerNotFoundError } from '../common/errors/customer-not-found.error';
+import { DuplicateEmailError } from 'src/common/errors/duplicate-email.error';
 
 @Injectable()
 export class CustomersService {
@@ -12,11 +13,22 @@ export class CustomersService {
   private nextId = 1;
 
   private toResponse(customer: Customer): CustomerResponseDto {
-    const { password, ...customerWithoutPassword } = customer;
-    return customerWithoutPassword;
+    return {
+      id: customer.id,
+      email: customer.email,
+      greenPoints: customer.greenPoints,
+    };
   }
 
   create(createCustomerDto: CreateCustomerDto): CustomerResponseDto {
+    const existingCustomer = this.customers.find(
+      (customer) =>
+        customer.email.toLowerCase() === createCustomerDto.email.toLowerCase(),
+    );
+
+    if (existingCustomer) {
+      throw new DuplicateEmailError();
+    }
     const newCustomer = new Customer();
 
     newCustomer.id = this.nextId++;
@@ -46,11 +58,24 @@ export class CustomersService {
     return this.toResponse(customer);
   }
 
-  update(id: number,updateCustomerDto: UpdateCustomerDto): CustomerResponseDto {
+  update(id: number, updateCustomerDto: UpdateCustomerDto): CustomerResponseDto {
     const customer = this.customers.find((customer) => customer.id === id);
 
     if (!customer) {
       throw new CustomerNotFoundError();
+    }
+
+    if (updateCustomerDto.email) {
+      const existingCustomer = this.customers.find(
+        (otherCustomer) =>
+          otherCustomer.email.toLowerCase() ===
+          updateCustomerDto.email!.toLowerCase() &&
+          otherCustomer.id !== id,
+      );
+
+      if (existingCustomer) {
+        throw new DuplicateEmailError();
+      }
     }
 
     Object.assign(customer, updateCustomerDto);
