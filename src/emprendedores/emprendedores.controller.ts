@@ -1,5 +1,5 @@
-import {BadRequestException, Controller, Get, Param, ParseIntPipe, Query} from '@nestjs/common';
-import {ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags} from '@nestjs/swagger';
+import { BadRequestException, Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { EntrepreneursService } from './emprendedores.service';
 import { EntrepreneurSummaryDto } from '../dto/entrepreneur-summary.dto';
 import { EntrepreneurDetailDto } from '../dto/entrepreneur-detail.dto';
@@ -9,7 +9,7 @@ import { ProductSummaryDto } from '../dto/product-summary.dto';
 @Controller('emprendedores')
 export class EntrepreneursController {
 
-  constructor(private readonly entrepreneursService: EntrepreneursService) {}
+  constructor(private readonly entrepreneursService: EntrepreneursService) { }
 
   @Get()
   @ApiOperation({
@@ -74,7 +74,10 @@ export class EntrepreneursController {
   @ApiNotFoundResponse({
     description: 'Emprendedor no encontrado.',
   })
-  findOne(@Param('emprendedorId', ParseIntPipe)entrepreneurId: number): EntrepreneurDetailDto {
+  @ApiBadRequestResponse({
+    description: 'El identificador debe ser un número entero.',
+  })
+  findOne(@Param('emprendedorId', ParseIntPipe) entrepreneurId: number): EntrepreneurDetailDto {
     return this.entrepreneursService.findOne(
       entrepreneurId,
     );
@@ -101,7 +104,10 @@ export class EntrepreneursController {
   @ApiNotFoundResponse({
     description: 'Emprendedor no encontrado.',
   })
-  findProductsByEntrepreneur(@Param('emprendedorId', ParseIntPipe)entrepreneurId: number): ProductSummaryDto[] {
+  @ApiBadRequestResponse({
+    description: 'El identificador debe ser un número entero.',
+  })
+  findProductsByEntrepreneur(@Param('emprendedorId', ParseIntPipe) entrepreneurId: number): ProductSummaryDto[] {
     return this.entrepreneursService.findProductsByEntrepreneur(
       entrepreneurId,
     );
