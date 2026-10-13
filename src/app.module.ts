@@ -4,6 +4,7 @@ import { ProductsModule } from './productos/productos.module';
 import { EntrepreneursModule } from './emprendedores/emprendedores.module';
 import { CustomersModule } from './customers/customers.module';
 import { RequestTracingMiddleware } from './common/middleware/request-tracing.middleware';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -11,6 +12,9 @@ import { RequestTracingMiddleware } from './common/middleware/request-tracing.mi
     ProductsModule,
     EntrepreneursModule,
     CustomersModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
   ],
   controllers: [],
   providers: [],
