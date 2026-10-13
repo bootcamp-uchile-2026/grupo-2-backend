@@ -397,6 +397,138 @@ https://github.com/bootcamp-uchile-2026/grupo-2-backend/wiki
 
 ---
 
+## Modelo entidad-relación
+
+El siguiente diagrama presenta una propuesta de estructura relacional basada en
+los modelos TypeScript definidos en `src/models/` del backend BuenOrigen.
+
+El modelo incluye 11 entidades y sus relaciones, identificando claves primarias
+(PK) y claves foráneas (FK).
+
+Actualmente, el backend utiliza datos en memoria. Por lo tanto, el diagrama
+representa un diseño relacional de referencia y no una base de datos SQL
+implementada.
+
+```mermaid
+erDiagram
+    CUSTOMER ||--o| PROFILE : tiene
+    CUSTOMER ||--o{ ADDRESS : registra
+    CUSTOMER ||--o{ PAYMENT_METHOD : registra
+    CUSTOMER ||--o{ ORDER : realiza
+
+    ORDER ||--o{ ORDER_ITEM : contiene
+    PAYMENT_METHOD ||--o{ ORDER : utilizada_en
+    PRODUCT ||--o{ ORDER_ITEM : incluido_en
+
+    ENTREPRENEUR ||--o{ PRODUCT : publica
+    SUBCATEGORY ||--o{ PRODUCT : agrupa
+
+    PRODUCT ||--o{ REVIEW : recibe
+    PRODUCT ||--o| GREEN_FOOTPRINT : posee
+
+    CUSTOMER {
+        int id PK
+        string email
+        string password
+        int greenPoints
+    }
+
+    PROFILE {
+        int id PK
+        int customerId FK
+        string name
+        string lastName
+        string phoneNumber
+        string profileImageUrl
+    }
+
+    ADDRESS {
+        int id PK
+        int customerId FK
+        string street
+        string number
+        string department
+        string commune
+        string city
+    }
+
+    PAYMENT_METHOD {
+        int id PK
+        int customerId FK
+        string cardType
+        string cardHolder
+        string cardNumber
+        string expirationDate
+    }
+
+    ENTREPRENEUR {
+        int id PK
+        string name
+        string description
+        string imageUrl
+        string story
+    }
+
+    SUBCATEGORY {
+        int id PK
+        int categoryId
+        string name
+        string slug
+        string imageUrl
+    }
+
+    PRODUCT {
+        int id PK
+        int subcategoryId FK
+        int entrepreneurId FK
+        string brand
+        string name
+        string description
+        float price
+        float salePrice
+        string imageUrl
+        string_array images
+        int stock
+        float rating
+        int salesLastMonth
+        datetime createdAt
+        string_array colors
+        string_array sizes
+    }
+
+    GREEN_FOOTPRINT {
+        int productId PK,FK
+        float sustainabilityRating
+        string_array materials
+        string productionProcess
+    }
+
+    REVIEW {
+        int id PK
+        int productId FK
+        string author
+        string comment
+        float rating
+        boolean published
+    }
+
+    ORDER {
+        int id PK
+        int customerId FK
+        int paymentMethodId FK
+        datetime orderDate
+        float totalAmount
+    }
+
+    ORDER_ITEM {
+        int id PK
+        int orderId FK
+        int productId FK
+        int quantity
+        float unitPrice
+    }
+```
+
 ## Pruebas locales de la API
 
 Con el servidor iniciado, se pueden ejecutar solicitudes HTTP desde una terminal o desde Swagger.
