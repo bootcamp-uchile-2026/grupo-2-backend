@@ -12,11 +12,18 @@ export class RequestTracingMiddleware implements NestMiddleware {
     req.headers['x-request-id'] = requestId;
     res.setHeader('x-request-id', requestId);
 
+    let bodyRegistrado = 'Sin body';
+
+    if (req.body && typeof req.body === 'object') {
+      bodyRegistrado = JSON.stringify(Object.keys(req.body));
+    }
+
     res.once('finish', () => {
       console.log({
-        requestId,
+        requestId: requestId,
         method: req.method,
         url: req.originalUrl,
+        body: bodyRegistrado,
         statusCode: res.statusCode,
         durationMs: Date.now() - startTime,
         timestamp: new Date().toISOString(),
