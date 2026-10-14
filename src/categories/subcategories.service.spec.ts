@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { SubcategoriesService } from './subcategorias.service';
+import { SubcategoriesService } from './subcategories.service';
 
 describe('SubcategoriesService', () => {
   let service: SubcategoriesService;

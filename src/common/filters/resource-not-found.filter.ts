@@ -9,6 +9,9 @@ import { FavoriteNotFoundError } from '../errors/favorite-not-found.error';
 
 
 @Catch(FavoriteNotFoundError, CustomerNotFoundError,EntrepreneurNotFoundError,ProductNotFoundError,SubcategoryNotFoundError,ArticleNotFoundError)
+import { CategoryNotFoundError } from '../errors/category-not-found.error';
+
+@Catch(CustomerNotFoundError,EntrepreneurNotFoundError,ProductNotFoundError,SubcategoryNotFoundError,ArticleNotFoundError, CategoryNotFoundError)
 
 export class ResourceNotFoundFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {

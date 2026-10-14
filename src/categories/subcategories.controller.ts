@@ -1,6 +1,6 @@
 import {BadRequestException, Controller, Get, Param, ParseIntPipe, Query} from '@nestjs/common';
 import {ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags} from '@nestjs/swagger';
-import { SubcategoriesService } from './subcategorias.service';
+import { SubcategoriesService } from './subcategories.service';
 import { SubcategoryDto } from '../dto/subcategory.dto';
 import { SubcategoryProductDto } from '../dto/subcategory-product.dto';
 import { PopularSubcategoryProductDto } from '../dto/popular-subcategory-product.dto';
