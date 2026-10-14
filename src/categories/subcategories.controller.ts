@@ -102,23 +102,10 @@ export class SubcategoriesController {
   @ApiNotFoundResponse({
     description: 'Subcategoría no encontrada.',
   })
-  findPopularProducts(@Param('subcategoriaId', ParseIntPipe)subcategoryId: number,
-    @Query('cantidad') quantityParam?: string): PopularSubcategoryProductDto[] {
-    let quantity = 4;
-
-    if (quantityParam !== undefined) {
-      quantity = Number(quantityParam);
-
-      if (!Number.isInteger(quantity) || quantity <= 0) {
-        throw new BadRequestException(
-          'La cantidad debe ser un número entero positivo.',
-        );
-      }
-    }
-
-    return this.subcategoriesService.findPopularProducts(
-      subcategoryId,
-      quantity,
-    );
-  }
+  findPopularProducts(
+  @Param('subcategoriaId', ParseIntPipe) subcategoryId: number,
+  @Query('cantidad') quantityParam?: string,
+): PopularSubcategoryProductDto[] {
+  return this.subcategoriesService.findPopularProducts(subcategoryId,quantityParam);
+}
 }
