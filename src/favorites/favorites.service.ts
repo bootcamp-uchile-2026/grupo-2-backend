@@ -8,7 +8,6 @@ import { Favorite } from '../models/favorite.model';
 
 @Injectable()
 export class FavoritesService {
-  
   constructor(
     private readonly customersService: CustomersService,
     private readonly productsService: ProductsService,
