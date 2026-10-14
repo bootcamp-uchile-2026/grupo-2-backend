@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ProductNotFoundError } from '../common/errors/product-not-found.error';
 import { Product } from '../models/product.model';
 import { GreenFootprint } from '../models/green-footprint.model';
@@ -1485,6 +1485,12 @@ export class ProductsService {
   ];
 
   searchProducts(search: string): ProductSearchDto[] {
+    if (!search || search.trim() === '') {
+      throw new BadRequestException(
+        'El término de búsqueda es obligatorio',
+      );
+    }
+
     const filteredProducts = this.products.filter((product) =>
       product.name.toLowerCase().includes(search.toLowerCase()),
     );
@@ -1521,6 +1527,11 @@ export class ProductsService {
   }
 
   findBestSellingProducts(quantity: number): BestSellingProductDto[] {
+    if (quantity <= 0) {
+      throw new BadRequestException(
+        'La cantidad debe ser un número entero positivo.',
+      );
+    }
     const sortedProducts = this.products.slice().sort(
       (a, b) => b.salesLastMonth - a.salesLastMonth,
     );
@@ -1619,7 +1630,12 @@ export class ProductsService {
     }));
   }
 
-  findRelatedProducts(productId: number,quantity: number): RelatedProductDto[] {
+  findRelatedProducts(productId: number, quantity: number): RelatedProductDto[] {
+    if (quantity <= 0) {
+      throw new BadRequestException(
+        'La cantidad debe ser un número entero positivo.',
+      );
+    }
     const product = this.products.find(
       (item) => item.id === productId,
     );

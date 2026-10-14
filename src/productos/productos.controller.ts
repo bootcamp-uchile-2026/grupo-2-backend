@@ -1,5 +1,5 @@
-import {BadRequestException, Controller, Get, Param, ParseIntPipe, Query} from '@nestjs/common';
-import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags} from '@nestjs/swagger';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ProductsService } from './productos.service';
 import { ProductSearchDto } from '../dto/product-search.dto';
 import { ProductOfferDto } from '../dto/product-offer.dto';
@@ -14,7 +14,7 @@ import { RelatedProductDto } from '../dto/related-product.dto';
 @Controller('productos')
 export class ProductsController {
 
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(private readonly productsService: ProductsService) { }
 
   @Get()
   @ApiOperation({
@@ -37,13 +37,7 @@ export class ProductsController {
   @ApiBadRequestResponse({
     description: 'El término de búsqueda es obligatorio.',
   })
-  searchProducts(
-    @Query('buscar') search: string): ProductSearchDto[] {
-    if (!search || search.trim() === '') {
-      throw new BadRequestException(
-        'El término de búsqueda es obligatorio',
-      );
-    }
+  searchProducts(@Query('buscar') search: string): ProductSearchDto[] {
     return this.productsService.searchProducts(search);
   }
 
@@ -85,16 +79,8 @@ export class ProductsController {
     description:
       'El parámetro cantidad debe ser un número entero positivo.',
   })
-  findBestSellingProducts(
-    @Query('cantidad', ParseIntPipe) quantity: number): BestSellingProductDto[] {
-    if (quantity <= 0) {
-      throw new BadRequestException(
-        'La cantidad debe ser un número entero positivo.',
-      );
-    }
-    return this.productsService.findBestSellingProducts(
-      quantity,
-    );
+  findBestSellingProducts(@Query('cantidad', ParseIntPipe) quantity: number): BestSellingProductDto[] {
+    return this.productsService.findBestSellingProducts(quantity);
   }
 
   @Get('nuevos')
@@ -233,14 +219,6 @@ export class ProductsController {
   findRelatedProducts(
     @Param('productoId', ParseIntPipe) productId: number,
     @Query('cantidad', ParseIntPipe) quantity: number): RelatedProductDto[] {
-    if (quantity <= 0) {
-      throw new BadRequestException(
-        'La cantidad debe ser un número entero positivo.',
-      );
-    }
-    return this.productsService.findRelatedProducts(
-      productId,
-      quantity,
-    );
+    return this.productsService.findRelatedProducts(productId, quantity);
   }
 }
