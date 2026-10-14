@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { SubcategoriesModule } from './subcategorias/subcategorias.module';
+import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './productos/productos.module';
 import { EntrepreneursModule } from './emprendedores/emprendedores.module';
 import { CustomersModule } from './customers/customers.module';
@@ -9,7 +9,7 @@ import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
-    SubcategoriesModule,
+    CategoriesModule,
     ProductsModule,
     EntrepreneursModule,
     CustomersModule,
