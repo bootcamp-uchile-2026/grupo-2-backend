@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiOkResponse, ApiParam, ApiBadRequestResponse, ApiNotFoundResponse } from '@nestjs/swagger';
 import { ArticlesService } from './articulos.service';
 import { ArticleSummaryDto } from '../dto/article-summary.dto';
@@ -50,12 +50,6 @@ export class ArticlesController {
     findOne(
         @Param('articleId', ParseIntPipe) articleId: number,
     ): ArticleDetailDto {
-        if (articleId <= 0) {
-            throw new BadRequestException(
-                'El identificador debe ser un número entero positivo.',
-            );
-        }
-
         return this.articlesService.findOne(articleId);
     }
 }

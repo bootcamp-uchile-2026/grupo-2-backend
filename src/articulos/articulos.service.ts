@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Article } from '../models/article.model';
 import { ArticleSummaryDto } from '../dto/article-summary.dto';
 import { ArticleDetailDto } from '../dto/article-detail.dto';
@@ -37,6 +37,11 @@ export class ArticlesService {
     }
 
     findOne(articleId: number): ArticleDetailDto {
+        if (articleId <= 0) {
+            throw new BadRequestException(
+                'El identificador debe ser un número entero positivo.',
+            );
+        }
         const article = this.articles.find(
             (item) => item.id === articleId,
         );

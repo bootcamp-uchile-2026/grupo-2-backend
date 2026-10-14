@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CategoryNotFoundError } from '../common/errors/category-not-found.error';
 import { Category } from '../models/category.model';
 import { CategoryDto } from '../dto/category.dto';
+import { BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class CategoriesService {
@@ -22,6 +23,12 @@ export class CategoriesService {
     }
 
     findOne(categoryId: number): CategoryDto {
+        if (categoryId <= 0) {
+            throw new BadRequestException(
+                'El identificador debe ser un número entero positivo.',
+            );
+        }
+
         const category = this.categories.find((item) => item.id === categoryId);
 
         if (!category) {
