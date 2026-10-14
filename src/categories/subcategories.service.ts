@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ProductsService } from '../productos/productos.service';
 import { SubcategoryNotFoundError } from '../common/errors/subcategory-not-found.error';
 import { SubcategoryProductDto } from '../dto/subcategory-product.dto';
@@ -194,21 +194,33 @@ export class SubcategoriesService {
       }));
   }
 
-  findPopularProducts(subcategoryId: number, quantity = 4): PopularSubcategoryProductDto[] {
-    this.validateSubcategoryExists(subcategoryId);
+  findPopularProducts(subcategoryId: number,quantityParam?: string): PopularSubcategoryProductDto[] {
+  let quantity = 4;
 
-    const maxQuantity = Math.min(quantity, 4);
+  if (quantityParam !== undefined) {
+    quantity = Number(quantityParam);
 
-    return this.productsService
-      .findProductsBySubcategory(subcategoryId)
-      .filter((product) => product.stock > 0)
-      .sort((a, b) => b.salesLastMonth - a.salesLastMonth)
-      .slice(0, maxQuantity)
-      .map((product) => ({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        imageUrl: product.imageUrl,
-      }));
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      throw new BadRequestException(
+        'La cantidad debe ser un número entero positivo.',
+      );
+    }
   }
+
+  this.validateSubcategoryExists(subcategoryId);
+
+  const maxQuantity = Math.min(quantity, 4);
+
+  return this.productsService
+    .findProductsBySubcategory(subcategoryId)
+    .filter((product) => product.stock > 0)
+    .sort((a, b) => b.salesLastMonth - a.salesLastMonth)
+    .slice(0, maxQuantity)
+    .map((product) => ({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      imageUrl: product.imageUrl,
+    }));
+}
 }

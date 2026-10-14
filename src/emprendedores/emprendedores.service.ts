@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Entrepreneur } from '../models/entrepreneur.model';
 import { EntrepreneurSummaryDto } from '../dto/entrepreneur-summary.dto';
 import { EntrepreneurDetailDto } from '../dto/entrepreneur-detail.dto';
@@ -86,19 +86,31 @@ export class EntrepreneursService {
     },
   ];
 
-  findAll(quantity?: number): EntrepreneurSummaryDto[] {
-    const selectedEntrepreneurs =
-      quantity === undefined
-        ? this.entrepreneurs
-        : this.entrepreneurs.slice(0, quantity);
+  findAll(quantityParam?: string): EntrepreneurSummaryDto[] {
+  let quantity: number | undefined;
 
-    return selectedEntrepreneurs.map((entrepreneur) => ({
-      id: entrepreneur.id,
-      name: entrepreneur.name,
-      description: entrepreneur.description,
-      imageUrl: entrepreneur.imageUrl,
-    }));
+  if (quantityParam !== undefined) {
+    quantity = Number(quantityParam);
+
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      throw new BadRequestException(
+        'La cantidad debe ser un número entero positivo.',
+      );
+    }
   }
+
+  const selectedEntrepreneurs =
+    quantity === undefined
+      ? this.entrepreneurs
+      : this.entrepreneurs.slice(0, quantity);
+
+  return selectedEntrepreneurs.map((entrepreneur) => ({
+    id: entrepreneur.id,
+    name: entrepreneur.name,
+    description: entrepreneur.description,
+    imageUrl: entrepreneur.imageUrl,
+  }));
+}
 
   findOne(entrepreneurId: number): EntrepreneurDetailDto {
     const entrepreneur = this.entrepreneurs.find(

@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { EntrepreneursService } from './emprendedores.service';
 import { EntrepreneurSummaryDto } from '../dto/entrepreneur-summary.dto';
@@ -35,24 +35,7 @@ export class EntrepreneursController {
       'El parámetro cantidad debe ser un número entero positivo.',
   })
   findAll(@Query('cantidad') quantity?: string): EntrepreneurSummaryDto[] {
-    if (quantity === undefined) {
-      return this.entrepreneursService.findAll();
-    }
-
-    const parsedQuantity = Number(quantity);
-
-    if (
-      !Number.isInteger(parsedQuantity) ||
-      parsedQuantity <= 0
-    ) {
-      throw new BadRequestException(
-        'La cantidad debe ser un número entero positivo.',
-      );
-    }
-
-    return this.entrepreneursService.findAll(
-      parsedQuantity,
-    );
+    return this.entrepreneursService.findAll(quantity);
   }
 
   @Get(':emprendedorId')

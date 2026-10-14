@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { CategoriesService } from './categories.service';
 import { CategoryDto } from '../dto/category.dto';
@@ -29,12 +29,6 @@ export class CategoriesController {
     findOne(
         @Param('categoriaId', ParseIntPipe) categoryId: number,
     ): CategoryDto {
-        if (categoryId <= 0) {
-            throw new BadRequestException(
-                'El identificador debe ser un número entero positivo.',
-            );
-        }
-
         return this.categoriesService.findOne(categoryId);
     }
 }

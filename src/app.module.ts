@@ -11,7 +11,6 @@ import { ConfigModule } from '@nestjs/config';
 @Module({
   imports: [
     FavoritesModule,
-    SubcategoriesModule,
     CategoriesModule,
     ProductsModule,
     EntrepreneursModule,
