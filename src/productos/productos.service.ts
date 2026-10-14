@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { FavoriteProductDto } from '../dto/favorite-product.dto';
 import { ProductNotFoundError } from '../common/errors/product-not-found.error';
 import { Product } from '../models/product.model';
 import { GreenFootprint } from '../models/green-footprint.model';
@@ -1632,9 +1633,7 @@ export class ProductsService {
 
   findRelatedProducts(productId: number, quantity: number): RelatedProductDto[] {
     if (quantity <= 0) {
-      throw new BadRequestException(
-        'La cantidad debe ser un número entero positivo.',
-      );
+      throw new BadRequestException('La cantidad debe ser un número entero positivo.');
     }
     const product = this.products.find(
       (item) => item.id === productId,
@@ -1662,6 +1661,23 @@ export class ProductsService {
       price: item.price,
       imageUrl: item.imageUrl,
     }));
+  }
+
+
+  findFavoriteProduct(productId: number): FavoriteProductDto {
+    const product = this.products.find((item) => item.id === productId);
+
+    if (!product) {
+      throw new ProductNotFoundError();
+    }
+
+    return {
+      id: product.id,
+      brand: product.brand,
+      name: product.name,
+      price: product.price,
+      imageUrl: product.imageUrl ?? '',
+    };
   }
 
   findProductsBySubcategory(subcategoryId: number): Product[] {
