@@ -4,8 +4,9 @@ import { CustomerNotFoundError } from '../errors/customer-not-found.error';
 import { EntrepreneurNotFoundError } from '../errors/entrepreneur-not-found.error';
 import { ProductNotFoundError } from '../errors/product-not-found.error';
 import { SubcategoryNotFoundError } from '../errors/subcategory-not-found.error';
+import { ArticleNotFoundError } from '../errors/article-not-found.error';
 
-@Catch(CustomerNotFoundError,EntrepreneurNotFoundError,ProductNotFoundError,SubcategoryNotFoundError)
+@Catch(CustomerNotFoundError,EntrepreneurNotFoundError,ProductNotFoundError,SubcategoryNotFoundError,ArticleNotFoundError)
 
 export class ResourceNotFoundFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
