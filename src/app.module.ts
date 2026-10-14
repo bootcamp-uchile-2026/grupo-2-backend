@@ -4,11 +4,14 @@ import { ProductsModule } from './productos/productos.module';
 import { EntrepreneursModule } from './emprendedores/emprendedores.module';
 import { CustomersModule } from './customers/customers.module';
 import { ArticlesModule } from './articulos/articulos.module';
+import { FavoritesModule } from './favorites/favorites.module';
 import { RequestTracingMiddleware } from './common/middleware/request-tracing.middleware';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    FavoritesModule,
+    SubcategoriesModule,
     CategoriesModule,
     ProductsModule,
     EntrepreneursModule,
