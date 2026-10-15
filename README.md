@@ -1,413 +1,184 @@
-<p align="center">
-  <img
-    src="https://drive.google.com/thumbnail?id=10uSzFualz9I89UUehPdV6E7CJ81EpDZj&sz=w1000"
-    alt="Logo BuenOrigen"
-    width="280"
-  >
-</p>
+# BuenOrigen Backend
 
-<h1 align="center">BuenOrigen Backend</h1>
+![Logo BuenOrigen](https://drive.google.com/thumbnail?id=10uSzFualz9I89UUehPdV6E7CJ81EpDZj&sz=w1000)
 
-<p align="center">
-  API REST desarrollada con NestJS para la plataforma e-commerce BuenOrigen.
-</p>
+**API REST desarrollada con NestJS y TypeScript para la plataforma de comercio electrónico BuenOrigen.**
 
 ---
 
 ## Descripción
 
-**BuenOrigen** es una plataforma e-commerce orientada a la comercialización de productos sustentables ofrecidos por distintos emprendedores.
+**BuenOrigen** es una plataforma orientada a la comercialización de productos sustentables de distintos emprendedores. Este repositorio contiene su backend, organizado mediante módulos, controladores, servicios y objetos de transferencia de datos (DTO).
 
-Este repositorio contiene el **Backend** de la aplicación, desarrollado utilizando **NestJS y TypeScript**.
+La API permite consultar el catálogo, explorar categorías y subcategorías, obtener información de emprendedores y artículos, registrar clientes y administrar productos favoritos. Sus interfaces HTTP se documentan mediante Swagger / OpenAPI.
 
-El Backend proporciona una API REST que permitirá la integración con las aplicaciones Frontend y Mobile.
+> **Estado de implementación:** se utilizan datos de prueba almacenados en memoria. Algunas comprobaciones de acceso funcionan mediante claves compartidas de prueba; no constituyen un sistema completo de autenticación, sesiones o autorización individual. Al reiniciar la aplicación, los cambios realizados sobre las colecciones en memoria no se conservan.
 
----
+## Tecnologías
 
-## Tecnologías utilizadas
+- Node.js, TypeScript y NestJS 11.
+- Swagger / OpenAPI para documentación de la API.
+- `class-validator` y `ValidationPipe` para validaciones de entrada.
+- `@nestjs/config` para configuración por variables de entorno.
+- Git para el control de versiones.
 
-- Node.js
-- TypeScript
-- NestJS
-- Swagger / OpenAPI
-- Git
-- GitHub
+## Requisitos e instalación
 
----
-
-## Requisitos previos
-
-Para instalar y ejecutar el Backend localmente es necesario contar con:
-
-- **Node.js** instalado.
-- **npm**, incluido con Node.js.
-- **Git**, para clonar y mantener actualizado el repositorio.
-- Una terminal, como Git Bash, CMD o la terminal integrada de Visual Studio Code.
-
-Verificar la instalación de Node.js y npm:
+Se requiere **Node.js**, **npm** y una terminal. Git es necesario para clonar el repositorio.
 
 ```bash
 node -v
 npm -v
-```
-
----
-
-## Descarga del proyecto
-
-El proyecto puede obtenerse de dos formas.
-
-### Opción 1: Clonar el repositorio con Git
-
-Esta es la opción recomendada para los integrantes del equipo, ya que permite trabajar con ramas y mantener el proyecto sincronizado con GitHub.
-
-```bash
 git clone https://github.com/bootcamp-uchile-2026/grupo-2-backend.git
-```
-
-Luego ingresar a la carpeta del proyecto:
-
-```bash
 cd grupo-2-backend
-```
-
-Para trabajar sobre la rama de integración del equipo:
-
-```bash
-git switch develop
-git pull --ff-only origin develop
-```
-
-### Opción 2: Descargar como ZIP
-
-También es posible descargar una copia del proyecto directamente desde GitHub.
-
-1. Ingresar al repositorio.
-2. Presionar el botón **Code**.
-3. Seleccionar **Download ZIP**.
-4. Descomprimir el archivo descargado.
-5. Abrir una terminal dentro de la carpeta del proyecto.
-
-> La descarga mediante ZIP permite ejecutar el proyecto, pero para desarrollo colaborativo se recomienda utilizar `git clone`.
-
----
-
-## Instalación
-
-Una vez descargado o clonado el proyecto, ingresar a la carpeta raíz e instalar las dependencias:
-
-```bash
 npm install
 ```
 
-Las dependencias y los comandos disponibles se encuentran definidos en:
+También es posible obtener una copia mediante **Code → Download ZIP** desde GitHub y ejecutar `npm install` dentro de la carpeta extraída.
 
-```text
-package.json
-```
+## Configuración local
 
-El proyecto utiliza **NestJS 11** y dispone de la dependencia `@nestjs/config` para cargar variables de entorno.
-
----
-
-## Configuración de variables de entorno
-
-El Backend utiliza variables de entorno para definir el puerto de ejecución y las claves utilizadas por determinados Guards.
-
-Esta configuración permite modificar valores según el entorno sin escribir credenciales directamente en el código fuente.
-
-### Variables utilizadas
-
-| Variable | Descripción | Valor de ejemplo |
-|---|---|---|
-| `PORT` | Puerto HTTP en el que se ejecuta el Backend. Si no se define, se utiliza `3000`. | `3000` |
-| `ADMIN_API_KEY` | Clave utilizada por `AdminGuard` para proteger endpoints administrativos. | `clave-admin-local` |
-| `CUSTOMER_API_KEY` | Clave utilizada por `CustomerAccessGuard`. No representa autenticación individual de clientes. | `clave-customer-local` |
-
-### Archivo `.env.example`
-
-El repositorio incluye un archivo `.env.example` con valores ficticios que permiten identificar las variables necesarias.
-
-Su contenido es:
-
-```dotenv
-PORT=3000
-ADMIN_API_KEY=clave-admin-local
-CUSTOMER_API_KEY=clave-customer-local
-```
-
-Este archivo sirve como referencia y puede incorporarse al repositorio porque no contiene credenciales reales.
-
-### Crear el archivo `.env`
-
-Antes de iniciar el Backend, crear una copia local del archivo de ejemplo.
-
-En Git Bash:
+El repositorio dispone de un archivo `.env.example` que sirve como plantilla de configuración. Crea un archivo `.env` local antes de iniciar la API:
 
 ```bash
+# Git Bash
 cp .env.example .env
 ```
 
-En CMD de Windows:
-
 ```cmd
+:: CMD de Windows
 copy .env.example .env
 ```
 
-El archivo `.env` deberá contener los valores que se utilizarán en el entorno local.
+Las variables conocidas son `PORT` (puerto HTTP; predeterminado `3000`), `ADMIN_API_KEY` y `CUSTOMER_API_KEY` (claves compartidas utilizadas por guards de prueba). Utiliza valores locales de desarrollo. **No publiques el archivo `.env` ni credenciales reales.** El archivo `.env.example` no debe contener secretos.
 
-Por ejemplo:
+La aplicación carga esta configuración mediante `ConfigModule.forRoot({ isGlobal: true })` y accede a ella mediante `process.env`. No se incluye aquí un procedimiento de autenticación individual porque no está implementado como tal.
 
-```dotenv
-PORT=3000
-ADMIN_API_KEY=clave-admin-local
-CUSTOMER_API_KEY=clave-customer-local
-```
+## Ejecución
 
-**Importante:** las claves indicadas son exclusivamente valores ficticios para pruebas locales. No deben utilizarse como credenciales de producción.
-
-### Carga de variables en NestJS
-
-La aplicación utiliza `ConfigModule`, perteneciente a `@nestjs/config`, para cargar las variables definidas en `.env`.
-
-Su configuración en `src/app.module.ts` es:
-
-```typescript
-import { ConfigModule } from '@nestjs/config';
-```
-
-Y dentro de los módulos importados:
-
-```typescript
-ConfigModule.forRoot({
-  isGlobal: true,
-}),
-```
-
-Esto permite cargar las variables al iniciar la aplicación.
-
-En el código actual, las variables son consultadas mediante `process.env`.
-
-Por ejemplo, el puerto se obtiene desde `src/main.ts`:
-
-```typescript
-await app.listen(process.env.PORT ?? 3000);
-```
-
-El valor definido en `PORT` tendrá prioridad. Si no existe, el Backend utilizará el puerto `3000`.
-
-### Protección de credenciales
-
-El archivo `.env` está incluido en `.gitignore`, por lo que no debe incorporarse a los commits del repositorio.
-
-Se deben respetar las siguientes precauciones:
-
-- No subir archivos `.env` que contengan claves privadas.
-- No incluir credenciales reales en el README.
-- Utilizar `.env.example` únicamente como plantilla.
-- Evitar compartir claves privadas mediante commits o Pull Requests.
-
----
-
-## Ejecución local
-
-Una vez instaladas las dependencias y configurado el archivo `.env`, el Backend puede ejecutarse mediante los siguientes comandos.
-
-### Modo desarrollo
+**Desarrollo**, con recarga ante cambios:
 
 ```bash
 npm run start:dev
 ```
 
-Este comando inicia NestJS en modo desarrollo, con observación de cambios en el código.
-
-### Compilar el proyecto
+**Compilación:**
 
 ```bash
 npm run build
 ```
 
-La compilación genera la versión JavaScript del proyecto en la carpeta `dist`.
-
-### Ejecutar la versión compilada
-
-Primero compilar:
-
-```bash
-npm run build
-```
-
-Luego ejecutar:
+**Ejecución de la versión compilada:**
 
 ```bash
 npm run start:prod
 ```
 
-Este comando inicia la aplicación a partir de los archivos compilados.
-
-### Dirección local
-
-Si se utiliza `PORT=3000`, el servidor estará disponible en:
-
-```text
-http://localhost:3000
-```
-
-Los endpoints REST utilizan sus respectivas rutas.
-
-Por ejemplo:
-
-```text
-http://localhost:3000/productos/ofertas
-```
-
-Si se modifica la variable `PORT`, se deberá utilizar el puerto configurado en las direcciones correspondientes.
-
----
+Con el puerto predeterminado, la API escucha en `http://localhost:3000`.
 
 ## Swagger / OpenAPI
 
-La API se encuentra documentada mediante **Swagger / OpenAPI**.
+Con la aplicación en ejecución:
 
-Una vez iniciado el proyecto, la documentación interactiva puede consultarse en:
+- Interfaz Swagger: **http://localhost:3000/api**
+- Especificación OpenAPI JSON: **http://localhost:3000/api-json**
 
-```text
-http://localhost:3000/api
+Swagger describe las operaciones disponibles, parámetros, cuerpos de solicitud, DTO de respuesta y códigos HTTP. Para conocer los ejemplos y parámetros exactos de cada operación, consulta esta documentación interactiva.
+
+## Arquitectura y módulos
+
+La aplicación sigue la organización habitual de NestJS:
+
+- **Controllers:** reciben las solicitudes HTTP, extraen parámetros y delegan en los servicios.
+- **Services:** administran las colecciones en memoria, aplican las reglas y construyen las respuestas.
+- **DTO:** establecen los contratos de entrada y salida, junto con sus validaciones y documentación.
+- **Models:** representan las estructuras de datos del dominio.
+- **Componentes comunes:** middleware de trazabilidad, interceptor, guards, errores personalizados y filtros de excepciones.
+
+| Dominio | Organización y responsabilidad |
+|---|---|
+| **Customers** | Registro, consulta y actualización de clientes. |
+| **Productos** | Búsqueda, ofertas, novedades, más vendidos, detalle, valoraciones, huella verde y productos relacionados. |
+| **Categories** | Categorías y subcategorías, con controladores y servicios independientes dentro de `CategoriesModule`. |
+| **Emprendedores** | Directorio, información pública y productos asociados a cada emprendedor. |
+| **Artículos** | Listado y detalle de artículos del blog. |
+| **Favoritos** | Consulta, incorporación y eliminación de productos favoritos de clientes. |
+
+`ProductsService` mantiene la colección principal de productos; los servicios que necesitan esa información la reutilizan en lugar de mantener copias independientes. Los datos actuales se almacenan en arreglos en memoria.
+
+### Flujo de una solicitud
+
+```mermaid
+flowchart LR
+    A[Cliente HTTP] --> B[Middleware de trazabilidad]
+    B --> C[Guard cuando corresponde]
+    C --> D[Controller]
+    D --> E[Validación y Service]
+    E --> F[Datos en memoria]
+    F --> E
+    E --> G[Respuesta JSON]
+    G --> A
 ```
 
-Swagger permite visualizar:
+Los pipes de validación y los filtros de excepciones intervienen en los puntos correspondientes del ciclo de vida de NestJS. Este esquema resume el recorrido general y no pretende representar todas las etapas internas del framework.
 
-- Endpoints disponibles.
-- Métodos HTTP.
-- Parámetros de ruta.
-- Query parameters.
-- Headers.
-- DTO de entrada y salida.
-- Respuestas y códigos HTTP.
-- Validaciones y errores documentados.
+## Endpoints principales
 
-La documentación debe mantenerse alineada con los endpoints y funcionalidades implementados.
+Las rutas que utilizan parámetros de consulta o de ruta aparecen con ejemplos ilustrativos. **`buscar` es obligatorio en `GET /productos`; una solicitud sin ese parámetro responde HTTP 400.**
 
----
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/productos?buscar=polera` | Buscar productos. |
+| GET | `/productos/ofertas` | Productos en oferta. |
+| GET | `/productos/mas-vendidos?cantidad=5` | Productos más vendidos. |
+| GET | `/productos/nuevos` | Productos nuevos. |
+| GET | `/productos/:productoId` | Detalle de un producto. |
+| GET | `/productos/:productoId/huella-verde` | Huella verde del producto. |
+| GET | `/productos/:productoId/valoraciones` | Valoraciones. |
+| GET | `/productos/:productoId/relacionados` | Productos relacionados. |
+| GET | `/categorias` | Listado de categorías. |
+| GET | `/categorias/:categoriaId` | Detalle de categoría. |
+| GET | `/categorias/:categoriaId/subcategorias` | Subcategorías de una categoría. |
+| GET | `/subcategorias/:subcategoriaId/productos` | Productos de una subcategoría. |
+| GET | `/subcategorias/:subcategoriaId/productos/populares` | Productos populares de una subcategoría. |
+| GET | `/emprendedores?cantidad=2` | Listado de emprendedores. |
+| GET | `/emprendedores/:emprendedorId` | Detalle de emprendedor. |
+| GET | `/emprendedores/:emprendedorId/productos` | Productos del emprendedor. |
+| GET | `/articulos` | Listado de artículos. |
+| GET | `/articulos/:articleId` | Detalle de un artículo. |
+| POST | `/customers` | Registro de cliente. |
+| GET | `/customers` | Listado de clientes (acceso restringido de prueba). |
+| GET | `/customers/:id` | Consulta de cliente (acceso restringido de prueba). |
+| PATCH | `/customers/:id` | Actualización de cliente (acceso restringido de prueba). |
+| GET | `/customers/:customerId/favoritos` | Listado de favoritos. |
+| POST | `/customers/:customerId/favoritos` | Añadir favorito. |
+| DELETE | `/customers/:customerId/favoritos/:productId` | Eliminar favorito. |
 
-## Uso de API Keys
+Los requisitos exactos de encabezados, cuerpos y respuestas se encuentran en Swagger. Algunos endpoints aplican guards mediante el encabezado `x-api-key` como mecanismo preliminar de control de acceso.
 
-Algunos endpoints del Backend utilizan Guards para controlar el acceso a operaciones protegidas.
+## Validaciones, errores y trazabilidad
 
-### Acceso administrativo
+El backend utiliza validaciones de DTO y una `ValidationPipe` global con `whitelist`, `forbidNonWhitelisted` y `transform`. Los servicios incorporan validaciones adicionales para reglas del dominio. Los errores personalizados se procesan mediante filtros comunes.
 
-`AdminGuard` utiliza la variable `ADMIN_API_KEY`.
+Entre las respuestas documentadas y verificadas se encuentran:
 
-Para realizar una solicitud protegida, se debe incorporar el encabezado:
+| HTTP | Uso |
+|---|---|
+| `200 OK` | Consulta exitosa. |
+| `201 Created` | Creación exitosa. |
+| `204 No Content` | Eliminación de favorito, sin cuerpo de respuesta. |
+| `400 Bad Request` | Entrada o parámetro inválido. |
+| `403 Forbidden` | Acceso denegado por un guard. |
+| `404 Not Found` | Recurso inexistente. |
+| `409 Conflict` | Conflicto como correo duplicado o favorito existente. |
 
-```http
-x-api-key: clave-admin-local
-```
+La trazabilidad registra un identificador de solicitud (`x-request-id`), método, ruta, código HTTP, duración y fecha. Cuando corresponde, se registra el cuerpo de la petición con protección de datos sensibles, como contraseñas. **No deben incorporarse secretos a logs ni a ejemplos públicos.**
 
-Ejemplo de consulta a un endpoint administrativo desde Git Bash:
+## Modelo de datos — diagrama entidad-relación de referencia
 
-```bash
-curl -i \
-  -H "x-api-key: clave-admin-local" \
-  "http://localhost:3000/customers"
-```
+El diagrama siguiente representa **14 modelos TypeScript** definidos en `src/models`. Es una vista conceptual de sus asociaciones: no representa tablas SQL creadas ni claves foráneas impuestas por una base de datos. Algunas asociaciones se expresan mediante propiedades de tipo objeto o arreglos, sin campos de identificación explícitos en la clase.
 
-El valor del encabezado debe coincidir con el configurado en `ADMIN_API_KEY`.
-
-Cuando la clave es correcta, la solicitud puede continuar hacia el endpoint. Cuando no coincide o no está configurada, el Guard deniega el acceso.
-
-### Guard de clientes
-
-El proyecto también dispone de `CustomerAccessGuard`, que consulta `CUSTOMER_API_KEY`.
-
-Este mecanismo utiliza una clave compartida y no identifica individualmente a un cliente.
-
-Por esta razón, los endpoints `/customers/me` fueron retirados temporalmente del alcance del Hito 2, hasta contar con un mecanismo apropiado de identificación individual.
-
-La presencia de `CUSTOMER_API_KEY` en la configuración no significa que exista actualmente un sistema completo de autenticación de usuarios.
-
----
-
-## Módulos implementados
-
-Actualmente el Backend cuenta con los siguientes dominios principales:
-
-```text
-Productos
-Subcategorías
-Emprendedores
-Customers
-```
-
-### Productos
-
-Se encuentran implementadas funcionalidades para:
-
-- Búsqueda de productos.
-- Productos en oferta.
-- Productos más vendidos.
-- Nuevos productos.
-- Detalle de producto.
-- Huella Verde.
-- Valoraciones.
-- Productos relacionados.
-
-### Subcategorías
-
-Permite:
-
-- Consultar subcategorías pertenecientes a una categoría.
-- Consultar productos de una subcategoría.
-- Consultar productos populares de una subcategoría.
-
-### Emprendedores
-
-Permite:
-
-- Consultar el directorio de emprendedores.
-- Consultar el perfil público de un emprendedor.
-- Consultar los productos asociados a un emprendedor.
-
-### Customers
-
-El módulo permite:
-
-- Registrar clientes.
-- Consultar clientes.
-- Consultar un cliente por identificador.
-- Actualizar los datos de un cliente.
-
-Las operaciones administrativas se encuentran protegidas mediante una API Key.
-
-Los datos de clientes se almacenan actualmente en memoria.
-
-### Datos dummy
-
-Los Services de catálogo utilizan datos ficticios para permitir la ejecución de los endpoints y las primeras integraciones con Frontend y Mobile.
-
-La información se mantiene en arreglos dentro de los Services correspondientes.
-
-`ProductsService` administra la colección principal de productos. Los Services de subcategorías y emprendedores consultan esa misma colección mediante inyección de dependencias, evitando duplicar los productos.
-
-Las categorías y subcategorías adicionales utilizadas durante las pruebas no constituyen necesariamente definiciones definitivas de UX/UI.
-
-La documentación detallada de las funcionalidades se encuentra disponible en la **Wiki del repositorio**:
-
-https://github.com/bootcamp-uchile-2026/grupo-2-backend/wiki
-
----
-
-## Modelo entidad-relación
-
-El siguiente diagrama presenta una propuesta de estructura relacional basada en
-los modelos TypeScript definidos en `src/models/` del backend BuenOrigen.
-
-El modelo incluye 11 entidades y sus relaciones, identificando claves primarias
-(PK) y claves foráneas (FK).
-
-Actualmente, el backend utiliza datos en memoria. Por lo tanto, el diagrama
-representa un diseño relacional de referencia y no una base de datos SQL
-implementada.
+`FAVORITE` relaciona clientes y productos mediante `customerId` y `productId`. `ARTICLE` no declara asociaciones directas con otros modelos. Los modelos de direcciones, métodos de pago y órdenes forman parte de la estructura del dominio, aunque no corresponden a módulos REST operativos en el código descrito.
 
 ```mermaid
 erDiagram
@@ -415,16 +186,19 @@ erDiagram
     CUSTOMER ||--o{ ADDRESS : registra
     CUSTOMER ||--o{ PAYMENT_METHOD : registra
     CUSTOMER ||--o{ ORDER : realiza
+    CUSTOMER ||--o{ FAVORITE : guarda
 
-    ORDER ||--o{ ORDER_ITEM : contiene
-    PAYMENT_METHOD ||--o{ ORDER : utilizada_en
-    PRODUCT ||--o{ ORDER_ITEM : incluido_en
-
-    ENTREPRENEUR ||--o{ PRODUCT : publica
+    CATEGORY ||--o{ SUBCATEGORY : contiene
     SUBCATEGORY ||--o{ PRODUCT : agrupa
+    ENTREPRENEUR ||--o{ PRODUCT : publica
 
+    PRODUCT ||--o{ FAVORITE : aparece_en
     PRODUCT ||--o{ REVIEW : recibe
     PRODUCT ||--o| GREEN_FOOTPRINT : posee
+    PRODUCT ||--o{ ORDER_ITEM : incluido_en
+
+    ORDER ||--o{ ORDER_ITEM : contiene
+    PAYMENT_METHOD ||--o{ ORDER : utilizado_en
 
     CUSTOMER {
         int id PK
@@ -432,35 +206,40 @@ erDiagram
         string password
         int greenPoints
     }
-
     PROFILE {
-        int id PK
-        int customerId FK
         string name
         string lastName
         string phoneNumber
         string profileImageUrl
     }
-
     ADDRESS {
         int id PK
-        int customerId FK
         string street
         string number
         string department
         string commune
         string city
     }
-
     PAYMENT_METHOD {
         int id PK
-        int customerId FK
         string cardType
         string cardHolder
         string cardNumber
         string expirationDate
     }
-
+    CATEGORY {
+        int id PK
+        string name
+        string slug
+        string imageUrl
+    }
+    SUBCATEGORY {
+        int id PK
+        int categoryId FK
+        string name
+        string slug
+        string imageUrl
+    }
     ENTREPRENEUR {
         int id PK
         string name
@@ -468,15 +247,6 @@ erDiagram
         string imageUrl
         string story
     }
-
-    SUBCATEGORY {
-        int id PK
-        int categoryId
-        string name
-        string slug
-        string imageUrl
-    }
-
     PRODUCT {
         int id PK
         int subcategoryId FK
@@ -495,14 +265,10 @@ erDiagram
         string_array colors
         string_array sizes
     }
-
-    GREEN_FOOTPRINT {
-        int productId PK,FK
-        float sustainabilityRating
-        string_array materials
-        string productionProcess
+    FAVORITE {
+        int customerId FK
+        int productId FK
     }
-
     REVIEW {
         int id PK
         int productId FK
@@ -511,269 +277,78 @@ erDiagram
         float rating
         boolean published
     }
-
+    GREEN_FOOTPRINT {
+        int productId FK
+        float sustainabilityRating
+        string_array materials
+        string productionProcess
+    }
+    ARTICLE {
+        int id PK
+        string title
+        string summary
+        string content
+        string imageUrl
+        string author
+        datetime publishedAt
+    }
     ORDER {
         int id PK
         int customerId FK
-        int paymentMethodId FK
         datetime orderDate
         float totalAmount
     }
-
     ORDER_ITEM {
-        int id PK
-        int orderId FK
-        int productId FK
         int quantity
         float unitPrice
     }
 ```
 
-## Pruebas locales de la API
 
-Con el servidor iniciado, se pueden ejecutar solicitudes HTTP desde una terminal o desde Swagger.
 
-### Buscar productos
+## Docker y ejecución en contenedores
 
-```bash
-curl -i "http://localhost:3000/productos?buscar=lavanda"
-```
+La ejecución mediante contenedores requiere definir y comprobar los archivos y parámetros del entorno. **Esta sección es una guía de configuración, no una afirmación de que ya exista una imagen publicada o un despliegue funcional.**
 
-### Consultar ofertas
+### Campos por completar
 
-```bash
-curl -i "http://localhost:3000/productos/ofertas"
-```
+| Elemento | Configuración |
+|---|---|
+| Dockerfile del backend | 🔴 **[PENDIENTE DE VERIFICAR / DEFINIR]** Ruta y estrategia de construcción. |
+| Archivo `.dockerignore` | 🔴 **[PENDIENTE DE VERIFICAR / DEFINIR]** Exclusiones del contexto de construcción. |
+| Nombre y etiqueta de la imagen | 🔴 **[PENDIENTE DE DEFINIR]** `__________` |
+| Puerto publicado en el host | 🔴 **[PENDIENTE DE DEFINIR]** `__________` |
+| Archivo de orquestación (`compose.yaml`, si aplica) | 🔴 **[PENDIENTE DE VERIFICAR / DEFINIR]** `__________` |
+| Contenedor o servicio de base de datos | 🔴 **[PENDIENTE DE DEFINIR]** Motor, versión, volumen y parámetros. |
+| Scripts de inicialización de base de datos | 🔴 **[PENDIENTE DE DEFINIR]** Ubicación y modo de ejecución. |
+| URL del servicio desplegado | 🔴 **[PENDIENTE DE DEFINIR]** `__________` |
 
-### Consultar los productos más vendidos
+### Comandos orientativos
 
-```bash
-curl -i "http://localhost:3000/productos/mas-vendidos?cantidad=5"
-```
-
-### Consultar productos por subcategoría
-
-```bash
-curl -i "http://localhost:3000/subcategorias/4/productos"
-```
-
-### Consultar productos de un emprendedor
+Una vez creado y validado un `Dockerfile`, la imagen podrá construirse con un comando como:
 
 ```bash
-curl -i "http://localhost:3000/emprendedores/4/productos"
+# EJEMPLO: sustituir el nombre y la etiqueta definidos para el proyecto
+docker build -t buenorigen-backend:local .
 ```
 
-### Consultar un producto inexistente
+La ejecución del contenedor deberá indicar el puerto y las variables de entorno apropiadas. **No ejecutar el siguiente ejemplo como configuración definitiva sin verificar el Dockerfile y los puertos:**
 
 ```bash
-curl -i "http://localhost:3000/productos/9999"
+# EJEMPLO DE REFERENCIA; AJUSTAR CONFIGURACIÓN ANTES DE SU USO
+docker run --rm -p 3000:3000 --env-file .env buenorigen-backend:local
 ```
 
-Para un producto inexistente, se espera una respuesta HTTP `404 Not Found`.
+No se incluyen credenciales reales ni comandos de creación de base de datos no verificados. Esta sección debe completarse con los archivos y valores efectivos del repositorio cuando estén definidos.
 
-### Validar un parámetro incorrecto
+## Integración con aplicaciones cliente
 
-```bash
-curl -i "http://localhost:3000/productos/mas-vendidos?cantidad=abc"
-```
+Las aplicaciones cliente consumen la API mediante HTTP y reciben respuestas JSON. Los contratos de integración se describen en Swagger; los consumidores deben respetar los parámetros obligatorios, DTO y códigos de respuesta publicados.
 
-Para una cantidad que no corresponda a un número válido, se espera una respuesta HTTP `400 Bad Request`.
+## Documentación técnica
 
-### Trazabilidad de solicitudes
-
-El Backend incorpora un identificador de solicitud mediante el encabezado:
-
-```http
-x-request-id
-```
-
-Este identificador permite relacionar las solicitudes HTTP con la información registrada en los logs del servidor.
-
----
-
-## Integración con Frontend
-
-Frontend y Backend se integrarán mediante una **API REST**, utilizando peticiones HTTP y respuestas en formato JSON.
-
-```mermaid
-flowchart TD
-    A["Frontend"] -->|HTTP Request| B["Backend NestJS"]
-    B --> C["Controller"]
-    C --> D["Service"]
-    D --> E["DTO"]
-    E -->|JSON Response| A
-```
-
-Los contratos de integración se encuentran documentados mediante **Swagger / OpenAPI**.
-
-Algunas de las interfaces disponibles son:
-
-```http
-GET /productos/ofertas
-```
-
-```http
-GET /productos/mas-vendidos?cantidad={n}
-```
-
-```http
-GET /productos/nuevos
-```
-
-```http
-GET /productos?buscar={texto}
-```
-
-```http
-GET /emprendedores?cantidad={n}
-```
-
-Los equipos Frontend y Mobile deben utilizar los contratos y estructuras de respuesta definidos por el Backend.
-
----
-
-## Estrategia de ramas
-
-El proyecto utiliza tres ramas principales:
-
-- **`develop`**: rama de integración de los desarrollos del equipo.
-- **`qa`**: rama destinada a la validación funcional, visual e integrada.
-- **`main`**: contiene la versión estable del proyecto.
-
-Las ramas de desarrollo (`feature/*`, `fix/*`, `refactor/*` y `docs/*`) se crean desde `develop`.
-
-Una vez finalizado el trabajo, se solicita un Pull Request hacia `develop`.
-
-Cuando `develop` se encuentra estable, se realiza un Pull Request hacia `qa` para efectuar las validaciones correspondientes.
-
-Si QA aprueba la versión, se realiza un Pull Request desde `qa` hacia `main`.
-
-Si QA detecta problemas, se crea una nueva rama `fix/*` desde `develop` y se repite el flujo de validación.
-
-### Flujo de ramas
-
-```mermaid
-flowchart TD
-    A["develop"] --> B["feature/*, fix/*, refactor/* o docs/*"]
-    B -->|Pull Request| A
-    A -->|Pull Request| C["qa"]
-    C -->|QA aprobado + Pull Request| D["main"]
-    C -->|Problema detectado| E["Nueva rama fix/* desde develop"]
-    E -->|Corrección + Pull Request| A
-```
-
-**Ejemplo:**
-
-Se desea crear un nuevo servicio para el catálogo de productos.
-
-Para ello, se crea una rama desde `develop`:
-
-```text
-feature/catalogo-productos
-```
-
-Una vez finalizado el desarrollo y realizadas las pruebas locales, se crea un Pull Request hacia `develop`.
-
-Posteriormente, cuando `develop` se encuentra estable, se realiza un Pull Request hacia `qa`.
-
-Si durante la validación en QA se detecta un error, se crea una nueva rama:
-
-```text
-fix/error-carrito
-```
-
-La corrección se desarrolla desde `develop` y se integra nuevamente mediante Pull Request.
-
----
-
-## Flujo básico de Git
-
-Actualizar la rama `develop`:
-
-```bash
-git switch develop
-git pull --ff-only origin develop
-```
-
-Crear una nueva rama para una funcionalidad:
-
-```bash
-git switch -c feature/nombre-funcionalidad
-```
-
-Después de realizar los cambios:
-
-```bash
-git status
-git add .
-git commit -m "feature: descripción del cambio"
-git push -u origin feature/nombre-funcionalidad
-```
-
-Finalmente, se deberá crear un **Pull Request hacia `develop`**.
-
----
-
-## Reglas básicas de trabajo
-
-- No desarrollar directamente sobre `main`.
-- Evitar realizar cambios directamente sobre `develop`.
-- Evitar realizar cambios directamente sobre `qa`.
-- Utilizar ramas `feature/*` para nuevas funcionalidades.
-- Utilizar ramas `fix/*` para correcciones.
-- Utilizar ramas `refactor/*` para reorganización de código.
-- Utilizar ramas `docs/*` para documentación.
-- Integrar los cambios mediante Pull Request.
-- Utilizar mensajes de commit claros y descriptivos.
-
-Ejemplos:
-
-```text
-feature: se implementa funcionalidad de emprendedores
-fix: se corrige validación de producto
-docs: se actualiza documentación Swagger
-refactor: se reorganiza lógica de productos
-chore: se actualizan dependencias
-```
-
----
-
-## Próximas funcionalidades
-
-Entre las funcionalidades identificadas para siguientes etapas se encuentran:
-
-```text
-Autenticación individual de usuarios
-Favoritos
-Carrito de compras
-Artículos
-Cuenta de Emprendedor
-```
-
-Estas funcionalidades deberán priorizarse y validarse conforme al Backlog y las definiciones del equipo.
-
----
-
-## Documentación
-
-La documentación técnica detallada del proyecto se encuentra disponible en la **Wiki de GitHub**, incluyendo:
-
-- Funcionalidades Backend.
-- Módulos y dominios.
-- Servicios.
-- Endpoints.
-- DTO.
-- Swagger / OpenAPI.
-- Flujo de Git.
-- Reglas de negocio.
-- Decisiones técnicas y funcionalidades pendientes.
-
-Wiki:
-
-https://github.com/bootcamp-uchile-2026/grupo-2-backend/wiki
-
----
+La documentación complementaria se encuentra en la [Wiki del repositorio](https://github.com/bootcamp-uchile-2026/grupo-2-backend/wiki). Para los contratos HTTP vigentes, se recomienda consultar también el Swagger generado directamente por la versión en ejecución.
 
 ## Equipo
 
-Proyecto desarrollado por el equipo **BuenOrigen** en el contexto del **Bootcamp de Desarrollo Backend del DCC de la Universidad de Chile**.
+Proyecto desarrollado por el equipo **BuenOrigen**, en el contexto del Bootcamp de Desarrollo Backend del DCC de la Universidad de Chile.
