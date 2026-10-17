@@ -1,13 +1,32 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { SubcategoriasModule } from './subcategorias/subcategorias.module';
-import { ProductosModule } from './productos/productos.module';
-import { EmprendedoresModule } from './emprendedores/emprendedores.module';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { CategoriesModule } from './categories/categories.module';
+import { ProductsModule } from './productos/productos.module';
+import { EntrepreneursModule } from './emprendedores/emprendedores.module';
+import { CustomersModule } from './customers/customers.module';
+import { ArticlesModule } from './articulos/articulos.module';
+import { FavoritesModule } from './favorites/favorites.module';
+import { RequestTracingMiddleware } from './common/middleware/request-tracing.middleware';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [SubcategoriasModule, ProductosModule, EmprendedoresModule],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    FavoritesModule,
+    CategoriesModule,
+    ProductsModule,
+    EntrepreneursModule,
+    CustomersModule,
+    ArticlesModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+  ],
+  controllers: [],
+  providers: [],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(RequestTracingMiddleware)
+      .forRoutes('*');
+  }
+}

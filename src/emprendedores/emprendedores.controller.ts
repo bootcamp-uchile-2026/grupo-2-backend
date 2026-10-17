@@ -1,87 +1,98 @@
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
-import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { EmprendedoresService } from './emprendedores.service';
-import { EmprendedorResumenDto } from '../model/dtos/EmprendedorResumen.dto';
-import { EmprendedorDetalleDto } from 'src/model/dtos/EmprendedorDetalle.dto';
-import { ProductoResumenDto } from 'src/model/dtos/ProductoResumen.dto';
+import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { EntrepreneursService } from './emprendedores.service';
+import { EntrepreneurSummaryDto } from '../dto/entrepreneur-summary.dto';
+import { EntrepreneurDetailDto } from '../dto/entrepreneur-detail.dto';
+import { ProductSummaryDto } from '../dto/product-summary.dto';
 
 @ApiTags('Emprendedores')
 @Controller('emprendedores')
-export class EmprendedoresController {
-    constructor(
-        private readonly emprendedoresService: EmprendedoresService,
-    ) { }
+export class EntrepreneursController {
 
-    @Get()
-    @ApiOperation({
-        summary: 'Obtener emprendedores',
-        description:
-            'Obtiene los emprendedores registrados en EcoTienda. Opcionalmente permite limitar la cantidad de resultados.',
-    })
-    @ApiQuery({
-        name: 'cantidad',
-        required: false,
-        type: Number,
-        example: 4,
-        description: 'Cantidad máxima de emprendedores que se desea obtener',
-    })
-    @ApiOkResponse({
-        description: 'Emprendedores obtenidos correctamente.',
-        type: EmprendedorResumenDto,
-        isArray: true,
-    })
-    obtenerEmprendedores(
-        @Query('cantidad') cantidad?: string): EmprendedorResumenDto[] {
-        return this.emprendedoresService.obtenerEmprendedores(cantidad)}
+  constructor(private readonly entrepreneursService: EntrepreneursService) { }
 
+  @Get()
+  @ApiOperation({
+    summary: 'Obtener emprendedores',
+    description:
+      'Obtiene los emprendedores registrados en BuenOrigen. Opcionalmente permite limitar la cantidad de resultados.',
+  })
+  @ApiQuery({
+    name: 'cantidad',
+    required: false,
+    type: Number,
+    example: 4,
+    description:
+      'Cantidad máxima de emprendedores. Debe ser un número entero positivo.',
+  })
+  @ApiOkResponse({
+    description: 'Emprendedores obtenidos correctamente.',
+    type: EntrepreneurSummaryDto,
+    isArray: true,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'El parámetro cantidad debe ser un número entero positivo.',
+  })
+  findAll(@Query('cantidad') quantity?: string): EntrepreneurSummaryDto[] {
+    return this.entrepreneursService.findAll(quantity);
+  }
 
-    @Get(':emprendedorId')
-    @ApiOperation({
-        summary: 'Obtener perfil de un emprendedor',
-        description:
-            'Obtiene la información pública detallada de un emprendedor específico.',
-    })
-    @ApiParam({
-        name: 'emprendedorId',
-        type: Number,
-        example: 1,
-        description: 'Identificador único del emprendedor',
-    })
-    @ApiOkResponse({
-        description: 'Emprendedor obtenido correctamente.',
-        type: EmprendedorDetalleDto,
-    })
-    @ApiNotFoundResponse({
-        description: 'Emprendedor no encontrado.',
-    })
-    obtenerEmprendedorPorId(
-        @Param('emprendedorId', ParseIntPipe) emprendedorId: number,
-    ): EmprendedorDetalleDto {
-        return this.emprendedoresService.obtenerEmprendedorPorId(emprendedorId);
-    }
+  @Get(':emprendedorId')
+  @ApiOperation({
+    summary: 'Obtener perfil de un emprendedor',
+    description:
+      'Obtiene la información pública detallada de un emprendedor específico.',
+  })
+  @ApiParam({
+    name: 'emprendedorId',
+    type: Number,
+    example: 1,
+    description: 'Identificador único del emprendedor',
+  })
+  @ApiOkResponse({
+    description: 'Emprendedor obtenido correctamente.',
+    type: EntrepreneurDetailDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Emprendedor no encontrado.',
+  })
+  @ApiBadRequestResponse({
+    description: 'El identificador debe ser un número entero.',
+  })
+  findOne(@Param('emprendedorId', ParseIntPipe) entrepreneurId: number): EntrepreneurDetailDto {
+    return this.entrepreneursService.findOne(
+      entrepreneurId,
+    );
+  }
 
-    @Get(':emprendedorId/productos')
-    @ApiOperation({
-        summary: 'Obtener productos de un emprendedor',
-        description:
-            'Obtiene los productos asociados a un emprendedor específico.',
-    })
-    @ApiParam({
-        name: 'emprendedorId',
-        type: Number,
-        example: 1,
-        description: 'Identificador único del emprendedor',
-    })
-    @ApiOkResponse({
-        description: 'Productos del emprendedor obtenidos correctamente.',
-        type: ProductoResumenDto,
-        isArray: true,
-    })
-    @ApiNotFoundResponse({
-        description: 'Emprendedor no encontrado.',
-    })
-    obtenerProductosPorEmprendedor(
-        @Param('emprendedorId', ParseIntPipe) emprendedorId: number): ProductoResumenDto[] {
-        return this.emprendedoresService.obtenerProductosPorEmprendedor(emprendedorId);
-    }
+  @Get(':emprendedorId/productos')
+  @ApiOperation({
+    summary: 'Obtener productos de un emprendedor',
+    description:
+      'Obtiene los productos asociados a un emprendedor específico.',
+  })
+  @ApiParam({
+    name: 'emprendedorId',
+    type: Number,
+    example: 1,
+    description: 'Identificador único del emprendedor',
+  })
+  @ApiOkResponse({
+    description:
+      'Productos del emprendedor obtenidos correctamente.',
+    type: ProductSummaryDto,
+    isArray: true,
+  })
+  @ApiNotFoundResponse({
+    description: 'Emprendedor no encontrado.',
+  })
+  @ApiBadRequestResponse({
+    description: 'El identificador debe ser un número entero.',
+  })
+  findProductsByEntrepreneur(@Param('emprendedorId', ParseIntPipe) entrepreneurId: number): ProductSummaryDto[] {
+    return this.entrepreneursService.findProductsByEntrepreneur(
+      entrepreneurId,
+    );
+  }
 }
