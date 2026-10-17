@@ -304,42 +304,120 @@ erDiagram
     }
 ```
 
+## Docker
 
+La aplicación BuenOrigen Backend puede ejecutarse dentro de un contenedor Docker. El proyecto incluye un `Dockerfile` que permite construir una imagen utilizando Node.js 22 sobre Alpine Linux.
 
-## Docker y ejecución en contenedores
+El proceso de construcción utiliza dos etapas:
 
-La ejecución mediante contenedores requiere definir y comprobar los archivos y parámetros del entorno. **Esta sección es una guía de configuración, no una afirmación de que ya exista una imagen publicada o un despliegue funcional.**
+- **Construcción (`builder`):** instala las dependencias, copia el código fuente y compila la aplicación mediante `npm run build`.
+- **Producción (`production`):** instala únicamente las dependencias de producción y copia los archivos compilados desde la etapa anterior.
 
-### Campos por completar
+### Requisitos
+
+- Docker instalado y en ejecución.
+- Acceso al repositorio del proyecto.
+- Configuración necesaria para ejecutar la aplicación en el entorno correspondiente.
+
+### Construir la imagen
+
+Desde la raíz del repositorio, donde se encuentra el `Dockerfile`, ejecutar:
+
+```bash
+docker build -t buenorigen-backend:qa .
+```
+
+Este comando construye una imagen Docker denominada `buenorigen-backend` con la etiqueta `qa`.
+
+Para comprobar que la imagen se creó correctamente:
+
+```bash
+docker images
+```
+
+### Ejecutar un contenedor
+
+Para iniciar la aplicación a partir de la imagen construida, se puede utilizar el siguiente comando en un entorno donde el nombre del contenedor esté disponible:
+
+```bash
+docker run -d \
+  --name buenorigen-qa \
+  -p 3003:3000 \
+  --env-file .env \
+  buenorigen-backend:qa
+```
+
+El comando ejecuta la aplicación en segundo plano y establece la correspondencia entre el puerto `3003` del equipo anfitrión y el puerto `3000` del contenedor.
+
+El archivo `.env` debe existir en el equipo donde se ejecuta Docker y contener la configuración requerida por la aplicación. No debe incorporarse al repositorio si contiene credenciales o información sensible.
+
+**Importante:** el comando anterior es una referencia para crear un contenedor nuevo. Si ya existe un contenedor con el nombre `buenorigen-qa`, debe revisarse su estado antes de intentar crear otro.
+
+### Verificar el contenedor
+
+Consultar los contenedores en ejecución:
+
+```bash
+docker ps
+```
+
+Revisar los registros de la aplicación:
+
+```bash
+docker logs buenorigen-qa
+```
+
+Para comprobar el acceso local a Swagger, abrir:
+
+http://localhost:3003/api
+
+La disponibilidad de Swagger confirma que la aplicación responde en esa ruta.
+
+---
+
+## Despliegue en Oracle Cloud
+
+El backend BuenOrigen se desplegó en una máquina virtual de Oracle Cloud con Ubuntu. Para ejecutar la aplicación se utilizó Docker, construyendo una imagen a partir del código del repositorio.
+
+### Procedimiento de despliegue
+
+1. **Acceso a la máquina virtual:** conexión remota mediante SSH utilizando la clave privada y las credenciales configuradas para la instancia.
+2. **Acceso al repositorio:** ingreso al directorio del proyecto y utilización de la rama `qa`.
+3. **Construcción de la imagen:** ejecución de `docker build` para generar la imagen `buenorigen-backend:qa`.
+4. **Ejecución del contenedor:** inicio de la aplicación mediante Docker, publicando el puerto `3000` del contenedor en el puerto `3003` de la máquina virtual.
+5. **Configuración de red:** habilitación del puerto `3003` en las reglas de ingreso de Oracle Cloud para permitir el acceso externo.
+6. **Verificación:** comprobación de la respuesta HTTP de Swagger desde la máquina virtual y posterior acceso mediante la dirección pública.
+
+### Imagen y contenedor de QA
 
 | Elemento | Configuración |
 |---|---|
-| Dockerfile del backend | 🔴 **[PENDIENTE DE VERIFICAR / DEFINIR]** Ruta y estrategia de construcción. |
-| Archivo `.dockerignore` | 🔴 **[PENDIENTE DE VERIFICAR / DEFINIR]** Exclusiones del contexto de construcción. |
-| Nombre y etiqueta de la imagen | 🔴 **[PENDIENTE DE DEFINIR]** `__________` |
-| Puerto publicado en el host | 🔴 **[PENDIENTE DE DEFINIR]** `__________` |
-| Archivo de orquestación (`compose.yaml`, si aplica) | 🔴 **[PENDIENTE DE VERIFICAR / DEFINIR]** `__________` |
-| Contenedor o servicio de base de datos | 🔴 **[PENDIENTE DE DEFINIR]** Motor, versión, volumen y parámetros. |
-| Scripts de inicialización de base de datos | 🔴 **[PENDIENTE DE DEFINIR]** Ubicación y modo de ejecución. |
-| URL del servicio desplegado | 🔴 **[PENDIENTE DE DEFINIR]** `__________` |
+| Plataforma | Oracle Cloud VM |
+| Sistema operativo | Ubuntu |
+| Rama utilizada | `qa` |
+| Imagen Docker | `buenorigen-backend:qa` |
+| Puerto del contenedor | `3000` |
+| Puerto publicado en la VM | `3003` |
+| Documentación Swagger | `/api` |
 
-### Comandos orientativos
+### Acceso a la aplicación
 
-Una vez creado y validado un `Dockerfile`, la imagen podrá construirse con un comando como:
+La documentación de la API se encuentra disponible en:
 
-```bash
-# EJEMPLO: sustituir el nombre y la etiqueta definidos para el proyecto
-docker build -t buenorigen-backend:local .
-```
+[Swagger — BuenOrigen QA](http://159.112.150.143:3003/api)
 
-La ejecución del contenedor deberá indicar el puerto y las variables de entorno apropiadas. **No ejecutar el siguiente ejemplo como configuración definitiva sin verificar el Dockerfile y los puertos:**
+### Verificación del despliegue
 
-```bash
-# EJEMPLO DE REFERENCIA; AJUSTAR CONFIGURACIÓN ANTES DE SU USO
-docker run --rm -p 3000:3000 --env-file .env buenorigen-backend:local
-```
+Durante las pruebas se comprobó que el contenedor de QA se encontraba ejecutándose y que la ruta `/api` respondía con un código HTTP `200 OK` desde la máquina virtual. También se habilitó el puerto `3003` en Oracle Cloud y se confirmó el acceso externo a la aplicación.
 
-No se incluyen credenciales reales ni comandos de creación de base de datos no verificados. Esta sección debe completarse con los archivos y valores efectivos del repositorio cuando estén definidos.
+Estas comprobaciones validan la ejecución del contenedor y la disponibilidad de Swagger.
+
+### Consideraciones de seguridad
+
+- No publicar claves privadas SSH, credenciales ni archivos `.env` con información sensible.
+- Revisar las reglas de ingreso de Oracle Cloud y limitar el acceso al puerto publicado cuando corresponda.
+- La URL documentada corresponde al ambiente QA
+
 
 ## Integración con aplicaciones cliente
 
