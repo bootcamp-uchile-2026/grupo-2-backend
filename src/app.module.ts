@@ -25,6 +25,9 @@ import { WellnessDetailEntity } from './models/wellness-detail.entity';
 import { ClothingDetailEntity } from './models/clothing-detail.entity';
 import { PetDetailEntity } from './models/pet-detail.entity';
 import { CraftDetailEntity } from './models/craft-detail.entity';
+import { CartEntity } from './models/cart.entity';
+import { CartItemEntity } from './models/cart-item.entity';
+import { AddressEntity } from './models/address.entity';
 
 
 @Module({
@@ -59,6 +62,9 @@ import { CraftDetailEntity } from './models/craft-detail.entity';
       ClothingDetailEntity,
       PetDetailEntity,
       CraftDetailEntity,
+      CartEntity,
+      CartItemEntity,
+      AddressEntity,
     ]),
     FavoritesModule,
     CategoriesModule,
