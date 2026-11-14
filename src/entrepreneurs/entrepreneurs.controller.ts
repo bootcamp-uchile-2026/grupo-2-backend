@@ -1,12 +1,12 @@
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { EntrepreneursService } from './emprendedores.service';
+import { EntrepreneursService } from './entrepreneurs.service';
 import { EntrepreneurSummaryDto } from '../dto/entrepreneur-summary.dto';
 import { EntrepreneurDetailDto } from '../dto/entrepreneur-detail.dto';
 import { ProductSummaryDto } from '../dto/product-summary.dto';
 
 @ApiTags('Emprendedores')
-@Controller('emprendedores')
+@Controller('entrepeneurs')
 export class EntrepreneursController {
 
   constructor(private readonly entrepreneursService: EntrepreneursService) { }
