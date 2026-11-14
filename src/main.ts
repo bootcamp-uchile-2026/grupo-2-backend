@@ -22,8 +22,8 @@ async function bootstrap() {
     new ConflictFilter(),
   );
   const config = new DocumentBuilder()
-    .setTitle('EcoTienda API')
-    .setDescription('Backend API for EcoTienda')
+    .setTitle('BuenOrigen API')
+    .setDescription('Backend API for BuenOrigen')
     .setVersion('3.0')
     .build();
 
