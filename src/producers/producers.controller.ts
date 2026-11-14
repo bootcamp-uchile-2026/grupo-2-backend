@@ -1,0 +1,75 @@
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ProducersService } from './producers.service';
+import { ProducerDetailDto } from '../dto/producer-detail.dto';
+import { PaginationDto } from '../dto/pagination.dto';
+
+@ApiTags('Producers')
+@Controller('producers')
+export class ProducersController {
+
+  constructor(
+    private readonly producersService: ProducersService) { }
+
+  @Get()
+  @ApiOperation({
+    summary: 'Obtener productores activos paginados',
+  })
+  @ApiOkResponse({
+    description: 'Listado paginado de productores',
+    schema: {
+      example: {
+        content: [
+          {
+            id: 1,
+            businessName: 'EcoRaíz',
+            description:
+              'Emprendimiento de productos sustentables.',
+            logoFileId: null,
+            location: 'Santiago, Chile',
+          },
+        ],
+        page: 0,
+        size: 20,
+        totalElements: 8,
+        totalPages: 1,
+        sortBy: 'id',
+        sortDirection: 'ASC',
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Parámetros de paginación inválidos',
+  })
+  findAll(
+    @Query() pagination: PaginationDto,
+  ) {
+    return this.producersService.findAll(pagination);
+  }
+
+  @Get(':producerId')
+  @ApiOperation({
+    summary: 'Obtener perfil público de un productor',
+  })
+  @ApiParam({
+    name: 'producerId',
+    type: Number,
+    example: 1,
+  })
+  @ApiOkResponse({
+    type: ProducerDetailDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Identificador inválido',
+  })
+  @ApiNotFoundResponse({
+    description: 'Productor no encontrado',
+  })
+  findOne(
+    @Param('producerId', ParseIntPipe)
+    producerId: number,
+  ): Promise<ProducerDetailDto> {
+
+    return this.producersService.findOne(producerId);
+  }
+}

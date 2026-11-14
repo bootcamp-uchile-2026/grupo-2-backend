@@ -1,7 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
-import { EntrepreneursModule } from './entrepreneurs/entrepreneurs.module';
+import { ProducersModule } from './producers/producers.module';
 import { CustomersModule } from './customers/customers.module';
 import { ArticlesModule } from './articles/articles.module';
 import { FavoritesModule } from './favorites/favorites.module';
@@ -11,7 +11,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { FileEntity } from './models/file.entity';
 import { UserEntity } from './models/user.entity';
 import { CustomerEntity } from './models/customer.entity';
-import { ProducerEntity } from './models/producer.entity';
 import { ProductEntity } from './models/product.entity';
 import { ProductImageEntity } from './models/product-image.entity';
 import { SustainabilityAttributeEntity } from './models/sustainability-attribute.entity';
@@ -55,7 +54,6 @@ import { ArticleEntity } from './models/article.entity';
       FileEntity,
       UserEntity,
       CustomerEntity,
-      ProducerEntity,
       ProductEntity,
       ProductImageEntity,
       SustainabilityAttributeEntity,
@@ -83,7 +81,7 @@ import { ArticleEntity } from './models/article.entity';
     FavoritesModule,
     CategoriesModule,
     ProductsModule,
-    EntrepreneursModule,
+    ProducersModule,
     CustomersModule,
     ArticlesModule,
   ],
