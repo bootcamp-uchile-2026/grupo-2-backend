@@ -12,7 +12,6 @@ import { FileEntity } from './models/file.entity';
 import { UserEntity } from './models/user.entity';
 import { CustomerEntity } from './models/customer.entity';
 import { ProducerEntity } from './models/producer.entity';
-import { CategoryEntity } from './models/category.entity';
 import { ProductEntity } from './models/product.entity';
 import { ProductImageEntity } from './models/product-image.entity';
 import { SustainabilityAttributeEntity } from './models/sustainability-attribute.entity';
@@ -57,7 +56,6 @@ import { ArticleEntity } from './models/article.entity';
       UserEntity,
       CustomerEntity,
       ProducerEntity,
-      CategoryEntity,
       ProductEntity,
       ProductImageEntity,
       SustainabilityAttributeEntity,
