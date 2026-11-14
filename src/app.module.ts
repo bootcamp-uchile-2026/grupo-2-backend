@@ -35,6 +35,7 @@ import { ReturnItemEntity } from './models/return-item.entity';
 import { ReviewEntity } from './models/review.entity';
 import { FavoriteEntity } from './models/favorite.entity';
 import { GreenPointMovementEntity } from './models/green-point-movement.entity';
+import { ArticleEntity } from './models/article.entity';
 
 
 @Module({
@@ -79,6 +80,7 @@ import { GreenPointMovementEntity } from './models/green-point-movement.entity';
       ReviewEntity,
       FavoriteEntity,
       GreenPointMovementEntity,
+      ArticleEntity,
     ]),
     FavoritesModule,
     CategoriesModule,
