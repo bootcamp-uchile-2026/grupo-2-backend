@@ -28,6 +28,10 @@ import { CraftDetailEntity } from './models/craft-detail.entity';
 import { CartEntity } from './models/cart.entity';
 import { CartItemEntity } from './models/cart-item.entity';
 import { AddressEntity } from './models/address.entity';
+import { OrderEntity } from './models/order.entity';
+import { OrderItemEntity } from './models/order-item.entity';
+import { ReturnEntity } from './models/return.entity';
+import { ReturnItemEntity } from './models/return-item.entity';
 
 
 @Module({
@@ -65,6 +69,10 @@ import { AddressEntity } from './models/address.entity';
       CartEntity,
       CartItemEntity,
       AddressEntity,
+      OrderEntity,
+      OrderItemEntity,
+      ReturnEntity,
+      ReturnItemEntity,
     ]),
     FavoritesModule,
     CategoriesModule,
