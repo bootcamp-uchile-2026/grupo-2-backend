@@ -1,11 +1,11 @@
-import { Controller, Get, Param, ParseIntPipe} from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiOkResponse, ApiParam, ApiBadRequestResponse, ApiNotFoundResponse } from '@nestjs/swagger';
-import { ArticlesService } from './articulos.service';
+import { ArticlesService } from './articles.service';
 import { ArticleSummaryDto } from '../dto/article-summary.dto';
 import { ArticleDetailDto } from '../dto/article-detail.dto';
 
 @ApiTags('Artículos')
-@Controller('articulos')
+@Controller('articles')
 export class ArticlesController {
 
     constructor(private readonly articlesService: ArticlesService) { }
