@@ -5,7 +5,7 @@ import { SubcategoryDto } from '../dto/subcategory.dto';
 import { SubcategoryProductDto } from '../dto/subcategory-product.dto';
 import { PopularSubcategoryProductDto } from '../dto/popular-subcategory-product.dto';
 
-@ApiTags('Subcategorías')
+@ApiTags('Subcategories')
 @Controller()
 export class SubcategoriesController {
 

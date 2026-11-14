@@ -10,7 +10,7 @@ import { ProductGreenFootprintDto } from '../dto/product-green-footprint.dto';
 import { ProductReviewDto } from '../dto/product-review.dto';
 import { RelatedProductDto } from '../dto/related-product.dto';
 
-@ApiTags('Productos')
+@ApiTags('Products')
 @Controller('products')
 export class ProductsController {
 

@@ -4,7 +4,7 @@ import { ArticlesService } from './articles.service';
 import { ArticleSummaryDto } from '../dto/article-summary.dto';
 import { ArticleDetailDto } from '../dto/article-detail.dto';
 
-@ApiTags('Artículos')
+@ApiTags('Articles')
 @Controller('articles')
 export class ArticlesController {
 

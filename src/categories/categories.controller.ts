@@ -3,7 +3,7 @@ import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation
 import { CategoriesService } from './categories.service';
 import { CategoryDto } from '../dto/category.dto';
 
-@ApiTags('Categorías')
+@ApiTags('Categories')
 @Controller('categories')
 export class CategoriesController {
 

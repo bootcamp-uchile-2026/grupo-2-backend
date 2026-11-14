@@ -5,7 +5,7 @@ import { EntrepreneurSummaryDto } from '../dto/entrepreneur-summary.dto';
 import { EntrepreneurDetailDto } from '../dto/entrepreneur-detail.dto';
 import { ProductSummaryDto } from '../dto/product-summary.dto';
 
-@ApiTags('Emprendedores')
+@ApiTags('Entrepreneurs')
 @Controller('entrepreneurs')
 export class EntrepreneursController {
 
