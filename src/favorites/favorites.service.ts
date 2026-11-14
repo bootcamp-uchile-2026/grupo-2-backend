@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { FavoriteAlreadyExistsError } from '../common/errors/favorite-already-exists.error';
 import { FavoriteNotFoundError } from '../common/errors/favorite-not-found.error';
 import { CustomersService } from '../customers/customers.service';
-import { ProductsService } from '../productos/productos.service';
+import { ProductsService } from '../products/products.service';
 import { FavoriteProductDto } from '../dto/favorite-product.dto';
 import { Favorite } from '../models/favorite.model';
 
@@ -11,9 +11,9 @@ export class FavoritesService {
   constructor(
     private readonly customersService: CustomersService,
     private readonly productsService: ProductsService,
-  ) {}
+  ) { }
 
-    private readonly favorites: Favorite[] = [];
+  private readonly favorites: Favorite[] = [];
 
 
   findAll(customerId: number): FavoriteProductDto[] {

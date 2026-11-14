@@ -3,13 +3,13 @@ import { Entrepreneur } from '../models/entrepreneur.model';
 import { EntrepreneurSummaryDto } from '../dto/entrepreneur-summary.dto';
 import { EntrepreneurDetailDto } from '../dto/entrepreneur-detail.dto';
 import { ProductSummaryDto } from '../dto/product-summary.dto';
-import { ProductsService } from '../productos/productos.service';
+import { ProductsService } from '../products/products.service';
 import { EntrepreneurNotFoundError } from '../common/errors/entrepreneur-not-found.error';
 
 @Injectable()
 export class EntrepreneursService {
 
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(private readonly productsService: ProductsService) { }
 
   private readonly entrepreneurs: Entrepreneur[] = [
     {
@@ -87,30 +87,30 @@ export class EntrepreneursService {
   ];
 
   findAll(quantityParam?: string): EntrepreneurSummaryDto[] {
-  let quantity: number | undefined;
+    let quantity: number | undefined;
 
-  if (quantityParam !== undefined) {
-    quantity = Number(quantityParam);
+    if (quantityParam !== undefined) {
+      quantity = Number(quantityParam);
 
-    if (!Number.isInteger(quantity) || quantity <= 0) {
-      throw new BadRequestException(
-        'La cantidad debe ser un número entero positivo.',
-      );
+      if (!Number.isInteger(quantity) || quantity <= 0) {
+        throw new BadRequestException(
+          'La cantidad debe ser un número entero positivo.',
+        );
+      }
     }
+
+    const selectedEntrepreneurs =
+      quantity === undefined
+        ? this.entrepreneurs
+        : this.entrepreneurs.slice(0, quantity);
+
+    return selectedEntrepreneurs.map((entrepreneur) => ({
+      id: entrepreneur.id,
+      name: entrepreneur.name,
+      description: entrepreneur.description,
+      imageUrl: entrepreneur.imageUrl,
+    }));
   }
-
-  const selectedEntrepreneurs =
-    quantity === undefined
-      ? this.entrepreneurs
-      : this.entrepreneurs.slice(0, quantity);
-
-  return selectedEntrepreneurs.map((entrepreneur) => ({
-    id: entrepreneur.id,
-    name: entrepreneur.name,
-    description: entrepreneur.description,
-    imageUrl: entrepreneur.imageUrl,
-  }));
-}
 
   findOne(entrepreneurId: number): EntrepreneurDetailDto {
     const entrepreneur = this.entrepreneurs.find(

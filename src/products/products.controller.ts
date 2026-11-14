@@ -1,6 +1,6 @@
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { ProductsService } from './productos.service';
+import { ProductsService } from './products.service';
 import { ProductSearchDto } from '../dto/product-search.dto';
 import { ProductOfferDto } from '../dto/product-offer.dto';
 import { BestSellingProductDto } from '../dto/best-selling-product.dto';
@@ -11,7 +11,7 @@ import { ProductReviewDto } from '../dto/product-review.dto';
 import { RelatedProductDto } from '../dto/related-product.dto';
 
 @ApiTags('Productos')
-@Controller('productos')
+@Controller('products')
 export class ProductsController {
 
   constructor(private readonly productsService: ProductsService) { }
@@ -23,7 +23,7 @@ export class ProductsController {
       'Busca productos del catálogo mediante un término de búsqueda obligatorio. Devuelve los productos coincidentes o un arreglo vacío si no encuentra resultados.',
   })
   @ApiQuery({
-    name: 'buscar',
+    name: 'search',
     type: String,
     required: true,
     description: 'Texto utilizado para buscar productos',
@@ -37,11 +37,11 @@ export class ProductsController {
   @ApiBadRequestResponse({
     description: 'El término de búsqueda es obligatorio.',
   })
-  searchProducts(@Query('buscar') search: string): ProductSearchDto[] {
+  searchProducts(@Query('search') search: string): ProductSearchDto[] {
     return this.productsService.searchProducts(search);
   }
 
-  @Get('ofertas')
+  @Get('offers')
   @ApiOperation({
     summary: 'Obtener productos en oferta',
     description:
@@ -56,14 +56,14 @@ export class ProductsController {
     return this.productsService.findProductsOnSale();
   }
 
-  @Get('mas-vendidos')
+  @Get('best-sellers')
   @ApiOperation({
     summary: 'Obtener productos más vendidos',
     description:
       'Obtiene una cantidad determinada de productos ordenados según su nivel de ventas.',
   })
   @ApiQuery({
-    name: 'cantidad',
+    name: 'quantity',
     type: Number,
     required: true,
     example: 5,
@@ -79,11 +79,11 @@ export class ProductsController {
     description:
       'El parámetro cantidad debe ser un número entero positivo.',
   })
-  findBestSellingProducts(@Query('cantidad', ParseIntPipe) quantity: number): BestSellingProductDto[] {
-    return this.productsService.findBestSellingProducts(quantity);
-  }
+  findBestSellingProducts(@Query('quantity', ParseIntPipe) quantity: number): BestSellingProductDto[] {
+  return this.productsService.findBestSellingProducts(quantity);
+}
 
-  @Get('nuevos')
+  @Get('new')
   @ApiOperation({
     summary: 'Obtener productos nuevos',
     description:
@@ -98,14 +98,14 @@ export class ProductsController {
     return this.productsService.findNewProducts();
   }
 
-  @Get(':productoId')
+  @Get(':productId')
   @ApiOperation({
     summary: 'Obtener producto por ID',
     description:
       'Obtiene el detalle de un producto a partir de su identificador.',
   })
   @ApiParam({
-    name: 'productoId',
+    name: 'productId',
     type: Number,
     example: 1,
     description: 'Identificador único del producto.',
@@ -121,18 +121,18 @@ export class ProductsController {
     description: 'Producto no encontrado.',
   })
   findOne(
-    @Param('productoId', ParseIntPipe) productId: number): ProductDetailDto {
+    @Param('productId', ParseIntPipe) productId: number): ProductDetailDto {
     return this.productsService.findOne(productId);
   }
 
-  @Get(':productoId/huella-verde')
+  @Get(':productId/green-footprint')
   @ApiOperation({
     summary: 'Obtener Huella Verde de un producto',
     description:
       'Obtiene la información de sustentabilidad asociada a un producto.',
   })
   @ApiParam({
-    name: 'productoId',
+    name: 'productId',
     type: Number,
     example: 1,
     description: 'Identificador único del producto.',
@@ -149,20 +149,20 @@ export class ProductsController {
     description: 'Producto no encontrado.',
   })
   findGreenFootprint(
-    @Param('productoId', ParseIntPipe) productId: number): ProductGreenFootprintDto {
+    @Param('productId', ParseIntPipe) productId: number): ProductGreenFootprintDto {
     return this.productsService.findGreenFootprint(
       productId,
     );
   }
 
-  @Get(':productoId/valoraciones')
+  @Get(':productId/reviews')
   @ApiOperation({
     summary: 'Obtener valoraciones de un producto',
     description:
       'Obtiene las valoraciones públicas asociadas a un producto.',
   })
   @ApiParam({
-    name: 'productoId',
+    name: 'productId',
     type: Number,
     example: 1,
     description: 'Identificador único del producto.',
@@ -179,29 +179,29 @@ export class ProductsController {
     description: 'Producto no encontrado.',
   })
   findReviews(
-    @Param('productoId', ParseIntPipe) productId: number): ProductReviewDto[] {
+    @Param('productId', ParseIntPipe) productId: number): ProductReviewDto[] {
     return this.productsService.findReviews(productId);
   }
 
-  @Get(':productoId/relacionados')
+  @Get(':productId/related')
   @ApiOperation({
     summary: 'Obtener productos relacionados',
     description:
       'Obtiene productos de la misma subcategoría relacionados con el producto consultado.',
   })
   @ApiParam({
-    name: 'productoId',
+    name: 'productId',
     type: Number,
     example: 1,
     description: 'Identificador único del producto.',
   })
   @ApiQuery({
-    name: 'cantidad',
+    name: 'quantity',
     type: Number,
     required: true,
-    example: 4,
+    example: 5,
     description:
-      'Cantidad máxima de productos relacionados que se desea obtener. Debe ser un número entero positivo.',
+      'Cantidad de productos más vendidos que se desea obtener. Debe ser un número entero positivo.',
   })
   @ApiOkResponse({
     description:
@@ -217,8 +217,8 @@ export class ProductsController {
     description: 'Producto no encontrado.',
   })
   findRelatedProducts(
-    @Param('productoId', ParseIntPipe) productId: number,
-    @Query('cantidad', ParseIntPipe) quantity: number): RelatedProductDto[] {
+    @Param('productId', ParseIntPipe) productId: number,
+    @Query('quantity', ParseIntPipe) quantity: number): RelatedProductDto[] {
     return this.productsService.findRelatedProducts(productId, quantity);
   }
 }
