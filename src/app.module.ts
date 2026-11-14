@@ -32,6 +32,9 @@ import { OrderEntity } from './models/order.entity';
 import { OrderItemEntity } from './models/order-item.entity';
 import { ReturnEntity } from './models/return.entity';
 import { ReturnItemEntity } from './models/return-item.entity';
+import { ReviewEntity } from './models/review.entity';
+import { FavoriteEntity } from './models/favorite.entity';
+import { GreenPointMovementEntity } from './models/green-point-movement.entity';
 
 
 @Module({
@@ -73,6 +76,9 @@ import { ReturnItemEntity } from './models/return-item.entity';
       OrderItemEntity,
       ReturnEntity,
       ReturnItemEntity,
+      ReviewEntity,
+      FavoriteEntity,
+      GreenPointMovementEntity,
     ]),
     FavoritesModule,
     CategoriesModule,
