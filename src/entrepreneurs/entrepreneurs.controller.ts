@@ -6,7 +6,7 @@ import { EntrepreneurDetailDto } from '../dto/entrepreneur-detail.dto';
 import { ProductSummaryDto } from '../dto/product-summary.dto';
 
 @ApiTags('Emprendedores')
-@Controller('entrepeneurs')
+@Controller('entrepreneurs')
 export class EntrepreneursController {
 
   constructor(private readonly entrepreneursService: EntrepreneursService) { }
@@ -18,7 +18,7 @@ export class EntrepreneursController {
       'Obtiene los emprendedores registrados en BuenOrigen. Opcionalmente permite limitar la cantidad de resultados.',
   })
   @ApiQuery({
-    name: 'cantidad',
+    name: 'quantity',
     required: false,
     type: Number,
     example: 4,
@@ -34,18 +34,18 @@ export class EntrepreneursController {
     description:
       'El parámetro cantidad debe ser un número entero positivo.',
   })
-  findAll(@Query('cantidad') quantity?: string): EntrepreneurSummaryDto[] {
+  findAll(@Query('quantity') quantity?: string): EntrepreneurSummaryDto[] {
     return this.entrepreneursService.findAll(quantity);
   }
 
-  @Get(':emprendedorId')
+  @Get(':entrepreneurId')
   @ApiOperation({
     summary: 'Obtener perfil de un emprendedor',
     description:
       'Obtiene la información pública detallada de un emprendedor específico.',
   })
   @ApiParam({
-    name: 'emprendedorId',
+    name: 'entrepreneurId',
     type: Number,
     example: 1,
     description: 'Identificador único del emprendedor',
@@ -60,27 +60,27 @@ export class EntrepreneursController {
   @ApiBadRequestResponse({
     description: 'El identificador debe ser un número entero.',
   })
-  findOne(@Param('emprendedorId', ParseIntPipe) entrepreneurId: number): EntrepreneurDetailDto {
+  findOne(@Param('entrepreneurId', ParseIntPipe) entrepreneurId: number): EntrepreneurDetailDto {
     return this.entrepreneursService.findOne(
       entrepreneurId,
     );
   }
 
-  @Get(':emprendedorId/productos')
+  @Get(':entrepreneurId/products')
   @ApiOperation({
     summary: 'Obtener productos de un emprendedor',
     description:
       'Obtiene los productos asociados a un emprendedor específico.',
   })
   @ApiParam({
-    name: 'emprendedorId',
+    name: 'entrepreneurId',
     type: Number,
     example: 1,
     description: 'Identificador único del emprendedor',
   })
   @ApiOkResponse({
     description:
-      'Productos del emprendedor obtenidos correctamente.',
+      'productos del emprendedor obtenidos correctamente.',
     type: ProductSummaryDto,
     isArray: true,
   })
@@ -90,7 +90,7 @@ export class EntrepreneursController {
   @ApiBadRequestResponse({
     description: 'El identificador debe ser un número entero.',
   })
-  findProductsByEntrepreneur(@Param('emprendedorId', ParseIntPipe) entrepreneurId: number): ProductSummaryDto[] {
+  findProductsByEntrepreneur(@Param('entrepreneurId', ParseIntPipe) entrepreneurId: number): ProductSummaryDto[] {
     return this.entrepreneursService.findProductsByEntrepreneur(
       entrepreneurId,
     );
