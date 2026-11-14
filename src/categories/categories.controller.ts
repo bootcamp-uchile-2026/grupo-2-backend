@@ -4,7 +4,7 @@ import { CategoriesService } from './categories.service';
 import { CategoryDto } from '../dto/category.dto';
 
 @ApiTags('Categorías')
-@Controller('categorias')
+@Controller('categories')
 export class CategoriesController {
 
     constructor(private readonly categoriesService: CategoriesService) { }
@@ -16,10 +16,10 @@ export class CategoriesController {
         return this.categoriesService.findAll();
     }
 
-    @Get(':categoriaId')
+    @Get(':categoryId')
     @ApiOperation({ summary: 'Obtener detalle de una categoría' })
     @ApiParam({
-        name: 'categoriaId',
+        name: 'categoryId',
         type: Number,
         example: 1,
     })
@@ -27,7 +27,7 @@ export class CategoriesController {
     @ApiBadRequestResponse({ description: 'Identificador inválido' })
     @ApiNotFoundResponse({ description: 'Categoría no encontrada' })
     findOne(
-        @Param('categoriaId', ParseIntPipe) categoryId: number,
+        @Param('categoryId', ParseIntPipe) categoryId: number,
     ): CategoryDto {
         return this.categoriesService.findOne(categoryId);
     }
