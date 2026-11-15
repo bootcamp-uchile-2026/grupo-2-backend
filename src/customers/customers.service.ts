@@ -163,30 +163,19 @@ export class CustomersService {
   }
 
 
-async validateOwnership(
-  customerId: number,
-  userId: number,
-): Promise<void> {
-  const customer = await this.findCustomer(customerId);
-
-  if (customer.userId !== userId) {
-    throw new ForbiddenException(
-      'No tienes permisos para acceder a este perfil.',
-    );
-  }
-}
-
-
-  async validateCustomer(customerId: number): Promise<void> {
-    await this.findCustomer(customerId);
-  }
-
-  async validateActiveCustomer(customerId: number): Promise<void> {
+  async validateOwnership(customerId: number, userId: number,requireActive: boolean = false): Promise<void> {
     const customer = await this.findCustomer(customerId);
 
-    if (!customer.user.isActive) {
+    if (customer.userId !== userId) {
       throw new ForbiddenException(
-        'El cliente se encuentra inactivo.');
+        'No tienes permisos para acceder a este perfil.',
+      );
+    }
+
+    if (requireActive && !customer.user.isActive) {
+      throw new ForbiddenException(
+        'El cliente se encuentra inactivo.',
+      );
     }
   }
 

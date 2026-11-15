@@ -1,4 +1,4 @@
-import {BadRequestException, ConflictException, Injectable} from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { CartEntity } from '../models/cart.entity';
@@ -30,22 +30,25 @@ export class CartsService {
 
         private readonly customersService: CustomersService,
         private readonly productsService: ProductsService,
-        private readonly dataSource: DataSource) {}
+        private readonly dataSource: DataSource) { }
 
-    async findOne(customerId: number): Promise<CartResponseDto> {
-        await this.customersService.validateActiveCustomer(customerId);
+    async findOne(customerId: number, userId: number): Promise<CartResponseDto> {
+
+        await this.customersService.validateOwnership(customerId, userId, true);
 
         const cart = await this.cartRepository.findOne({
-            where: { customerId }});
+            where: { customerId }
+        });
 
         if (!cart) {
             throw new CartNotFoundError();
         }
+
         return this.buildResponse(cart);
     }
 
-    async add(customerId: number, dto: AddCartItemDto): Promise<CartResponseDto> {
-        await this.customersService.validateActiveCustomer(customerId);
+    async add(customerId: number, dto: AddCartItemDto, userId: number): Promise<CartResponseDto> {
+        await this.customersService.validateOwnership(customerId, userId, true);
 
         await this.dataSource.transaction(async manager => {
             const cart = await this.findCartForUpdate(
@@ -58,7 +61,8 @@ export class CartsService {
             const item = await manager.findOne(CartItemEntity, {
                 where: {
                     cartId: cart.id,
-                    productId: dto.productId},
+                    productId: dto.productId
+                },
             });
 
             const quantity = (item?.quantity ?? 0) + dto.quantity;
@@ -75,7 +79,8 @@ export class CartsService {
                 const newItem = manager.create(CartItemEntity, {
                     cartId: cart.id,
                     productId: dto.productId,
-                    quantity});
+                    quantity
+                });
                 await manager.save(newItem);
             }
 
@@ -83,15 +88,13 @@ export class CartsService {
 
             await manager.save(cart);
         });
-
-        return this.findOne(customerId);
+        return this.findOne(customerId, userId);
     }
 
-    async update(customerId: number, productId: number,dto: UpdateCartItemDto): Promise<CartResponseDto> {
-
+    async update(customerId: number, productId: number, dto: UpdateCartItemDto, userId: number): Promise<CartResponseDto> {
         this.validateProductId(productId);
 
-        await this.customersService.validateActiveCustomer(customerId);
+        await this.customersService.validateOwnership(customerId, userId, true);
 
         await this.dataSource.transaction(async manager => {
 
@@ -110,7 +113,7 @@ export class CartsService {
                 throw new CartItemNotFoundError();
             }
 
-            const product =await this.productsService.findPublicProduct(productId);
+            const product = await this.productsService.findPublicProduct(productId);
 
             this.validateQuantity(product, dto.quantity);
 
@@ -123,16 +126,13 @@ export class CartsService {
 
             await manager.save(cart);
         });
-
-        return this.findOne(customerId);
+        return this.findOne(customerId, userId);
     }
 
-    async remove(customerId: number, productId: number): Promise<void> {
-
+    async remove(customerId: number, productId: number, userId: number): Promise<void> {
         this.validateProductId(productId);
 
-        await this.customersService.validateActiveCustomer(customerId);
-
+        await this.customersService.validateOwnership(customerId, userId, true);
         await this.dataSource.transaction(async manager => {
 
             const cart = await this.findCartForUpdate(
@@ -155,8 +155,8 @@ export class CartsService {
         });
     }
 
-    async clear(customerId: number): Promise<void> {
-        await this.customersService.validateActiveCustomer(customerId);
+    async clear(customerId: number, userId: number): Promise<void> {
+        await this.customersService.validateOwnership(customerId, userId, true);
 
         await this.dataSource.transaction(async manager => {
 
@@ -170,7 +170,8 @@ export class CartsService {
 
             cart.updatedAt = new Date();
 
-            await manager.save(cart)});
+            await manager.save(cart)
+        });
     }
 
     private async findCartForUpdate(customerId: number, manager: EntityManager): Promise<CartEntity> {
@@ -178,7 +179,8 @@ export class CartsService {
         const cart = await manager.findOne(CartEntity, {
             where: { customerId },
             lock: {
-                mode: 'pessimistic_write' },
+                mode: 'pessimistic_write'
+            },
         });
 
         if (!cart) {
@@ -216,7 +218,8 @@ export class CartsService {
         const images = await this.productImageRepository.find({
             where: {
                 productId: In(productIds),
-                isPrimary: true},
+                isPrimary: true
+            },
         });
 
         const imageMap = new Map(
@@ -251,16 +254,16 @@ export class CartsService {
         return CartMapper.toResponseDto(cart, responseItems);
     }
 
-    private validateQuantity(product: ProductEntity,quantity: number ): void {
+    private validateQuantity(product: ProductEntity, quantity: number): void {
 
-        if ( !Number.isInteger(quantity) ||  quantity < 1 ||quantity > 3 ) {
+        if (!Number.isInteger(quantity) || quantity < 1 || quantity > 3) {
             throw new BadRequestException(
-                'La cantidad debe ser un número entero entre 1 y 3.' );
+                'La cantidad debe ser un número entero entre 1 y 3.');
         }
 
         if (quantity > product.stock) {
             throw new ConflictException(
-                'La cantidad solicitada supera el stock disponible.' );
+                'La cantidad solicitada supera el stock disponible.');
         }
     }
 

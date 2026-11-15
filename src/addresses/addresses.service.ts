@@ -19,10 +19,10 @@ export class AddressesService {
         private readonly addressRepository: Repository<AddressEntity>,
 
         private readonly customersService: CustomersService,
-        private readonly dataSource: DataSource) {}
+        private readonly dataSource: DataSource) { }
 
-    async findAll(customerId: number): Promise<AddressResponseDto[]> {
-        await this.customersService.validateActiveCustomer(customerId);
+    async findAll(customerId: number, userId: number): Promise<AddressResponseDto[]> {
+        await this.customersService.validateOwnership(customerId, userId, true);
 
         const addresses = await this.addressRepository.find({
             where: {
@@ -40,11 +40,9 @@ export class AddressesService {
         );
     }
 
-    async findOne(customerId: number, addressId: number): Promise<AddressResponseDto> {
-
+    async findOne(customerId: number, addressId: number, userId: number): Promise<AddressResponseDto> {
         this.validateAddressId(addressId);
-
-        await this.customersService.validateActiveCustomer(customerId);
+        await this.customersService.validateOwnership(customerId, userId, true);
 
         const address = await this.addressRepository.findOne({
             where: {
@@ -61,9 +59,8 @@ export class AddressesService {
         return AddressMapper.toResponseDto(address);
     }
 
-    async create(customerId: number,dto: CreateAddressDto): Promise<AddressResponseDto> {
-
-        await this.customersService.validateActiveCustomer(customerId);
+    async create(customerId: number, dto: CreateAddressDto, userId: number): Promise<AddressResponseDto> {
+        await this.customersService.validateOwnership(customerId, userId, true);
 
         return this.dataSource.transaction(async manager => {
 
@@ -105,11 +102,9 @@ export class AddressesService {
         });
     }
 
-    async update(customerId: number, addressId: number, dto: UpdateAddressDto): Promise<AddressResponseDto> {
-
+    async update(customerId: number, addressId: number, dto: UpdateAddressDto, userId: number): Promise<AddressResponseDto> {
         this.validateAddressId(addressId);
-
-        await this.customersService.validateActiveCustomer(customerId);
+        await this.customersService.validateOwnership(customerId, userId, true);
 
         return this.dataSource.transaction(async manager => {
 
@@ -170,11 +165,9 @@ export class AddressesService {
         });
     }
 
-    async setDefault(customerId: number, addressId: number): Promise<AddressResponseDto> {
-
+    async setDefault(customerId: number, addressId: number, userId: number): Promise<AddressResponseDto> {
         this.validateAddressId(addressId);
-
-        await this.customersService.validateActiveCustomer(customerId);
+        await this.customersService.validateOwnership(customerId, userId, true);
 
         return this.dataSource.transaction(async manager => {
 
@@ -201,11 +194,9 @@ export class AddressesService {
         });
     }
 
-    async remove(customerId: number,addressId: number): Promise<void> {
-
+    async remove(customerId: number, addressId: number, userId: number): Promise<void> {
         this.validateAddressId(addressId);
-
-        await this.customersService.validateActiveCustomer(customerId);
+        await this.customersService.validateOwnership(customerId, userId, true);
 
         await this.dataSource.transaction(async manager => {
 
@@ -248,7 +239,7 @@ export class AddressesService {
         });
     }
 
-    private async findActiveAddress(customerId: number, addressId: number,manager: EntityManager): Promise<AddressEntity> {
+    private async findActiveAddress(customerId: number, addressId: number, manager: EntityManager): Promise<AddressEntity> {
         const address = await manager.findOne(AddressEntity, {
             where: {
                 id: addressId,
@@ -270,10 +261,12 @@ export class AddressesService {
             {
                 customerId,
                 isDefault: true,
-                isActive: true},
+                isActive: true
+            },
             {
                 isDefault: false,
-                updatedAt: new Date()},
+                updatedAt: new Date()
+            },
         );
     }
 

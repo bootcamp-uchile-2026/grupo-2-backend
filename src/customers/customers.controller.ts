@@ -2,18 +2,19 @@ import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuar
 import {
     ApiTags, ApiOperation, ApiBody, ApiCreatedResponse, ApiOkResponse, ApiBadRequestResponse, ApiConflictResponse, ApiForbiddenResponse, ApiNotFoundResponse,
     ApiParam,
-    ApiBearerAuth
+    ApiBearerAuth,
+    ApiUnauthorizedResponse
 } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
 import { UpdateCustomerDto } from '../dto/update-customer.dto';
 import { CustomerResponseDto } from '../dto/customer-response.dto';
 import { PaginationDto } from '../dto/pagination.dto';
-import { UserRole } from 'src/models/user.entity';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { RolesGuard } from 'src/common/guards/roles/roles.guard';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth/jwt-auth.guard';
+import { UserRole } from '../models/user.entity';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles/roles.guard';
+import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
 
 @ApiTags('Customers')
 @Controller('customers')
@@ -58,6 +59,9 @@ export class CustomersController {
     @ApiForbiddenResponse({
         description: 'Acceso denegado.',
     })
+    @ApiUnauthorizedResponse({
+        description: 'Token inválido o inexistente.',
+    })
     findAll(@Query() pagination: PaginationDto) {
         return this.customersService.findAll(pagination)
     }
@@ -86,6 +90,9 @@ export class CustomersController {
     })
     @ApiForbiddenResponse({
         description: 'No tienes permisos para consultar este perfil.',
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Token inválido o inexistente.',
     })
     async findOne(
         @Param('id', ParseIntPipe) id: number,
@@ -127,6 +134,9 @@ export class CustomersController {
     })
     @ApiForbiddenResponse({
         description: 'No tienes permisos para actualizar este perfil.',
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Token inválido o inexistente.',
     })
     async update(
         @Param('id', ParseIntPipe) id: number,
