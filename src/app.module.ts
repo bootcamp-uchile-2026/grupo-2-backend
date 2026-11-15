@@ -9,16 +9,12 @@ import { RequestTracingMiddleware } from './common/middleware/request-tracing.mi
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { FileEntity } from './models/file.entity';
-import { UserEntity } from './models/user.entity';
-import { CustomerEntity } from './models/customer.entity';
 import { SustainabilityAttributeEntity } from './models/sustainability-attribute.entity';
-import { CartEntity } from './models/cart.entity';
 import { CartItemEntity } from './models/cart-item.entity';
 import { AddressEntity } from './models/address.entity';
 import { OrderEntity } from './models/order.entity';
 import { ReturnItemEntity } from './models/return-item.entity';
 import { FavoriteEntity } from './models/favorite.entity';
-import { GreenPointMovementEntity } from './models/green-point-movement.entity';
 import { ReturnEntity } from './models/return.entity';
 
 
@@ -38,18 +34,13 @@ import { ReturnEntity } from './models/return.entity';
       synchronize: false,
     }), TypeOrmModule.forFeature([
       FileEntity,
-      UserEntity,
-      CustomerEntity,
       SustainabilityAttributeEntity,
-      CartEntity,
       CartItemEntity,
       AddressEntity,
       OrderEntity,
       ReturnItemEntity,
       FavoriteEntity,
-      GreenPointMovementEntity,
-      ReturnEntity
-    ]),
+      ReturnEntity]),
     FavoritesModule,
     CategoriesModule,
     ProductsModule,

@@ -1,85 +1,356 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, QueryFailedError, Repository } from 'typeorm';
+import * as argon2 from 'argon2';
+import { UserEntity, UserRole } from '../models/user.entity';
+import { CustomerEntity } from '../models/customer.entity';
+import { CartEntity } from '../models/cart.entity';
+import { GreenPointMovementEntity, GreenPointMovementType } from '../models/green-point-movement.entity';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
 import { UpdateCustomerDto } from '../dto/update-customer.dto';
 import { CustomerResponseDto } from '../dto/customer-response.dto';
-import { Customer } from '../models/customer.model';
+import { PaginationDto } from '../dto/pagination.dto';
 import { CustomerNotFoundError } from '../common/errors/customer-not-found.error';
-import { DuplicateEmailError } from 'src/common/errors/duplicate-email.error';
+import { DuplicateEmailError } from '../common/errors/duplicate-email.error';
+import { CustomerMapper } from './customer.mapper';
 
 @Injectable()
 export class CustomersService {
 
-  private readonly customers: Customer[] = [];
-  private nextId = 1;
+  constructor(
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
 
-  private toResponse(customer: Customer): CustomerResponseDto {
+    @InjectRepository(CustomerEntity)
+    private readonly customerRepository: Repository<CustomerEntity>,
+
+    @InjectRepository(GreenPointMovementEntity)
+    private readonly greenPointRepository:
+      Repository<GreenPointMovementEntity>,
+
+    private readonly dataSource: DataSource) { }
+
+  async create(dto: CreateCustomerDto): Promise<CustomerResponseDto> {
+    const email = dto.email.trim().toLowerCase();
+    const firstName = dto.firstName.trim();
+
+    if (!firstName) {
+      throw new BadRequestException(
+        'El nombre del cliente es obligatorio.',
+      );
+    }
+
+    if (dto.privacyAccepted !== true) {
+      throw new BadRequestException(
+        'Debe aceptar la política de privacidad.',
+      );
+    }
+
+    await this.validateEmail(email);
+
+    const passwordHash = await argon2.hash(
+      dto.password,
+      { type: argon2.argon2id },
+    );
+
+    try {
+      return await this.dataSource.transaction(
+        async (manager) => {
+
+          const user = manager.create(
+            UserEntity,
+            {
+              email,
+              passwordHash,
+              firstName,
+              lastName: dto.lastName?.trim() || null,
+              phone: dto.phone?.trim() || null,
+              profileFileId: null,
+              role: UserRole.CUSTOMER,
+              isActive: true,
+              privacyAcceptedAt: new Date(),
+            },
+          );
+
+          const savedUser = await manager.save(user);
+
+          const customer = manager.create(
+            CustomerEntity,
+            {
+              userId: savedUser.id,
+            },
+          );
+
+          const savedCustomer =
+            await manager.save(customer);
+
+          const cart = manager.create(
+            CartEntity,
+            {
+              customerId: savedCustomer.id,
+            },
+          );
+
+          await manager.save(cart);
+
+          const welcomeMovement = manager.create(
+            GreenPointMovementEntity,
+            {
+              customerId: savedCustomer.id,
+              type: GreenPointMovementType.WELCOME,
+              points: 80,
+              orderId: null,
+              returnId: null,
+              reviewId: null,
+              description: 'Puntos verdes de bienvenida',
+            },
+          );
+
+          await manager.save(welcomeMovement);
+
+          savedCustomer.user = savedUser;
+
+          return CustomerMapper.toResponseDto(
+            savedCustomer,
+            80,
+          );
+        },
+      );
+
+    } catch (error) {
+      this.handleDatabaseError(error);
+    }
+  }
+
+
+  async findAll(pagination: PaginationDto) {
+    const { page, size, sortBy, sortDirection } = pagination;
+
+    const allowedSortFields = [
+      'id',
+      'firstName',
+      'lastName',
+      'email',
+      'createdAt',
+      'isActive',
+    ];
+
+    if (!allowedSortFields.includes(sortBy)) {
+      throw new BadRequestException(
+        'Campo de ordenamiento inválido.',
+      );
+    }
+
+    let sortField = `user.${sortBy}`;
+
+    if (sortBy === 'id' || sortBy === 'createdAt') {
+      sortField = `customer.${sortBy}`;
+    }
+
+    const query = this.customerRepository
+      .createQueryBuilder('customer')
+      .innerJoinAndSelect('customer.user', 'user')
+      .where('user.role = :role', {
+        role: UserRole.CUSTOMER,
+      });
+
+    const totalElements = await query.getCount();
+
+    query.orderBy(sortField, sortDirection);
+
+    if (sortBy !== 'id') {
+      query.addOrderBy('customer.id', 'ASC');
+    }
+
+    const customers = await query
+      .skip(page * size)
+      .take(size)
+      .getMany();
+
+    const points = await this.getGreenPoints(
+      customers.map((customer) => customer.id),
+    );
+
     return {
-      id: customer.id,
-      email: customer.email,
-      greenPoints: customer.greenPoints,
+      content: customers.map((customer) =>
+        CustomerMapper.toResponseDto(
+          customer,
+          points.get(customer.id) ?? 0,
+        ),
+      ),
+      page,
+      size,
+      totalElements,
+      totalPages: Math.ceil(totalElements / size),
+      sortBy,
+      sortDirection,
     };
   }
 
-  create(createCustomerDto: CreateCustomerDto): CustomerResponseDto {
-    const existingCustomer = this.customers.find(
-      (customer) =>
-        customer.email.toLowerCase() === createCustomerDto.email.toLowerCase(),
-    );
+  async findOne(customerId: number): Promise<CustomerResponseDto> {
+    const customer = await this.findCustomer(customerId);
+    const points = await this.getGreenPoints([
+      customer.id,
+    ]);
 
-    if (existingCustomer) {
+    return CustomerMapper.toResponseDto(
+      customer,
+      points.get(customer.id) ?? 0,
+    );
+  }
+
+  async update(customerId: number, dto: UpdateCustomerDto): Promise<CustomerResponseDto> {
+
+    const customer = await this.findCustomer(customerId);
+    const user = customer.user;
+
+    if (dto.email !== undefined) {
+
+      const email = dto.email.trim().toLowerCase();
+
+      await this.validateEmail(email, user.id);
+
+      user.email = email;
+    }
+
+    if (dto.firstName !== undefined) {
+
+      const firstName = dto.firstName.trim();
+
+      if (!firstName) {
+        throw new BadRequestException(
+          'El nombre del cliente es obligatorio.',
+        );
+      }
+
+      user.firstName = firstName;
+    }
+
+    if (dto.lastName !== undefined) {
+      user.lastName = dto.lastName?.trim() || null;
+    }
+
+    if (dto.phone !== undefined) {
+      user.phone = dto.phone?.trim() || null;
+    }
+
+    if (dto.password !== undefined) {
+
+      user.passwordHash = await argon2.hash(
+        dto.password,
+        {
+          type: argon2.argon2id,
+        },
+      );
+    }
+
+    user.updatedAt = new Date();
+
+    try {
+
+      customer.user =
+        await this.userRepository.save(user);
+
+    } catch (error) {
+      this.handleDatabaseError(error);
+    }
+
+    const points = await this.getGreenPoints([
+      customer.id,
+    ]);
+
+    return CustomerMapper.toResponseDto(
+      customer,
+      points.get(customer.id) ?? 0,
+    );
+  }
+
+  private async findCustomer(customerId: number): Promise<CustomerEntity> {
+
+    if (!Number.isInteger(customerId) || customerId <= 0) {
+      throw new BadRequestException(
+        'El identificador debe ser un número entero positivo.',
+      );
+    }
+
+    const customer = await this.customerRepository.findOne({
+      where: {
+        id: customerId,
+        user: {
+          role: UserRole.CUSTOMER,
+        },
+      },
+      relations: {
+        user: true,
+      },
+    });
+
+    if (!customer) {
+      throw new CustomerNotFoundError();
+    }
+
+    return customer;
+  }
+
+  private async validateEmail(email: string, userId?: number): Promise<void> {
+
+    const existingUser = await this.userRepository
+      .createQueryBuilder('user')
+      .where('LOWER(user.email) = :email', {
+        email,
+      })
+      .getOne();
+
+    if (existingUser && existingUser.id !== userId) {
       throw new DuplicateEmailError();
     }
-    const newCustomer = new Customer();
-
-    newCustomer.id = this.nextId++;
-    newCustomer.email = createCustomerDto.email;
-    newCustomer.password = createCustomerDto.password;
-    newCustomer.greenPoints = 0;
-    newCustomer.addresses = [];
-    newCustomer.paymentMethods = [];
-    newCustomer.orders = [];
-
-    this.customers.push(newCustomer);
-
-    return this.toResponse(newCustomer);
   }
 
-  findAll(): CustomerResponseDto[] {
-    return this.customers.map((customer) => this.toResponse(customer));
-  }
-
-  findOne(id: number): CustomerResponseDto {
-    const customer = this.customers.find((customer) => customer.id === id);
-
-    if (!customer) {
-      throw new CustomerNotFoundError();
+  private async getGreenPoints(customerIds: number[]): Promise<Map<number, number>> {
+    if (customerIds.length === 0) {
+      return new Map();
     }
 
-    return this.toResponse(customer);
+    const results = await this.greenPointRepository
+      .createQueryBuilder('movement')
+      .select(
+        'movement.customerId',
+        'customerId',
+      )
+      .addSelect(
+        'SUM(movement.points)',
+        'greenPoints',
+      )
+      .where(
+        'movement.customerId IN (:...customerIds)',
+        {
+          customerIds,
+        },
+      )
+      .groupBy('movement.customerId')
+      .getRawMany();
+
+    return new Map<number, number>(
+      results.map((result) => [
+        Number(result.customerId),
+        Number(result.greenPoints),
+      ]),
+    );
   }
 
-  update(id: number, updateCustomerDto: UpdateCustomerDto): CustomerResponseDto {
-    const customer = this.customers.find((customer) => customer.id === id);
+  private handleDatabaseError(error: unknown): never {
 
-    if (!customer) {
-      throw new CustomerNotFoundError();
-    }
+    if (error instanceof QueryFailedError) {
 
-    if (updateCustomerDto.email) {
-      const existingCustomer = this.customers.find(
-        (otherCustomer) =>
-          otherCustomer.email.toLowerCase() ===
-          updateCustomerDto.email!.toLowerCase() &&
-          otherCustomer.id !== id,
-      );
+      const driverError = error.driverError;
 
-      if (existingCustomer) {
+      if (driverError.code === '23505' &&
+        typeof driverError.detail === 'string' &&
+        driverError.detail.startsWith('Key (email)=')
+      ) {
         throw new DuplicateEmailError();
       }
     }
-
-    Object.assign(customer, updateCustomerDto);
-
-    return this.toResponse(customer);
+    throw error;
   }
 }
