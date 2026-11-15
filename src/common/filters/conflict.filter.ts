@@ -3,8 +3,19 @@ import { Response } from 'express';
 import { QueryFailedError } from 'typeorm';
 import { DuplicateEmailError } from '../errors/duplicate-email.error';
 import { FavoriteAlreadyExistsError } from '../errors/favorite-already-exists.error';
+import { EmptyCartError } from '../errors/empty-cart.error';
+import { InsufficientStockError } from '../errors/insufficient-stock.error';
+import { InsufficientGreenPointsError } from '../errors/insufficient-green-points.error';
+import { CheckoutTotalChangedError } from '../errors/checkout-total-changed.error';
 
-@Catch(DuplicateEmailError, FavoriteAlreadyExistsError, QueryFailedError)
+@Catch(
+  DuplicateEmailError,
+  FavoriteAlreadyExistsError,
+  EmptyCartError,
+  InsufficientStockError,
+  InsufficientGreenPointsError,
+  CheckoutTotalChangedError,
+  QueryFailedError)
 export class ConflictFilter implements ExceptionFilter {
 
   catch(exception: Error, host: ArgumentsHost) {
@@ -19,6 +30,7 @@ export class ConflictFilter implements ExceptionFilter {
 
         if (error.constraint === 'users_email_key') {
           exception = new DuplicateEmailError();
+
         } else if (error.constraint === 'favorites_pkey') {
           exception = new FavoriteAlreadyExistsError();
         }
