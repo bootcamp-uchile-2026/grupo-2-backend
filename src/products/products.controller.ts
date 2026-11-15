@@ -21,36 +21,6 @@ export class ProductsController {
   })
   @ApiOkResponse({
     description: 'Catálogo paginado de productos',
-    schema: {
-      example: {
-        content: [
-          {
-            id: 65,
-            name: 'Miel de Ulmo Artesanal 500 g',
-            producerId: 12,
-            producerName: 'Sabores de la Tierra',
-            categoryId: 9,
-            price: 6990,
-            offerPrice: 6291,
-            finalPrice: 6291,
-            discountPercentage: 10,
-            stock: 19,
-            available: true,
-            co2Avoided: 3.0562,
-            greenPoints: 305,
-            rating: 5,
-            reviewCount: 1,
-            primaryImageFileId: null,
-          },
-        ],
-        page: 0,
-        size: 20,
-        totalElements: 64,
-        totalPages: 4,
-        sortBy: 'id',
-        sortDirection: 'ASC',
-      },
-    },
   })
   @ApiBadRequestResponse({
     description: 'Parámetros de consulta inválidos',
@@ -165,25 +135,6 @@ export class ProductsController {
   })
   @ApiOkResponse({
     description: 'Listado paginado de valoraciones',
-    schema: {
-      example: {
-        content: [
-          {
-            id: 1,
-            author: 'María',
-            comment: 'Muy buen producto.',
-            rating: 5,
-            createdAt: '2026-11-01T12:00:00Z',
-          },
-        ],
-        page: 0,
-        size: 20,
-        totalElements: 1,
-        totalPages: 1,
-        sortBy: 'id',
-        sortDirection: 'ASC',
-      },
-    },
   })
   @ApiBadRequestResponse({
     description: 'Parámetros inválidos',
@@ -193,7 +144,8 @@ export class ProductsController {
   })
   findReviews(@Param('productId', ParseIntPipe) productId: number,
     @Query() pagination: PaginationDto) {
-    return this.productsService.findReviews(productId, pagination)  }
+    return this.productsService.findReviews(productId, pagination)
+  }
 
   @Get(':productId/related')
   @ApiOperation({
