@@ -14,7 +14,6 @@ import { CartItemEntity } from './models/cart-item.entity';
 import { AddressEntity } from './models/address.entity';
 import { OrderEntity } from './models/order.entity';
 import { ReturnItemEntity } from './models/return-item.entity';
-import { FavoriteEntity } from './models/favorite.entity';
 import { ReturnEntity } from './models/return.entity';
 
 
@@ -39,7 +38,6 @@ import { ReturnEntity } from './models/return.entity';
       AddressEntity,
       OrderEntity,
       ReturnItemEntity,
-      FavoriteEntity,
       ReturnEntity]),
     FavoritesModule,
     CategoriesModule,
