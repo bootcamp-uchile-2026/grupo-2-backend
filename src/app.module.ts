@@ -19,7 +19,6 @@ import { OrderEntity } from './models/order.entity';
 import { ReturnItemEntity } from './models/return-item.entity';
 import { FavoriteEntity } from './models/favorite.entity';
 import { GreenPointMovementEntity } from './models/green-point-movement.entity';
-import { ArticleEntity } from './models/article.entity';
 import { ReturnEntity } from './models/return.entity';
 
 
@@ -49,7 +48,6 @@ import { ReturnEntity } from './models/return.entity';
       ReturnItemEntity,
       FavoriteEntity,
       GreenPointMovementEntity,
-      ArticleEntity,
       ReturnEntity
     ]),
     FavoritesModule,

@@ -1,8 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ArticleSummaryDto {
+
     @ApiProperty({
-        example: 1,
+        example: 6,
         description: 'Identificador único del artículo.',
     })
     id: number;
@@ -16,17 +17,22 @@ export class ArticleSummaryDto {
     @ApiProperty({
         example: 'Recomendaciones prácticas para reducir residuos.',
         description: 'Resumen del contenido.',
+        type: String,
+        nullable: true,
     })
-    summary: string;
+    summary: string | null;
 
     @ApiProperty({
-        example: 'https://example.com/images/article-1.jpg',
-        description: 'URL de la imagen principal.',
+        description: 'Identificador del archivo de portada.',
+        type: String,
+        format: 'uuid',
+        nullable: true,
+        example: null,
     })
-    imageUrl: string;
+    coverFileId: string | null;
 
     @ApiProperty({
-        example: '2026-10-01T12:00:00.000Z',
+        example: '2026-10-25T21:50:34.408Z',
         description: 'Fecha de publicación en formato ISO 8601.',
         type: String,
         format: 'date-time',
