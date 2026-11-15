@@ -1,3 +1,4 @@
+
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LessThanOrEqual, Repository } from 'typeorm';
@@ -12,29 +13,20 @@ export class ArticlesService {
 
     constructor(
         @InjectRepository(ArticleEntity)
-        private readonly articleRepository: Repository<ArticleEntity>) { }
+        private readonly articleRepository: Repository<ArticleEntity>) {}
 
     async findAll(pagination: PaginationDto) {
 
         const { page, size, sortBy, sortDirection } = pagination;
 
-        const allowedSortFields = [
-            'id',
-            'title',
-            'publishedAt',
-            'createdAt',
-        ];
+        const allowedSortFields = ['id', 'title', 'publishedAt', 'createdAt'];
 
         if (!allowedSortFields.includes(sortBy)) {
-            throw new BadRequestException(
-                'Campo de ordenamiento inválido.',
-            );
-        }
+            throw new BadRequestException('Campo de ordenamiento inválido.')}
 
         const where = {
             status: ArticleStatus.PUBLISHED,
-            publishedAt: LessThanOrEqual(new Date()),
-        };
+            publishedAt: LessThanOrEqual(new Date())};
 
         const articles = await this.articleRepository.find({
             where,
@@ -46,14 +38,10 @@ export class ArticlesService {
             },
         });
 
-        const totalElements = await this.articleRepository.count({
-            where,
-        });
+        const totalElements = await this.articleRepository.count({ where });
 
         return {
-            content: articles.map(
-                (article) => ArticleMapper.toSummaryDto(article),
-            ),
+            content: articles.map(article => ArticleMapper.toSummaryDto(article)),
             page,
             size,
             totalElements,
@@ -64,11 +52,12 @@ export class ArticlesService {
     }
 
     async findOne(articleId: number): Promise<ArticleDetailDto> {
-        if (!Number.isInteger(articleId) || articleId <= 0) {
-            throw new BadRequestException(
-                'El identificador debe ser un número entero positivo.');
-            }
 
+        if (articleId <= 0) {
+            throw new BadRequestException(
+                'El identificador debe ser un número entero positivo.',
+            );
+        }
         const article = await this.articleRepository.findOne({
             where: {
                 id: articleId,
@@ -81,7 +70,8 @@ export class ArticlesService {
         });
 
         if (!article) {
-            throw new ArticleNotFoundError()}
+            throw new ArticleNotFoundError();
+        }
 
         return ArticleMapper.toDetailDto(article);
     }

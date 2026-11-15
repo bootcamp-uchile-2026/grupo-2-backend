@@ -17,26 +17,6 @@ export class ProducersController {
   })
   @ApiOkResponse({
     description: 'Listado paginado de productores',
-    schema: {
-      example: {
-        content: [
-          {
-            id: 1,
-            businessName: 'EcoRaíz',
-            description:
-              'Emprendimiento de productos sustentables.',
-            logoFileId: null,
-            location: 'Santiago, Chile',
-          },
-        ],
-        page: 0,
-        size: 20,
-        totalElements: 8,
-        totalPages: 1,
-        sortBy: 'id',
-        sortDirection: 'ASC',
-      },
-    },
   })
   @ApiBadRequestResponse({
     description: 'Parámetros de paginación inválidos',
@@ -52,7 +32,7 @@ export class ProducersController {
   @ApiParam({
     name: 'producerId',
     type: Number,
-    example: 1,
+    example: 9,
   })
   @ApiOkResponse({
     type: ProducerDetailDto,
@@ -63,7 +43,7 @@ export class ProducersController {
   @ApiNotFoundResponse({
     description: 'Productor no encontrado',
   })
-  findOne(@Param('producerId', ParseIntPipe)producerId: number): Promise<ProducerDetailDto> {
+  findOne(@Param('producerId', ParseIntPipe) producerId: number): Promise<ProducerDetailDto> {
     return this.producersService.findOne(producerId);
   }
 
@@ -86,7 +66,7 @@ export class ProducersController {
   @ApiNotFoundResponse({
     description: 'Productor no encontrado',
   })
-  findProductsByProducer(@Param('producerId', ParseIntPipe)producerId: number,
+  findProductsByProducer(@Param('producerId', ParseIntPipe) producerId: number,
     @Query() pagination: PaginationDto) {
     return this.producersService.findProductsByProducer(producerId, pagination);
   }

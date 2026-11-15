@@ -13,107 +13,77 @@ import { ProductsService } from '../products/products.service';
 @Injectable()
 export class ProducersService {
 
-  constructor(
-    @InjectRepository(ProducerEntity)
-    private readonly producersRepository: Repository<ProducerEntity>,
+    constructor(
+        @InjectRepository(ProducerEntity)
+        private readonly producersRepository: Repository<ProducerEntity>,
+        private readonly productsService: ProductsService) {}
 
-    private readonly productsService: ProductsService) { }
+    async findAll(pagination: PaginationDto) {
+        const { page, size, sortBy, sortDirection } = pagination;
 
-  async findAll(pagination: PaginationDto) {
+        const allowedSortFields = ['id', 'businessName', 'location', 'createdAt'];
 
-    const {
-      page,
-      size,
-      sortBy,
-      sortDirection,
-    } = pagination;
+        if (!allowedSortFields.includes(sortBy)) {
+            throw new BadRequestException('Campo de ordenamiento inválido.')}
 
-    const allowedSortFields = [
-      'id',
-      'businessName',
-      'location',
-      'createdAt',
-    ];
+        const where = {
+            user: {
+                isActive: true,
+                role: UserRole.PRODUCER,
+            },
+        };
 
-    if (!allowedSortFields.includes(sortBy)) {
-      throw new BadRequestException(
-        'Campo de ordenamiento inválido.',
-      );
+        const producers = await this.producersRepository.find({
+            where,
+            skip: page * size,
+            take: size,
+            order: {
+                [sortBy]: sortDirection,
+                id: sortBy === 'id' ? sortDirection : 'ASC',
+            },
+        });
+
+        const totalElements = await this.producersRepository.count({ where });
+
+        const content: ProducerSummaryDto[] = producers.map(producer => ProducerMapper.toSummaryDto(producer));
+
+        return {
+            content,
+            page,
+            size,
+            totalElements,
+            totalPages: Math.ceil(totalElements / size),
+            sortBy,
+            sortDirection,
+        };
     }
 
-    const where = {
-      user: {
-        isActive: true,
-        role: UserRole.PRODUCER,
-      },
-    };
+    async findOne(producerId: number): Promise<ProducerDetailDto> {
 
-    const producers =
-      await this.producersRepository.find({
-        where,
-        skip: page * size,
-        take: size,
-        order: {
-          [sortBy]: sortDirection,
-          id: sortBy === 'id'
-            ? sortDirection
-            : 'ASC',
-        },
-      });
+        if (producerId <= 0) {
+            throw new BadRequestException(
+                'El identificador debe ser un número entero positivo.');}
 
-    const totalElements =
-      await this.producersRepository.count({
-        where,
-      });
+        const producer = await this.producersRepository.findOne({
+            where: {
+                id: producerId,
+                user: {
+                    isActive: true,
+                    role: UserRole.PRODUCER,
+                },
+            },
+        });
 
-    const content: ProducerSummaryDto[] =
-      producers.map((producer) =>
-        ProducerMapper.toSummaryDto(producer),
-      );
+        if (!producer) {
+            throw new ProducerNotFoundError()}
 
-    return {
-      content,
-      page,
-      size,
-      totalElements,
-      totalPages: Math.ceil(totalElements / size),
-      sortBy,
-      sortDirection,
-    };
-  }
-
-  async findOne(producerId: number): Promise<ProducerDetailDto> {
-    if (producerId <= 0) {
-      throw new BadRequestException(
-        'El identificador debe ser un número entero positivo.',
-      );
+        return ProducerMapper.toDetailDto(producer);
     }
 
-    const producer =
-      await this.producersRepository.findOne({
-        where: {
-          id: producerId,
-          user: {
-            isActive: true,
-            role: UserRole.PRODUCER,
-          },
-        },
-      });
+    async findProductsByProducer(producerId: number, pagination: PaginationDto) {
 
-    if (!producer) {
-      throw new ProducerNotFoundError();
+        await this.findOne(producerId);
+
+        return this.productsService.findProductsByProducer(producerId, pagination);
     }
-
-    return ProducerMapper.toDetailDto(producer);
-  }
-
-  async findProductsByProducer(producerId: number,pagination: PaginationDto) {
-
-    await this.findOne(producerId);
-
-    return this.productsService.findProductsByProducer(
-      producerId,
-      pagination,
-    );
-  }
 }

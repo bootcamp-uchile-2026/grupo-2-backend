@@ -1,5 +1,5 @@
-import {Controller, Get, Param, ParseIntPipe, Query} from '@nestjs/common';
-import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags} from '@nestjs/swagger';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { CategoriesService } from './categories.service';
 import { CategoryDto } from '../dto/category.dto';
 import { PaginationDto } from '../dto/pagination.dto';
@@ -9,7 +9,7 @@ import { PaginationDto } from '../dto/pagination.dto';
 export class CategoriesController {
 
     constructor(
-        private readonly categoriesService:CategoriesService) { }
+        private readonly categoriesService: CategoriesService) { }
 
     @Get()
     @ApiOperation({
@@ -17,24 +17,6 @@ export class CategoriesController {
     })
     @ApiOkResponse({
         description: 'Listado paginado de categorías',
-        schema: {
-            example: {
-                content: [
-                    {
-                        id: 1,
-                        name: 'Alimentos',
-                        description:
-                            'Productos alimenticios artesanales y sustentables.',
-                    },
-                ],
-                page: 0,
-                size: 20,
-                totalElements: 8,
-                totalPages: 1,
-                sortBy: 'id',
-                sortDirection: 'ASC',
-            },
-        },
     })
     @ApiBadRequestResponse({
         description: 'Parámetros de paginación inválidos',
@@ -62,7 +44,7 @@ export class CategoriesController {
         description: 'Categoría no encontrada',
     })
     findOne(
-        @Param('categoryId', ParseIntPipe)categoryId: number): Promise<CategoryDto> {
+        @Param('categoryId', ParseIntPipe) categoryId: number): Promise<CategoryDto> {
         return this.categoriesService.findOne(categoryId);
     }
 }
