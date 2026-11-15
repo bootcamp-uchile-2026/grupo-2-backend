@@ -8,6 +8,7 @@ import { UserRole } from 'src/models/user.entity';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles/roles.guard';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth/jwt-auth.guard';
+import { LoginResponseDto } from '../dto/auth/login-response.dto';
 
 @ApiTags('Autenticación')
 @Controller('auth')
@@ -25,6 +26,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Autenticación exitosa.',
+    type: LoginResponseDto,
   })
   @ApiResponse({
     status: 401,

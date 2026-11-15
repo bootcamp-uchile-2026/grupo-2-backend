@@ -10,6 +10,7 @@ import { UserEntity } from '../models/user.entity';
 
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { StringValue } from 'ms';
 
 
 
@@ -29,7 +30,10 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         return {
           secret,
           signOptions: {
-            expiresIn: '1h',
+            expiresIn: configService.get<string>(
+              'JWT_EXPIRES_IN',
+              '1h',
+            ) as StringValue,
           },
         };
       },
