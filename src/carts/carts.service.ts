@@ -174,19 +174,17 @@ export class CartsService {
         });
     }
 
-    private async findCartForUpdate(customerId: number, manager: EntityManager): Promise<CartEntity> {
+    async findCartForUpdate(customerId: number, manager: EntityManager): Promise<CartEntity> {
 
         const cart = await manager.findOne(CartEntity, {
             where: { customerId },
             lock: {
-                mode: 'pessimistic_write'
-            },
+                mode: 'pessimistic_write'},
         });
 
         if (!cart) {
             throw new CartNotFoundError();
         }
-
         return cart;
     }
 

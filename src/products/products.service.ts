@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder, In } from 'typeorm';
+import { Repository, SelectQueryBuilder, In, EntityManager } from 'typeorm';
 import { ProductEntity } from '../models/product.entity';
 import { ProductImageEntity } from '../models/product-image.entity';
 import { ReviewEntity } from '../models/review.entity';
@@ -489,12 +489,17 @@ export class ProductsService {
     });
   }
 
-  private async findSpecializedDetails(product: ProductEntity): Promise<Record<string, string | number | null> | null> {
+  async findSpecializedDetails(product: ProductEntity, manager?: EntityManager): Promise<Record<string, string | number | null> | null> {
     const productId = product.id;
     switch (product.category.name) {
 
       case 'Alimentos': {
-        const detail = await this.foodDetailsRepository.findOne({
+
+        const repository = manager
+          ? manager.getRepository(FoodDetailEntity)
+          : this.foodDetailsRepository;
+
+        const detail = await repository.findOne({
           where: { productId },
         });
 
@@ -507,7 +512,12 @@ export class ProductsService {
       }
 
       case 'Cuidado personal': {
-        const detail = await this.personalCareDetailsRepository.findOne({
+
+        const repository = manager
+          ? manager.getRepository(PersonalCareDetailEntity)
+          : this.personalCareDetailsRepository;
+
+        const detail = await repository.findOne({
           where: { productId },
         });
 
@@ -519,7 +529,12 @@ export class ProductsService {
       }
 
       case 'Huerto y jardín': {
-        const detail = await this.gardenDetailsRepository.findOne({
+
+        const repository = manager
+          ? manager.getRepository(GardenDetailEntity)
+          : this.gardenDetailsRepository;
+
+        const detail = await repository.findOne({
           where: { productId },
         });
 
@@ -534,7 +549,12 @@ export class ProductsService {
       }
 
       case 'Limpieza del hogar': {
-        const detail = await this.homeCleaningDetailsRepository.findOne({
+
+        const repository = manager
+          ? manager.getRepository(HomeCleaningDetailEntity)
+          : this.homeCleaningDetailsRepository;
+
+        const detail = await repository.findOne({
           where: { productId },
         });
 
@@ -546,7 +566,12 @@ export class ProductsService {
       }
 
       case 'Aromas y bienestar': {
-        const detail = await this.wellnessDetailsRepository.findOne({
+
+        const repository = manager
+          ? manager.getRepository(WellnessDetailEntity)
+          : this.wellnessDetailsRepository;
+
+        const detail = await repository.findOne({
           where: { productId },
         });
 
@@ -559,7 +584,12 @@ export class ProductsService {
       }
 
       case 'Ropa y accesorios': {
-        const detail = await this.clothingDetailsRepository.findOne({
+
+        const repository = manager
+          ? manager.getRepository(ClothingDetailEntity)
+          : this.clothingDetailsRepository;
+
+        const detail = await repository.findOne({
           where: { productId },
         });
 
@@ -571,7 +601,12 @@ export class ProductsService {
       }
 
       case 'Mascotas': {
-        const detail = await this.petDetailsRepository.findOne({
+
+        const repository = manager
+          ? manager.getRepository(PetDetailEntity)
+          : this.petDetailsRepository;
+
+        const detail = await repository.findOne({
           where: { productId },
         });
 
@@ -584,7 +619,12 @@ export class ProductsService {
       }
 
       case 'Decoración y artesanía': {
-        const detail = await this.craftDetailsRepository.findOne({
+
+        const repository = manager
+          ? manager.getRepository(CraftDetailEntity)
+          : this.craftDetailsRepository;
+
+        const detail = await repository.findOne({
           where: { productId },
         });
 
@@ -602,7 +642,6 @@ export class ProductsService {
         return null;
     }
   }
-
   private toNumber(value: string | null): number | null {
     return value === null ? null : Number(value);
   }

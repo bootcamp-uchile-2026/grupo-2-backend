@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import * as argon2 from 'argon2';
 import { UserEntity, UserRole } from '../models/user.entity';
 import { CustomerEntity } from '../models/customer.entity';
@@ -95,7 +95,6 @@ export class CustomersService {
   }
 
   async findAll(pagination: PaginationDto) {
-
     const { page, size, sortBy, sortDirection } = pagination;
 
     const allowedSortFields = [
@@ -152,7 +151,6 @@ export class CustomersService {
   }
 
   async findOne(customerId: number): Promise<CustomerResponseDto> {
-
     const customer = await this.findCustomer(customerId);
     const points = await this.getGreenPoints([customer.id]);
 
@@ -162,9 +160,9 @@ export class CustomersService {
     );
   }
 
+  async validateOwnership(customerId: number, userId: number, requireActive: boolean = false, manager?: EntityManager ): Promise<void> {
 
-  async validateOwnership(customerId: number, userId: number,requireActive: boolean = false): Promise<void> {
-    const customer = await this.findCustomer(customerId);
+    const customer = await this.findCustomer(customerId, manager);
 
     if (customer.userId !== userId) {
       throw new ForbiddenException(
@@ -179,8 +177,17 @@ export class CustomersService {
     }
   }
 
-  async update(customerId: number, dto: UpdateCustomerDto): Promise<CustomerResponseDto> {
+  async getGreenPointsBalance(customerId: number,manager?: EntityManager): Promise<number> {
 
+    const points = await this.getGreenPoints(
+      [customerId],
+      manager,
+    );
+
+    return points.get(customerId) ?? 0;
+  }
+
+  async update(customerId: number, dto: UpdateCustomerDto): Promise<CustomerResponseDto> {
     const customer = await this.findCustomer(customerId);
     const user = customer.user;
 
@@ -228,15 +235,18 @@ export class CustomersService {
     );
   }
 
-  private async findCustomer(customerId: number): Promise<CustomerEntity> {
+  private async findCustomer(customerId: number, manager?: EntityManager): Promise<CustomerEntity> {
 
     if (!Number.isInteger(customerId) || customerId <= 0) {
       throw new BadRequestException(
-        'El identificador debe ser un número entero positivo.',
-      );
+        'El identificador debe ser un número entero positivo.');
     }
 
-    const customer = await this.customerRepository.findOne({
+    const repository = manager
+      ? manager.getRepository(CustomerEntity)
+      : this.customerRepository;
+
+    const customer = await repository.findOne({
       where: {
         id: customerId,
         user: {
@@ -256,7 +266,6 @@ export class CustomersService {
   }
 
   private async validateEmail(email: string, userId?: number): Promise<void> {
-
     const existingUser = await this.userRepository
       .createQueryBuilder('user')
       .where('LOWER(user.email) = :email', { email })
@@ -267,13 +276,17 @@ export class CustomersService {
     }
   }
 
-  private async getGreenPoints(customerIds: number[]): Promise<Map<number, number>> {
+  private async getGreenPoints(customerIds: number[], manager?: EntityManager): Promise<Map<number, number>> {
 
     if (customerIds.length === 0) {
       return new Map();
     }
 
-    const results = await this.greenPointRepository
+    const repository = manager
+      ? manager.getRepository(GreenPointMovementEntity)
+      : this.greenPointRepository;
+
+    const results = await repository
       .createQueryBuilder('movement')
       .select('movement.customerId', 'customerId')
       .addSelect('SUM(movement.points)', 'greenPoints')
