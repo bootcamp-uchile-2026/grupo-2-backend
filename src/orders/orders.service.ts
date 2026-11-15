@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
-import { DataSource, EntityManager, In } from 'typeorm';
+import { DataSource, EntityManager, In, SelectQueryBuilder } from 'typeorm';
 import { CustomersService } from '../customers/customers.service';
 import { ProductsService } from '../products/products.service';
 import { CartsService } from '../carts/carts.service';
@@ -32,7 +32,6 @@ import { ProducersService } from 'src/producers/producers.service';
 import { ProducerOrderDetailDto } from 'src/dto/producer-order-detail.dto';
 import { OrderItemNotFoundError } from 'src/common/errors/order-item-not-found.error';
 import { InvalidOrderStatusError } from 'src/common/errors/invalid-order-status.error';
-import { SelectQueryBuilder } from 'typeorm/browser';
 import { UpdateOrderStatusDto } from 'src/dto/update-order-status.dto';
 
 
@@ -432,6 +431,21 @@ export class OrdersService {
 
         return this.dataSource.transaction(async manager => {
 
+            const existingOrder = await manager.findOne(OrderEntity, {
+                where: {
+                    id: orderId,
+                },
+            });
+
+            if (!existingOrder) {
+                throw new OrderNotFoundError();
+            }
+
+            await this.lockCustomer(
+                existingOrder.customerId,
+                manager,
+            );
+
             const order = await manager.findOne(OrderEntity, {
                 where: {
                     id: orderId,
@@ -445,56 +459,117 @@ export class OrdersService {
                 throw new OrderNotFoundError();
             }
 
-            if (dto.status !== OrderStatus.SHIPPED) {
-                throw new InvalidOrderStatusError(
-                    'La transición solicitada no está permitida.',
-                );
-            }
-
-            if (order.status !== OrderStatus.PREPARING) {
-                throw new InvalidOrderStatusError(
-                    'Solo se pueden despachar pedidos en preparación.',
-                );
-            }
-
-            if (order.paymentStatus !== PaymentStatus.PAID) {
-                throw new InvalidOrderStatusError(
-                    'El pedido debe estar pagado para ser despachado.',
-                );
-            }
-
             const orderItems = await this.findItemsByOrders(
                 [order.id],
                 manager,
             );
 
-            if (orderItems.length === 0) {
-                throw new InvalidOrderStatusError(
-                    'El pedido no contiene productos.',
-                );
+            switch (dto.status) {
+                case OrderStatus.SHIPPED:
+                    return this.shipOrder(
+                        order,
+                        orderItems,
+                        manager,
+                    );
+
+                case OrderStatus.DELIVERED:
+                    return this.deliverOrder(
+                        order,
+                        orderItems,
+                        manager,
+                    );
+                default:
+                    throw new InvalidOrderStatusError(
+                        'La transición solicitada no está permitida.',
+                    );
             }
-
-            if (orderItems.some(item => !item.isPrepared)) {
-                throw new InvalidOrderStatusError(
-                    'Todos los productos deben estar preparados antes del despacho.',
-                );
-            }
-
-            const now = new Date();
-
-            order.status = OrderStatus.SHIPPED;
-            order.shippedAt = now;
-            order.updatedAt = now;
-
-            await manager.save(OrderEntity, order);
-
-            return OrderMapper.toResponseDto(
-                order,
-                orderItems,
-            );
         });
     }
 
+    private async shipOrder(order: OrderEntity, orderItems: OrderItemEntity[], manager: EntityManager): Promise<OrderResponseDto> {
+
+        if (order.status !== OrderStatus.PREPARING) {
+            throw new InvalidOrderStatusError(
+                'Solo se pueden despachar pedidos en preparación.',
+            );
+        }
+
+        if (order.paymentStatus !== PaymentStatus.PAID) {
+            throw new InvalidOrderStatusError(
+                'El pedido debe estar pagado para ser despachado.',
+            );
+        }
+
+        if (orderItems.length === 0) {
+            throw new InvalidOrderStatusError(
+                'El pedido no contiene productos.',
+            );
+        }
+
+        if (orderItems.some(item => !item.isPrepared)) {
+            throw new InvalidOrderStatusError(
+                'Todos los productos deben estar preparados antes del despacho.',
+            );
+        }
+
+        const now = new Date();
+
+        order.status = OrderStatus.SHIPPED;
+        order.shippedAt = now;
+        order.updatedAt = now;
+
+        await manager.save(OrderEntity, order);
+
+        return OrderMapper.toResponseDto(
+            order,
+            orderItems,
+        );
+    }
+
+    private async deliverOrder(order: OrderEntity, orderItems: OrderItemEntity[], manager: EntityManager): Promise<OrderResponseDto> {
+        if (order.status !== OrderStatus.SHIPPED) {
+            throw new InvalidOrderStatusError(
+                'Solo se pueden entregar pedidos despachados.',
+            );
+        }
+
+        if (order.paymentStatus !== PaymentStatus.PAID) {
+            throw new InvalidOrderStatusError(
+                'El pedido debe estar pagado para ser entregado.',
+            );
+        }
+
+        if (orderItems.length === 0) {
+            throw new InvalidOrderStatusError(
+                'El pedido no contiene productos.',
+            );
+        }
+
+        const now = new Date();
+
+        order.status = OrderStatus.DELIVERED;
+        order.deliveredAt = now;
+        order.updatedAt = now;
+
+        const response = OrderMapper.toResponseDto(order, orderItems);
+
+        await manager.save(OrderEntity, order);
+
+        if (response.estimatedGreenPoints > 0) {
+
+            await manager.save(GreenPointMovementEntity, {
+                customerId: order.customerId,
+                type: GreenPointMovementType.PURCHASE,
+                points: response.estimatedGreenPoints,
+                orderId: order.id,
+                returnId: null,
+                reviewId: null,
+                description: 'Puntos verdes por compra entregada',
+                createdAt: now,
+            });
+        }
+        return response;
+    }
     async prepareOrderItem(producerId: number, orderId: number, itemId: number, userId: number): Promise<ProducerOrderDetailDto> {
 
         if (!Number.isInteger(orderId) || orderId <= 0 ||
