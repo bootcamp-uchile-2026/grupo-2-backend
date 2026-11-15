@@ -199,6 +199,10 @@ export class CustomersService {
     );
   }
 
+  async validateCustomer(customerId: number): Promise<void> {
+    await this.findCustomer(customerId);
+  }
+
   async update(customerId: number, dto: UpdateCustomerDto): Promise<CustomerResponseDto> {
 
     const customer = await this.findCustomer(customerId);

@@ -25,6 +25,7 @@ import { FavoriteProductDto } from '../dto/favorite-product.dto';
 import { ProductNotFoundError } from '../common/errors/product-not-found.error';
 import { ProductMapper } from './product.mapper';
 import { ProducerEntity } from 'src/models/producer.entity';
+import { FavoriteEntity } from 'src/models/favorite.entity';
 
 
 @Injectable()
@@ -473,6 +474,18 @@ export class ProductsService {
       );
 
     return summary;
+  }
+
+  async findFavoriteProducts(customerId: number): Promise<FavoriteProductDto[]> {
+
+    const products = await this.createPublicProductsQuery()
+      .innerJoin(FavoriteEntity, 'favorite', 'favorite.productId = product.id')
+      .andWhere('favorite.customerId = :customerId', { customerId })
+      .orderBy('favorite.createdAt', 'DESC')
+      .addOrderBy('favorite.productId', 'ASC')
+      .getMany();
+
+    return this.toSummaryDtos(products, new Date());
   }
 
 
