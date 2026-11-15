@@ -50,7 +50,7 @@ cp .env.example .env
 copy .env.example .env
 ```
 
-Las variables conocidas son `PORT` (puerto HTTP; predeterminado `3000`), `ADMIN_API_KEY` y `CUSTOMER_API_KEY` (claves compartidas utilizadas por guards de prueba). Utiliza valores locales de desarrollo. **No publiques el archivo `.env` ni credenciales reales.** El archivo `.env.example` no debe contener secretos.
+Las variables de entorno permiten configurar el puerto HTTP, la conexión a PostgreSQL y la autenticación mediante JWT. Utiliza el archivo `.env.example` como referencia para configurar el entorno local. **No publiques el archivo `.env` ni credenciales reales.**
 
 La aplicación carga esta configuración mediante `ConfigModule.forRoot({ isGlobal: true })` y accede a ella mediante `process.env`. No se incluye aquí un procedimiento de autenticación individual porque no está implementado como tal.
 
@@ -154,8 +154,7 @@ Las rutas que utilizan parámetros de consulta o de ruta aparecen con ejemplos i
 | POST | `/customers/:customerId/favoritos` | Añadir favorito. |
 | DELETE | `/customers/:customerId/favoritos/:productId` | Eliminar favorito. |
 
-Los requisitos exactos de encabezados, cuerpos y respuestas se encuentran en Swagger. Algunos endpoints aplican guards mediante el encabezado `x-api-key` como mecanismo preliminar de control de acceso.
-
+Los requisitos de encabezados, cuerpos y respuestas se encuentran documentados en Swagger. Los endpoints protegidos utilizan autenticación mediante JWT y autorización basada en los roles CUSTOMER, PRODUCER y ADMIN, según corresponda.
 ## Validaciones, errores y trazabilidad
 
 El backend utiliza validaciones de DTO y una `ValidationPipe` global con `whitelist`, `forbidNonWhitelisted` y `transform`. Los servicios incorporan validaciones adicionales para reglas del dominio. Los errores personalizados se procesan mediante filtros comunes.
