@@ -16,8 +16,7 @@ import { CreateOrderDto } from 'src/dto/create-order.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.CUSTOMER)
 @Controller('customers/:customerId/checkout')
-export class OrdersController {
-
+export class CheckoutController {
     constructor(
         private readonly ordersService: OrdersService) { }
 
@@ -45,7 +44,7 @@ export class OrdersController {
         description: 'Carrito vacío, productos no disponibles, stock o puntos verdes insuficientes.',
     })
     async preview(@Param('customerId', ParseIntPipe) customerId: number, @Query() dto: CheckoutPreviewDto, @CurrentUser() user: { id: number; role: UserRole }): Promise<CheckoutPreviewResponseDto> {
-        return this.ordersService.preview(customerId, dto,user.id );
+        return this.ordersService.preview(customerId, dto, user.id);
     }
 
     @Post()

@@ -5,7 +5,8 @@ import { OrderItemEntity } from '../models/order-item.entity';
 import { CustomersModule } from '../customers/customers.module';
 import { ProductsModule } from '../products/products.module';
 import { CartsModule } from '../carts/carts.module';
-import { OrdersController } from './orders.controller';
+import { CheckoutController } from './checkout.controller';
+import { CustomerOrdersController } from './customer-orders.controller';
 import { OrdersService } from './orders.service';
 
 @Module({
@@ -18,8 +19,11 @@ import { OrdersService } from './orders.service';
         ProductsModule,
         CartsModule,
     ],
-    controllers: [OrdersController],
+    controllers: [
+        CheckoutController,
+        CustomerOrdersController,
+    ],
     providers: [OrdersService],
     exports: [OrdersService],
 })
-export class OrdersModule {}
+export class OrdersModule { }
