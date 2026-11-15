@@ -32,6 +32,8 @@ import { ProducersService } from 'src/producers/producers.service';
 import { ProducerOrderDetailDto } from 'src/dto/producer-order-detail.dto';
 import { OrderItemNotFoundError } from 'src/common/errors/order-item-not-found.error';
 import { InvalidOrderStatusError } from 'src/common/errors/invalid-order-status.error';
+import { SelectQueryBuilder } from 'typeorm/browser';
+import { UpdateOrderStatusDto } from 'src/dto/update-order-status.dto';
 
 
 @Injectable()
@@ -266,66 +268,13 @@ export class OrdersService {
 
         await this.customersService.validateOwnership(customerId, userId, true);
 
-        const { page, size, sortBy, sortDirection, status } = query;
-
-        const allowedSortFields = [
-            'id',
-            'status',
-            'createdAt',
-            'updatedAt',
-        ];
-
-        if (!allowedSortFields.includes(sortBy)) {
-            throw new BadRequestException(
-                'Campo de ordenamiento inválido.',
-            );
-        }
-
         const queryBuilder = this.dataSource.manager
             .createQueryBuilder(OrderEntity, 'order')
             .where('order.customerId = :customerId', {
                 customerId,
             });
 
-        if (status !== undefined) {
-            queryBuilder.andWhere('order.status = :status', {
-                status,
-            });
-        }
-
-        const totalElements = await queryBuilder.getCount();
-
-        queryBuilder.orderBy(`order.${sortBy}`, sortDirection);
-
-        if (sortBy !== 'id') {
-            queryBuilder.addOrderBy('order.id', 'ASC');
-        }
-
-        const orders = await queryBuilder
-            .offset(page * size)
-            .limit(size)
-            .getMany();
-
-        const orderItems = await this.findItemsByOrders(
-            orders.map(order => order.id),
-        );
-
-        const content = orders.map(order =>
-            OrderMapper.toSummaryDto(
-                order,
-                orderItems.filter(item => item.orderId === order.id),
-            ),
-        );
-
-        return {
-            content,
-            page,
-            size,
-            totalElements,
-            totalPages: Math.ceil(totalElements / size),
-            sortBy,
-            sortDirection,
-        };
+        return this.paginateOrders(queryBuilder, query);
     }
 
     async findOrderByCustomer(customerId: number, orderId: number, userId: number): Promise<OrderResponseDto> {
@@ -358,6 +307,44 @@ export class OrdersService {
         return OrderMapper.toResponseDto(order, orderItems);
     }
 
+    async findAllOrders(query: OrderQueryDto) {
+
+        const queryBuilder = this.dataSource.manager
+            .createQueryBuilder(OrderEntity, 'order');
+
+        return this.paginateOrders(queryBuilder, query);
+    }
+
+    async findOrderByAdmin(orderId: number): Promise<OrderResponseDto> {
+
+        if (!Number.isInteger(orderId) || orderId <= 0) {
+            throw new BadRequestException(
+                'El identificador debe ser un número entero positivo.',
+            );
+        }
+
+        const order = await this.dataSource.manager.findOne(
+            OrderEntity,
+            {
+                where: {
+                    id: orderId,
+                },
+            },
+        );
+
+        if (!order) {
+            throw new OrderNotFoundError();
+        }
+
+        const orderItems = await this.findItemsByOrders([
+            order.id,
+        ]);
+
+        return OrderMapper.toResponseDto(
+            order,
+            orderItems,
+        );
+    }
     async findOrdersByProducer(producerId: number, query: OrderQueryDto, userId: number) {
         await this.producersService.validateOwnership(producerId, userId);
 
@@ -433,6 +420,79 @@ export class OrdersService {
             sortBy,
             sortDirection,
         };
+    }
+
+    async updateOrderStatus(orderId: number, dto: UpdateOrderStatusDto): Promise<OrderResponseDto> {
+
+        if (!Number.isInteger(orderId) || orderId <= 0) {
+            throw new BadRequestException(
+                'El identificador debe ser un número entero positivo.',
+            );
+        }
+
+        return this.dataSource.transaction(async manager => {
+
+            const order = await manager.findOne(OrderEntity, {
+                where: {
+                    id: orderId,
+                },
+                lock: {
+                    mode: 'pessimistic_write',
+                },
+            });
+
+            if (!order) {
+                throw new OrderNotFoundError();
+            }
+
+            if (dto.status !== OrderStatus.SHIPPED) {
+                throw new InvalidOrderStatusError(
+                    'La transición solicitada no está permitida.',
+                );
+            }
+
+            if (order.status !== OrderStatus.PREPARING) {
+                throw new InvalidOrderStatusError(
+                    'Solo se pueden despachar pedidos en preparación.',
+                );
+            }
+
+            if (order.paymentStatus !== PaymentStatus.PAID) {
+                throw new InvalidOrderStatusError(
+                    'El pedido debe estar pagado para ser despachado.',
+                );
+            }
+
+            const orderItems = await this.findItemsByOrders(
+                [order.id],
+                manager,
+            );
+
+            if (orderItems.length === 0) {
+                throw new InvalidOrderStatusError(
+                    'El pedido no contiene productos.',
+                );
+            }
+
+            if (orderItems.some(item => !item.isPrepared)) {
+                throw new InvalidOrderStatusError(
+                    'Todos los productos deben estar preparados antes del despacho.',
+                );
+            }
+
+            const now = new Date();
+
+            order.status = OrderStatus.SHIPPED;
+            order.shippedAt = now;
+            order.updatedAt = now;
+
+            await manager.save(OrderEntity, order);
+
+            return OrderMapper.toResponseDto(
+                order,
+                orderItems,
+            );
+        });
     }
 
     async prepareOrderItem(producerId: number, orderId: number, itemId: number, userId: number): Promise<ProducerOrderDetailDto> {
@@ -597,13 +657,13 @@ export class OrdersService {
         return address;
     }
 
-    private async findItemsByOrders(orderIds: number[]): Promise<OrderItemEntity[]> {
+    private async findItemsByOrders(orderIds: number[], manager: EntityManager = this.dataSource.manager): Promise<OrderItemEntity[]> {
 
         if (orderIds.length === 0) {
             return [];
         }
 
-        return this.dataSource.manager.find(OrderItemEntity, {
+        return manager.find(OrderItemEntity, {
             where: {
                 orderId: In(orderIds),
             },
@@ -818,6 +878,64 @@ export class OrdersService {
         if (greenPointsToRedeem > availableGreenPoints) {
             throw new InsufficientGreenPointsError();
         }
+    }
+
+    private async paginateOrders(queryBuilder: SelectQueryBuilder<OrderEntity>, query: OrderQueryDto) {
+
+        const { page, size, sortBy, sortDirection, status } = query;
+
+        const allowedSortFields = [
+            'id',
+            'status',
+            'createdAt',
+            'updatedAt',
+        ];
+
+        if (!allowedSortFields.includes(sortBy)) {
+            throw new BadRequestException(
+                'Campo de ordenamiento inválido.',
+            );
+        }
+
+        if (status !== undefined) {
+            queryBuilder.andWhere('order.status = :status', {
+                status,
+            });
+        }
+
+        const totalElements = await queryBuilder.getCount();
+
+        queryBuilder.orderBy(`order.${sortBy}`, sortDirection);
+
+        if (sortBy !== 'id') {
+            queryBuilder.addOrderBy('order.id', 'ASC');
+        }
+
+        const orders = await queryBuilder
+            .offset(page * size)
+            .limit(size)
+            .getMany();
+
+        const orderItems = await this.findItemsByOrders(
+            orders.map(order => order.id),
+        );
+
+        const content = orders.map(order =>
+            OrderMapper.toSummaryDto(
+                order,
+                orderItems.filter(item => item.orderId === order.id),
+            ),
+        );
+
+        return {
+            content,
+            page,
+            size,
+            totalElements,
+            totalPages: Math.ceil(totalElements / size),
+            sortBy,
+            sortDirection,
+        };
     }
 
     private distributeDiscount(items: CheckoutItemResponseDto[], subtotal: number, greenPointsToRedeem: number): void {

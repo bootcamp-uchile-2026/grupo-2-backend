@@ -9,6 +9,7 @@ import { ProducersModule } from '../producers/producers.module';
 import { CheckoutController } from './checkout.controller';
 import { CustomerOrdersController } from './customer-orders.controller';
 import { ProducerOrdersController } from './producer-orders.controller';
+import { AdminOrdersController } from './admin-orders.controller';
 import { OrdersService } from './orders.service';
 
 @Module({
@@ -26,6 +27,7 @@ import { OrdersService } from './orders.service';
         CheckoutController,
         CustomerOrdersController,
         ProducerOrdersController,
+        AdminOrdersController,
     ],
     providers: [OrdersService],
     exports: [OrdersService],
