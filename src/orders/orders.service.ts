@@ -251,7 +251,6 @@ export class OrdersService {
             await manager.update(CartEntity, cart.id, {
                 updatedAt: now,
             });
-
             return OrderMapper.toResponseDto(order, orderItems);
         });
     }
@@ -481,23 +480,27 @@ export class OrdersService {
     }
 
     private distributeDiscount(items: CheckoutItemResponseDto[], subtotal: number, greenPointsToRedeem: number): void {
-
         if (greenPointsToRedeem === 0) {
             return;
         }
 
+        const totalSubtotal = BigInt(subtotal);
+        const points = BigInt(greenPointsToRedeem);
+
         const distribution = items.map(item => {
 
-            const proportionalDiscount =
-                greenPointsToRedeem * item.subtotal / subtotal;
+            const numerator =
+                points * BigInt(item.subtotal);
 
-            const discount = Math.floor(proportionalDiscount);
+            const discount = numerator / totalSubtotal;
 
-            item.greenPointDiscount = discount;
+            const remainder = numerator % totalSubtotal;
+
+            item.greenPointDiscount = Number(discount);
 
             return {
                 item,
-                remainder: proportionalDiscount - discount,
+                remainder,
             };
         });
 
@@ -510,10 +513,18 @@ export class OrdersService {
         const remainingDiscount =
             greenPointsToRedeem - assignedDiscount;
 
-        distribution.sort((a, b) =>
-            b.remainder - a.remainder ||
-            a.item.productId - b.item.productId,
-        );
+        distribution.sort((a, b) => {
+
+            if (a.remainder > b.remainder) {
+                return -1;
+            }
+
+            if (a.remainder < b.remainder) {
+                return 1;
+            }
+
+            return a.item.productId - b.item.productId;
+        });
 
         for (let i = 0; i < remainingDiscount; i++) {
             distribution[i].item.greenPointDiscount++;
