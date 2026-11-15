@@ -13,15 +13,14 @@ import { SustainabilityAttributeEntity } from './models/sustainability-attribute
 import { CartItemEntity } from './models/cart-item.entity';
 import { AddressEntity } from './models/address.entity';
 import { OrderEntity } from './models/order.entity';
-import { ReturnItemEntity } from './models/return-item.entity';
 import { ReturnEntity } from './models/return.entity';
-
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
@@ -31,14 +30,16 @@ import { ReturnEntity } from './models/return.entity';
       database: process.env.DB_DATABASE,
       autoLoadEntities: true,
       synchronize: false,
-    }), TypeOrmModule.forFeature([
+    }),
+
+    TypeOrmModule.forFeature([
       FileEntity,
       SustainabilityAttributeEntity,
       CartItemEntity,
       AddressEntity,
       OrderEntity,
-      ReturnItemEntity,
-      ReturnEntity]),
+      ReturnEntity,
+    ]),
     FavoritesModule,
     CategoriesModule,
     ProductsModule,
@@ -50,6 +51,7 @@ import { ReturnEntity } from './models/return.entity';
   providers: [],
 })
 export class AppModule implements NestModule {
+
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(RequestTracingMiddleware)
