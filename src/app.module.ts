@@ -9,12 +9,12 @@ import { ArticlesModule } from './articles/articles.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { CartsModule } from './carts/carts.module';
 import { AddressesModule } from './addresses/addresses.module';
+import { AuthModule } from './auth/auth.module';
 import { RequestTracingMiddleware } from './common/middleware/request-tracing.middleware';
 import { FileEntity } from './models/file.entity';
 import { SustainabilityAttributeEntity } from './models/sustainability-attribute.entity';
 import { OrderEntity } from './models/order.entity';
 import { ReturnEntity } from './models/return.entity';
-import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -43,6 +43,8 @@ import { AuthModule } from './auth/auth.module';
     ProducersModule,
     CustomersModule,
     ArticlesModule,
+    CartsModule,
+    AddressesModule,
     AuthModule,
   ],
   controllers: [],
