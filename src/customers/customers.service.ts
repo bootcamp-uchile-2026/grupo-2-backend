@@ -181,6 +181,15 @@ async validateOwnership(
     await this.findCustomer(customerId);
   }
 
+  async validateActiveCustomer(customerId: number): Promise<void> {
+    const customer = await this.findCustomer(customerId);
+
+    if (!customer.user.isActive) {
+      throw new ForbiddenException(
+        'El cliente se encuentra inactivo.');
+    }
+  }
+
   async update(customerId: number, dto: UpdateCustomerDto): Promise<CustomerResponseDto> {
 
     const customer = await this.findCustomer(customerId);

@@ -385,7 +385,7 @@ export class ProductsService {
     };
   }
 
-  private async findPublicProduct(productId: number): Promise<ProductEntity> {
+  async findPublicProduct(productId: number): Promise<ProductEntity> {
 
     if (!Number.isInteger(productId) || productId <= 0) {
       throw new BadRequestException(
@@ -404,7 +404,7 @@ export class ProductsService {
     return product;
   }
 
-  private getActiveOfferPrice(product: ProductEntity, now: Date): number | null {
+  getActiveOfferPrice(product: ProductEntity, now: Date): number | null {
 
     if (
       product.offerPrice !== null &&
@@ -415,10 +415,11 @@ export class ProductsService {
     ) {
       return product.offerPrice;
     }
+
     return null;
   }
 
-  private calculateGreenPoints(co2Avoided: string): number {
+  calculateGreenPoints(co2Avoided: string): number {
     const value = Math.round(Number(co2Avoided) * 10000);
     return Math.floor(value / 100);
   }
