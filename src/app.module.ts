@@ -11,29 +11,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { FileEntity } from './models/file.entity';
 import { UserEntity } from './models/user.entity';
 import { CustomerEntity } from './models/customer.entity';
-import { ProductEntity } from './models/product.entity';
-import { ProductImageEntity } from './models/product-image.entity';
 import { SustainabilityAttributeEntity } from './models/sustainability-attribute.entity';
-import { ProductSustainabilityAttributeEntity } from './models/product-sustainability-attribute.entity';
-import { FoodDetailEntity } from './models/food-detail.entity';
-import { PersonalCareDetailEntity } from './models/personal-care-detail.entity';
-import { GardenDetailEntity } from './models/garden-detail.entity';
-import { HomeCleaningDetailEntity } from './models/home-cleaning-detail.entity';
-import { WellnessDetailEntity } from './models/wellness-detail.entity';
-import { ClothingDetailEntity } from './models/clothing-detail.entity';
-import { PetDetailEntity } from './models/pet-detail.entity';
-import { CraftDetailEntity } from './models/craft-detail.entity';
 import { CartEntity } from './models/cart.entity';
 import { CartItemEntity } from './models/cart-item.entity';
 import { AddressEntity } from './models/address.entity';
 import { OrderEntity } from './models/order.entity';
-import { OrderItemEntity } from './models/order-item.entity';
-import { ReturnEntity } from './models/return.entity';
 import { ReturnItemEntity } from './models/return-item.entity';
-import { ReviewEntity } from './models/review.entity';
 import { FavoriteEntity } from './models/favorite.entity';
 import { GreenPointMovementEntity } from './models/green-point-movement.entity';
 import { ArticleEntity } from './models/article.entity';
+import { ReturnEntity } from './models/return.entity';
 
 
 @Module({
@@ -54,29 +41,16 @@ import { ArticleEntity } from './models/article.entity';
       FileEntity,
       UserEntity,
       CustomerEntity,
-      ProductEntity,
-      ProductImageEntity,
       SustainabilityAttributeEntity,
-      ProductSustainabilityAttributeEntity,
-      FoodDetailEntity,
-      PersonalCareDetailEntity,
-      GardenDetailEntity,
-      HomeCleaningDetailEntity,
-      WellnessDetailEntity,
-      ClothingDetailEntity,
-      PetDetailEntity,
-      CraftDetailEntity,
       CartEntity,
       CartItemEntity,
       AddressEntity,
       OrderEntity,
-      OrderItemEntity,
-      ReturnEntity,
       ReturnItemEntity,
-      ReviewEntity,
       FavoriteEntity,
       GreenPointMovementEntity,
       ArticleEntity,
+      ReturnEntity
     ]),
     FavoritesModule,
     CategoriesModule,

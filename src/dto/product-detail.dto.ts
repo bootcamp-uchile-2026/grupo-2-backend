@@ -1,51 +1,34 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
+import { ProductSummaryDto } from './product-summary.dto';
 
-export class ProductDetailDto {
-  @ApiProperty({
-    example: 25,
-    description: 'Identificador único del producto',
-  })
-  id: number;
+export class ProductDetailDto extends ProductSummaryDto {
 
   @ApiProperty({
-    example: 'Polera Sustentable',
-    description: 'Nombre del producto',
-  })
-  name: string;
-
-  @ApiProperty({
-    example: 18990,
-    description: 'Precio actual del producto',
-  })
-  price: number;
-
-  @ApiProperty({
-    example: 'Polera confeccionada con materiales de origen sustentable.',
-    description: 'Descripción del producto',
+    example: 'Producto elaborado artesanalmente.',
   })
   description: string;
 
   @ApiProperty({
-    type: [String],
-    example: [
-      'https://ejemplo.cl/imagenes/polera-1.jpg',
-      'https://ejemplo.cl/imagenes/polera-2.jpg',
-    ],
-    description: 'Imágenes asociadas al producto',
+    example: 'Alimentos',
   })
-  images: string[];
+  categoryName: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     type: [String],
-    example: ['Negro', 'Blanco'],
-    description: 'Colores disponibles del producto cuando corresponda',
+    description: 'Identificadores de archivos de imágenes',
+    example: [],
   })
-  colors?: string[];
+  imageFileIds: string[];
 
-  @ApiPropertyOptional({
-    type: [String],
-    example: ['S', 'M', 'L'],
-    description: 'Tallas disponibles del producto cuando corresponda',
+  @ApiProperty({
+    type: Object,
+    nullable: true,
+    example: {
+      size: 'L',
+      color: 'Verde',
+      material: 'Algodón',
+    },
+    description: 'Características específicas de la categoría',
   })
-  sizes?: string[];
+  details: Record<string, string | number | null> | null;
 }

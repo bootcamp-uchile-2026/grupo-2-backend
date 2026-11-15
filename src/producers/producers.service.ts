@@ -1,4 +1,4 @@
-import {Injectable, BadRequestException} from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProducerEntity } from '../models/producer.entity';
@@ -8,13 +8,16 @@ import { ProducerSummaryDto } from '../dto/producer-summary.dto';
 import { ProducerDetailDto } from '../dto/producer-detail.dto';
 import { ProducerNotFoundError } from '../common/errors/producer-not-found.error';
 import { ProducerMapper } from './producer.mapper';
+import { ProductsService } from '../products/products.service';
 
 @Injectable()
 export class ProducersService {
 
   constructor(
-      @InjectRepository(ProducerEntity)
-      private readonly producersRepository: Repository<ProducerEntity>) { }
+    @InjectRepository(ProducerEntity)
+    private readonly producersRepository: Repository<ProducerEntity>,
+
+    private readonly productsService: ProductsService) { }
 
   async findAll(pagination: PaginationDto) {
 
@@ -79,10 +82,7 @@ export class ProducersService {
     };
   }
 
-  async findOne(
-    producerId: number,
-  ): Promise<ProducerDetailDto> {
-
+  async findOne(producerId: number): Promise<ProducerDetailDto> {
     if (producerId <= 0) {
       throw new BadRequestException(
         'El identificador debe ser un número entero positivo.',
@@ -105,5 +105,15 @@ export class ProducersService {
     }
 
     return ProducerMapper.toDetailDto(producer);
+  }
+
+  async findProductsByProducer(producerId: number,pagination: PaginationDto) {
+
+    await this.findOne(producerId);
+
+    return this.productsService.findProductsByProducer(
+      producerId,
+      pagination,
+    );
   }
 }

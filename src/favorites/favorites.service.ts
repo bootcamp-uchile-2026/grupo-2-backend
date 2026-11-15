@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable} from '@nestjs/common';
 import { FavoriteAlreadyExistsError } from '../common/errors/favorite-already-exists.error';
 import { FavoriteNotFoundError } from '../common/errors/favorite-not-found.error';
+import { ProductNotFoundError } from '../common/errors/product-not-found.error';
 import { CustomersService } from '../customers/customers.service';
 import { ProductsService } from '../products/products.service';
 import { FavoriteProductDto } from '../dto/favorite-product.dto';
@@ -8,78 +9,132 @@ import { Favorite } from '../models/favorite.model';
 
 @Injectable()
 export class FavoritesService {
-  constructor(
-    private readonly customersService: CustomersService,
-    private readonly productsService: ProductsService,
-  ) { }
 
-  private readonly favorites: Favorite[] = [];
+    constructor(
+        private readonly customersService:
+            CustomersService,
 
+        private readonly productsService:
+            ProductsService,
+    ) { }
 
-  findAll(customerId: number): FavoriteProductDto[] {
-    this.validateId(customerId);
-    this.customersService.findOne(customerId);
+    private readonly favorites: Favorite[] = [];
 
-    const customerFavorites = this.favorites.filter(
-      (favorite) => favorite.customerId === customerId,
-    );
+    async findAll(
+        customerId: number,
+    ): Promise<FavoriteProductDto[]> {
 
-    return customerFavorites.map((favorite) =>
-      this.productsService.findFavoriteProduct(favorite.productId),
-    );
-  }
+        this.validateId(customerId);
 
-  add(customerId: number, productId: number): FavoriteProductDto {
-    this.validateId(customerId);
-    this.validateId(productId);
-    this.customersService.findOne(customerId);
+        await this.customersService.findOne(
+            customerId,
+        );
 
-    const product = this.productsService.findFavoriteProduct(productId);
+        const customerFavorites =
+            this.favorites.filter(
+                (favorite) =>
+                    favorite.customerId === customerId,
+            );
 
-    const existingFavorite = this.favorites.find(
-      (favorite) =>
-        favorite.customerId === customerId &&
-        favorite.productId === productId,
-    );
+        const products: FavoriteProductDto[] = [];
 
-    if (existingFavorite) {
-      throw new FavoriteAlreadyExistsError();
+        for (const favorite of customerFavorites) {
+
+            try {
+
+                const product =
+                    await this.productsService.findFavoriteProduct(
+                        favorite.productId,
+                    );
+
+                products.push(product);
+
+            } catch (error) {
+
+                if (!(error instanceof ProductNotFoundError)) {
+                    throw error;
+                }
+            }
+        }
+
+        return products;
     }
 
-    const newFavorite: Favorite = {
-      customerId: customerId,
-      productId: productId,
-    };
+    async add(
+        customerId: number,
+        productId: number,
+    ): Promise<FavoriteProductDto> {
 
-    this.favorites.push(newFavorite);
+        this.validateId(customerId);
+        this.validateId(productId);
 
-    return product;
-  }
+        await this.customersService.findOne(
+            customerId,
+        );
 
-  remove(customerId: number, productId: number): void {
-    this.validateId(customerId);
-    this.validateId(productId);
-    this.customersService.findOne(customerId);
-    this.productsService.findFavoriteProduct(productId);
+        const product =
+            await this.productsService.findFavoriteProduct(
+                productId,
+            );
 
-    const favoriteIndex = this.favorites.findIndex(
-      (favorite) =>
-        favorite.customerId === customerId &&
-        favorite.productId === productId,
-    );
+        const existingFavorite =
+            this.favorites.find(
+                (favorite) =>
+                    favorite.customerId === customerId &&
+                    favorite.productId === productId,
+            );
 
-    if (favoriteIndex === -1) {
-      throw new FavoriteNotFoundError();
+        if (existingFavorite) {
+            throw new FavoriteAlreadyExistsError();
+        }
+
+        this.favorites.push({
+            customerId,
+            productId,
+        });
+
+        return product;
     }
 
-    this.favorites.splice(favoriteIndex, 1);
-  }
+    async remove(
+        customerId: number,
+        productId: number,
+    ): Promise<void> {
 
-  private validateId(id: number): void {
-    if (id <= 0) {
-      throw new BadRequestException(
-        'El identificador debe ser un número entero positivo.',
-      );
+        this.validateId(customerId);
+        this.validateId(productId);
+
+        await this.customersService.findOne(
+            customerId,
+        );
+
+        const favoriteIndex =
+            this.favorites.findIndex(
+                (favorite) =>
+                    favorite.customerId === customerId &&
+                    favorite.productId === productId,
+            );
+
+        if (favoriteIndex === -1) {
+            throw new FavoriteNotFoundError();
+        }
+
+        this.favorites.splice(
+            favoriteIndex,
+            1,
+        );
     }
-  }
+
+    private validateId(id: number): void {
+
+        if (
+            !Number.isInteger(id) ||
+            id <= 0
+        ) {
+
+            throw new BadRequestException(
+                'El identificador debe ser un número entero positivo.',
+            );
+        }
+    }
 }

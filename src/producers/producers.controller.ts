@@ -41,9 +41,7 @@ export class ProducersController {
   @ApiBadRequestResponse({
     description: 'Parámetros de paginación inválidos',
   })
-  findAll(
-    @Query() pagination: PaginationDto,
-  ) {
+  findAll(@Query() pagination: PaginationDto) {
     return this.producersService.findAll(pagination);
   }
 
@@ -65,11 +63,31 @@ export class ProducersController {
   @ApiNotFoundResponse({
     description: 'Productor no encontrado',
   })
-  findOne(
-    @Param('producerId', ParseIntPipe)
-    producerId: number,
-  ): Promise<ProducerDetailDto> {
-
+  findOne(@Param('producerId', ParseIntPipe)producerId: number): Promise<ProducerDetailDto> {
     return this.producersService.findOne(producerId);
+  }
+
+
+  @Get(':producerId/products')
+  @ApiOperation({
+    summary: 'Obtener productos de un productor',
+  })
+  @ApiParam({
+    name: 'producerId',
+    type: Number,
+    example: 9,
+  })
+  @ApiOkResponse({
+    description: 'Listado paginado de productos',
+  })
+  @ApiBadRequestResponse({
+    description: 'Parámetros inválidos',
+  })
+  @ApiNotFoundResponse({
+    description: 'Productor no encontrado',
+  })
+  findProductsByProducer(@Param('producerId', ParseIntPipe)producerId: number,
+    @Query() pagination: PaginationDto) {
+    return this.producersService.findProductsByProducer(producerId, pagination);
   }
 }

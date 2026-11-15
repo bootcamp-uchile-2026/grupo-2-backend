@@ -1,1704 +1,908 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { FavoriteProductDto } from '../dto/favorite-product.dto';
-import { ProductNotFoundError } from '../common/errors/product-not-found.error';
-import { Product } from '../models/product.model';
-import { GreenFootprint } from '../models/green-footprint.model';
-import { Review } from '../models/review.model';
-import { ProductSearchDto } from '../dto/product-search.dto';
-import { ProductOfferDto } from '../dto/product-offer.dto';
-import { BestSellingProductDto } from '../dto/best-selling-product.dto';
-import { NewProductSummaryDto } from '../dto/new-product-summary.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, SelectQueryBuilder, In } from 'typeorm';
+import { ProductEntity } from '../models/product.entity';
+import { ProductImageEntity } from '../models/product-image.entity';
+import { ReviewEntity } from '../models/review.entity';
+import { UserRole } from '../models/user.entity';
+import { ProductSustainabilityAttributeEntity } from '../models/product-sustainability-attribute.entity';
+import { FoodDetailEntity } from '../models/food-detail.entity';
+import { PersonalCareDetailEntity } from '../models/personal-care-detail.entity';
+import { GardenDetailEntity } from '../models/garden-detail.entity';
+import { HomeCleaningDetailEntity } from '../models/home-cleaning-detail.entity';
+import { WellnessDetailEntity } from '../models/wellness-detail.entity';
+import { ClothingDetailEntity } from '../models/clothing-detail.entity';
+import { PetDetailEntity } from '../models/pet-detail.entity';
+import { CraftDetailEntity } from '../models/craft-detail.entity';
+import { PaginationDto } from '../dto/pagination.dto';
+import { ProductQueryDto } from '../dto/product-query.dto';
+import { ProductSummaryDto } from '../dto/product-summary.dto';
 import { ProductDetailDto } from '../dto/product-detail.dto';
+import { BestSellingProductDto } from '../dto/best-selling-product.dto';
 import { ProductGreenFootprintDto } from '../dto/product-green-footprint.dto';
 import { ProductReviewDto } from '../dto/product-review.dto';
-import { RelatedProductDto } from '../dto/related-product.dto';
-import { ProductSummaryDto } from '../dto/product-summary.dto';
+import { FavoriteProductDto } from '../dto/favorite-product.dto';
+import { ProductNotFoundError } from '../common/errors/product-not-found.error';
+import { ProductMapper } from './product.mapper';
+import { ProducerEntity } from 'src/models/producer.entity';
+
 
 @Injectable()
 export class ProductsService {
-  private readonly products: Product[] = [
-    // ROPA Y ACCESORIOS - POLERAS (1)
-    {
-      id: 1,
-      subcategoryId: 1,
-      entrepreneurId: 1,
-      brand: 'EcoWear',
-      name: 'Polera de algodón orgánico',
-      description: 'Polera confeccionada con algodón orgánico.',
-      price: 12990,
-      salePrice: 9990,
-      imageUrl: 'https:polera.jpg',
-      images: ['https:polera.jpg', 'https:polera-2.jpg'],
-      stock: 25,
-      rating: 4.7,
-      salesLastMonth: 50,
-      createdAt: new Date('2026-08-20'),
-      colors: ['Blanco', 'Negro', 'Verde'],
-      sizes: ['S', 'M', 'L', 'XL'],
-    },
-    {
-      id: 2,
-      subcategoryId: 1,
-      entrepreneurId: 1,
-      brand: 'EcoWear',
-      name: 'Polera manga larga',
-      description: 'Polera de algodón de manga larga.',
-      price: 15990,
-      salePrice: null,
-      imageUrl: 'https:polera-larga.jpg',
-      images: ['https:olera-larga.jpg'],
-      stock: 15,
-      rating: 4.5,
-      salesLastMonth: 35,
-      createdAt: new Date('2026-08-18'),
-      colors: ['Negro', 'Gris'],
-      sizes: ['S', 'M', 'L'],
-    },
-    {
-      id: 6,
-      subcategoryId: 1,
-      entrepreneurId: 1,
-      brand: 'EcoWear',
-      name: 'Polera reciclada',
-      description: 'Polera elaborada con fibras recicladas.',
-      price: 13990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-6',
-      images: ['imagen-dummy-producto-6'],
-      stock: 18,
-      rating: 4.6,
-      salesLastMonth: 42,
-      createdAt: new Date('2026-09-01'),
-      colors: ['Azul', 'Gris'],
-      sizes: ['S', 'M', 'L'],
-    },
-    {
-      id: 7,
-      subcategoryId: 1,
-      entrepreneurId: 1,
-      brand: 'EcoWear',
-      name: 'Polera estampado botánico',
-      description: 'Polera con estampado inspirado en plantas.',
-      price: 16990,
-      salePrice: 12990,
-      imageUrl: 'imagen-dummy-producto-7',
-      images: ['imagen-dummy-producto-7'],
-      stock: 0,
-      rating: 4.4,
-      salesLastMonth: 30,
-      createdAt: new Date('2026-09-02'),
-      sizes: ['S', 'M', 'L'],
-    },
-
-    // ROPA Y ACCESORIOS - PANTALONES (2)
-    {
-      id: 3,
-      subcategoryId: 2,
-      entrepreneurId: 2,
-      brand: 'VerdeVida',
-      name: 'Pantalón de algodón',
-      description: 'Pantalón de algodón para uso cotidiano.',
-      price: 9990,
-      salePrice: 7990,
-      imageUrl: 'https:polera-basica.jpg',
-      images: ['https:polera-basica.jpg'],
-      stock: 20,
-      rating: 4.2,
-      salesLastMonth: 25,
-      createdAt: new Date('2026-08-15'),
-      colors: ['Blanco', 'Negro'],
-      sizes: ['S', 'M', 'L', 'XL'],
-    },
-    {
-      id: 4,
-      subcategoryId: 2,
-      entrepreneurId: 2,
-      brand: 'NaturalFit',
-      name: 'Pantalón deportivo',
-      description: 'Pantalón cómodo para actividades deportivas.',
-      price: 18990,
-      salePrice: null,
-      imageUrl: 'https:polera-deportiva.jpg',
-      images: ['https:polera-deportiva.jpg'],
-      stock: 10,
-      rating: 4.8,
-      salesLastMonth: 20,
-      createdAt: new Date('2026-08-10'),
-      colors: ['Negro', 'Azul'],
-      sizes: ['M', 'L', 'XL'],
-    },
-    {
-      id: 8,
-      subcategoryId: 2,
-      entrepreneurId: 1,
-      brand: 'EcoWear',
-      name: 'Pantalón de lino',
-      description: 'Pantalón ligero confeccionado en lino.',
-      price: 24990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-8',
-      images: ['imagen-dummy-producto-8'],
-      stock: 13,
-      rating: 4.9,
-      salesLastMonth: 26,
-      createdAt: new Date('2026-09-03'),
-      sizes: ['S', 'M', 'L'],
-    },
-    {
-      id: 9,
-      subcategoryId: 2,
-      entrepreneurId: 1,
-      brand: 'EcoWear',
-      name: 'Pantalón de tela reciclada',
-      description: 'Pantalón confeccionado con fibras recicladas.',
-      price: 27990,
-      salePrice: 22990,
-      imageUrl: 'imagen-dummy-producto-9',
-      images: ['imagen-dummy-producto-9'],
-      stock: 6,
-      rating: 4.3,
-      salesLastMonth: 33,
-      createdAt: new Date('2026-09-04'),
-      sizes: ['M', 'L', 'XL'],
-    },
-
-    // ROPA Y ACCESORIOS - POLERONES (3)
-    {
-      id: 5,
-      subcategoryId: 3,
-      entrepreneurId: 2,
-      brand: 'VerdeVida',
-      name: 'Polerón estampado',
-      description: 'Polerón de algodón con diseño estampado.',
-      price: 14990,
-      salePrice: 11990,
-      imageUrl: 'https:polera-estampada.jpg',
-      images: ['https:polera-estampada.jpg', 'https:polera-estampada-2.jpg'],
-      stock: 8,
-      rating: null,
-      salesLastMonth: 15,
-      createdAt: new Date('2026-08-05'),
-      sizes: ['S', 'M', 'L'],
-    },
-    {
-      id: 10,
-      subcategoryId: 3,
-      entrepreneurId: 1,
-      brand: 'EcoWear',
-      name: 'Polerón de algodón orgánico',
-      description: 'Polerón de algodón orgánico para uso diario.',
-      price: 29990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-10',
-      images: ['imagen-dummy-producto-10'],
-      stock: 12,
-      rating: 4.8,
-      salesLastMonth: 48,
-      createdAt: new Date('2026-09-05'),
-      sizes: ['S', 'M', 'L', 'XL'],
-    },
-    {
-      id: 11,
-      subcategoryId: 3,
-      entrepreneurId: 1,
-      brand: 'EcoWear',
-      name: 'Polerón con capucha',
-      description: 'Polerón de algodón con capucha.',
-      price: 32990,
-      salePrice: 26990,
-      imageUrl: 'imagen-dummy-producto-11',
-      images: ['imagen-dummy-producto-11'],
-      stock: 0,
-      rating: 4.7,
-      salesLastMonth: 40,
-      createdAt: new Date('2026-09-06'),
-      sizes: ['S', 'M', 'L'],
-    },
-    {
-      id: 12,
-      subcategoryId: 3,
-      entrepreneurId: 1,
-      brand: 'EcoWear',
-      name: 'Polerón de fibras recicladas',
-      description: 'Polerón confeccionado con fibras recuperadas.',
-      price: 34990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-12',
-      images: ['imagen-dummy-producto-12'],
-      stock: 7,
-      rating: null,
-      salesLastMonth: 12,
-      createdAt: new Date('2026-09-07'),
-    },
-
-    // ALIMENTOS - CONSERVAS Y MERMELADAS (4)
-    {
-      id: 13,
-      subcategoryId: 4,
-      entrepreneurId: 4,
-      brand: 'Sabores de la Tierra',
-      name: 'Mermelada artesanal de frutilla',
-      description: 'Mermelada elaborada artesanalmente con frutillas.',
-      price: 5990,
-      salePrice: 4990,
-      imageUrl: 'imagen-dummy-producto-13',
-      images: ['imagen-dummy-producto-13'],
-      stock: 30,
-      rating: 4.8,
-      salesLastMonth: 85,
-      createdAt: new Date('2026-09-08'),
-    },
-    {
-      id: 14,
-      subcategoryId: 4,
-      entrepreneurId: 4,
-      brand: 'Sabores de la Tierra',
-      name: 'Mermelada de mora',
-      description: 'Mermelada artesanal de mora.',
-      price: 6490,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-14',
-      images: ['imagen-dummy-producto-14'],
-      stock: 22,
-      rating: 4.5,
-      salesLastMonth: 51,
-      createdAt: new Date('2026-09-09'),
-    },
-    {
-      id: 15,
-      subcategoryId: 4,
-      entrepreneurId: 4,
-      brand: 'Sabores de la Tierra',
-      name: 'Conserva de tomates',
-      description: 'Conserva artesanal de tomates.',
-      price: 7490,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-15',
-      images: ['imagen-dummy-producto-15'],
-      stock: 0,
-      rating: null,
-      salesLastMonth: 9,
-      createdAt: new Date('2026-09-10'),
-    },
-
-    // ALIMENTOS - SNACKS Y FRUTOS SECOS (5)
-    {
-      id: 16,
-      subcategoryId: 5,
-      entrepreneurId: 4,
-      brand: 'Sabores de la Tierra',
-      name: 'Mix de frutos secos',
-      description: 'Mezcla de frutos secos para colación.',
-      price: 4990,
-      salePrice: 3990,
-      imageUrl: 'imagen-dummy-producto-16',
-      images: ['imagen-dummy-producto-16'],
-      stock: 40,
-      rating: 4.9,
-      salesLastMonth: 120,
-      createdAt: new Date('2026-09-11'),
-    },
-    {
-      id: 17,
-      subcategoryId: 5,
-      entrepreneurId: 4,
-      brand: 'Sabores de la Tierra',
-      name: 'Almendras naturales',
-      description: 'Almendras seleccionadas sin saborizantes.',
-      price: 6990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-17',
-      images: ['imagen-dummy-producto-17'],
-      stock: 25,
-      rating: 4.6,
-      salesLastMonth: 66,
-      createdAt: new Date('2026-09-12'),
-    },
-    {
-      id: 18,
-      subcategoryId: 5,
-      entrepreneurId: 4,
-      brand: 'Sabores de la Tierra',
-      name: 'Barra de avena artesanal',
-      description: 'Barra de avena elaborada artesanalmente.',
-      price: 2490,
-      salePrice: 1990,
-      imageUrl: 'imagen-dummy-producto-18',
-      images: ['imagen-dummy-producto-18'],
-      stock: 45,
-      rating: 4.1,
-      salesLastMonth: 91,
-      createdAt: new Date('2026-09-13'),
-    },
-
-    // CUIDADO PERSONAL - JABONES ARTESANALES (6)
-    {
-      id: 19,
-      subcategoryId: 6,
-      entrepreneurId: 3,
-      brand: 'Naturaleza Viva',
-      name: 'Jabón artesanal de lavanda',
-      description: 'Jabón de uso personal con aroma a lavanda.',
-      price: 4490,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-19',
-      images: ['imagen-dummy-producto-19'],
-      stock: 32,
-      rating: 4.8,
-      salesLastMonth: 72,
-      createdAt: new Date('2026-09-14'),
-    },
-    {
-      id: 20,
-      subcategoryId: 6,
-      entrepreneurId: 3,
-      brand: 'Naturaleza Viva',
-      name: 'Jabón de avena',
-      description: 'Jabón artesanal de avena.',
-      price: 3990,
-      salePrice: 3490,
-      imageUrl: 'imagen-dummy-producto-20',
-      images: ['imagen-dummy-producto-20'],
-      stock: 0,
-      rating: 4.5,
-      salesLastMonth: 60,
-      createdAt: new Date('2026-09-15'),
-    },
-    {
-      id: 21,
-      subcategoryId: 6,
-      entrepreneurId: 3,
-      brand: 'Naturaleza Viva',
-      name: 'Jabón de carbón vegetal',
-      description: 'Jabón artesanal con carbón vegetal.',
-      price: 4990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-21',
-      images: ['imagen-dummy-producto-21'],
-      stock: 19,
-      rating: null,
-      salesLastMonth: 17,
-      createdAt: new Date('2026-09-16'),
-    },
-
-    // CUIDADO PERSONAL - COSMÉTICA NATURAL (7)
-    {
-      id: 22,
-      subcategoryId: 7,
-      entrepreneurId: 3,
-      brand: 'Naturaleza Viva',
-      name: 'Bálsamo labial natural',
-      description: 'Bálsamo labial con ingredientes de origen natural.',
-      price: 5490,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-22',
-      images: ['imagen-dummy-producto-22'],
-      stock: 38,
-      rating: 4.7,
-      salesLastMonth: 96,
-      createdAt: new Date('2026-09-17'),
-    },
-    {
-      id: 23,
-      subcategoryId: 7,
-      entrepreneurId: 3,
-      brand: 'Naturaleza Viva',
-      name: 'Crema de manos natural',
-      description: 'Crema para el cuidado de las manos.',
-      price: 8990,
-      salePrice: 6990,
-      imageUrl: 'imagen-dummy-producto-23',
-      images: ['imagen-dummy-producto-23'],
-      stock: 14,
-      rating: 4.3,
-      salesLastMonth: 55,
-      createdAt: new Date('2026-09-18'),
-    },
-    {
-      id: 24,
-      subcategoryId: 7,
-      entrepreneurId: 3,
-      brand: 'Naturaleza Viva',
-      name: 'Exfoliante corporal',
-      description: 'Exfoliante con ingredientes de origen vegetal.',
-      price: 9990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-24',
-      images: ['imagen-dummy-producto-24'],
-      stock: 0,
-      rating: null,
-      salesLastMonth: 8,
-      createdAt: new Date('2026-09-19'),
-    },
-
-    // HUERTO Y JARDINERÍA - SEMILLAS Y ALMÁCIGOS (8)
-    {
-      id: 25,
-      subcategoryId: 8,
-      entrepreneurId: 5,
-      brand: 'Huerto Vivo',
-      name: 'Semillas de albahaca',
-      description: 'Semillas para cultivo doméstico.',
-      price: 2490,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-25',
-      images: ['imagen-dummy-producto-25'],
-      stock: 60,
-      rating: 4.7,
-      salesLastMonth: 74,
-      createdAt: new Date('2026-09-20'),
-    },
-    {
-      id: 26,
-      subcategoryId: 8,
-      entrepreneurId: 5,
-      brand: 'Huerto Vivo',
-      name: 'Semillas de tomate',
-      description: 'Semillas para iniciar un huerto doméstico.',
-      price: 2990,
-      salePrice: 2490,
-      imageUrl: 'imagen-dummy-producto-26',
-      images: ['imagen-dummy-producto-26'],
-      stock: 42,
-      rating: 4.8,
-      salesLastMonth: 82,
-      createdAt: new Date('2026-09-21'),
-    },
-    {
-      id: 27,
-      subcategoryId: 8,
-      entrepreneurId: 5,
-      brand: 'Huerto Vivo',
-      name: 'Almácigos de lechuga',
-      description: 'Almácigos listos para trasplante.',
-      price: 3990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-27',
-      images: ['imagen-dummy-producto-27'],
-      stock: 0,
-      rating: null,
-      salesLastMonth: 11,
-      createdAt: new Date('2026-09-22'),
-    },
-
-    // HUERTO Y JARDINERÍA - MACETEROS Y ACCESORIOS (9)
-    {
-      id: 28,
-      subcategoryId: 9,
-      entrepreneurId: 5,
-      brand: 'Huerto Vivo',
-      name: 'Macetero de material reciclado',
-      description: 'Macetero fabricado con material recuperado.',
-      price: 7990,
-      salePrice: 5990,
-      imageUrl: 'imagen-dummy-producto-28',
-      images: ['imagen-dummy-producto-28'],
-      stock: 21,
-      rating: 4.4,
-      salesLastMonth: 49,
-      createdAt: new Date('2026-09-23'),
-    },
-    {
-      id: 29,
-      subcategoryId: 9,
-      entrepreneurId: 5,
-      brand: 'Huerto Vivo',
-      name: 'Set de herramientas de jardín',
-      description: 'Herramientas básicas para jardinería.',
-      price: 15990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-29',
-      images: ['imagen-dummy-producto-29'],
-      stock: 16,
-      rating: 4.6,
-      salesLastMonth: 37,
-      createdAt: new Date('2026-09-24'),
-    },
-    {
-      id: 30,
-      subcategoryId: 9,
-      entrepreneurId: 5,
-      brand: 'Huerto Vivo',
-      name: 'Regadera reutilizable',
-      description: 'Regadera para plantas de interior y exterior.',
-      price: 10990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-30',
-      images: ['imagen-dummy-producto-30'],
-      stock: 12,
-      rating: 4.5,
-      salesLastMonth: 27,
-      createdAt: new Date('2026-09-25'),
-    },
-
-    // LIMPIEZA DEL HOGAR - PRODUCTOS DE LIMPIEZA (10)
-    {
-      id: 31,
-      subcategoryId: 10,
-      entrepreneurId: 2,
-      brand: 'Verde Hogar',
-      name: 'Detergente biodegradable',
-      description: 'Detergente para lavado de ropa.',
-      price: 8990,
-      salePrice: 6990,
-      imageUrl: 'imagen-dummy-producto-31',
-      images: ['imagen-dummy-producto-31'],
-      stock: 33,
-      rating: 4.8,
-      salesLastMonth: 110,
-      createdAt: new Date('2026-09-26'),
-    },
-    {
-      id: 32,
-      subcategoryId: 10,
-      entrepreneurId: 2,
-      brand: 'Verde Hogar',
-      name: 'Limpiador multiuso',
-      description: 'Limpiador para superficies del hogar.',
-      price: 5990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-32',
-      images: ['imagen-dummy-producto-32'],
-      stock: 27,
-      rating: 4.6,
-      salesLastMonth: 77,
-      createdAt: new Date('2026-09-27'),
-    },
-    {
-      id: 33,
-      subcategoryId: 10,
-      entrepreneurId: 2,
-      brand: 'Verde Hogar',
-      name: 'Lavalozas concentrado',
-      description: 'Lavalozas concentrado para uso doméstico.',
-      price: 5490,
-      salePrice: 4490,
-      imageUrl: 'imagen-dummy-producto-33',
-      images: ['imagen-dummy-producto-33'],
-      stock: 0,
-      rating: 4.2,
-      salesLastMonth: 58,
-      createdAt: new Date('2026-09-28'),
-    },
-
-    // LIMPIEZA DEL HOGAR - ACCESORIOS REUTILIZABLES (11)
-    {
-      id: 34,
-      subcategoryId: 11,
-      entrepreneurId: 2,
-      brand: 'Verde Hogar',
-      name: 'Paños de limpieza reutilizables',
-      description: 'Set de paños lavables para limpieza doméstica.',
-      price: 7990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-34',
-      images: ['imagen-dummy-producto-34'],
-      stock: 36,
-      rating: 4.8,
-      salesLastMonth: 94,
-      createdAt: new Date('2026-09-29'),
-    },
-    {
-      id: 35,
-      subcategoryId: 11,
-      entrepreneurId: 2,
-      brand: 'Verde Hogar',
-      name: 'Esponja vegetal',
-      description: 'Esponja de origen vegetal para limpieza.',
-      price: 3990,
-      salePrice: 2990,
-      imageUrl: 'imagen-dummy-producto-35',
-      images: ['imagen-dummy-producto-35'],
-      stock: 23,
-      rating: 4.5,
-      salesLastMonth: 69,
-      createdAt: new Date('2026-09-30'),
-    },
-    {
-      id: 36,
-      subcategoryId: 11,
-      entrepreneurId: 2,
-      brand: 'Verde Hogar',
-      name: 'Cepillo de madera',
-      description: 'Cepillo con mango de madera para limpieza.',
-      price: 6490,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-36',
-      images: ['imagen-dummy-producto-36'],
-      stock: 17,
-      rating: null,
-      salesLastMonth: 21,
-      createdAt: new Date('2026-10-01'),
-    },
-
-    // AROMAS Y BIENESTAR - VELAS AROMÁTICAS (12)
-    {
-      id: 37,
-      subcategoryId: 12,
-      entrepreneurId: 6,
-      brand: 'Aromas del Bosque',
-      name: 'Vela aromática de lavanda',
-      description: 'Vela artesanal con aroma a lavanda.',
-      price: 10990,
-      salePrice: 8990,
-      imageUrl: 'imagen-dummy-producto-37',
-      images: ['imagen-dummy-producto-37'],
-      stock: 28,
-      rating: 4.9,
-      salesLastMonth: 103,
-      createdAt: new Date('2026-10-02'),
-    },
-    {
-      id: 38,
-      subcategoryId: 12,
-      entrepreneurId: 6,
-      brand: 'Aromas del Bosque',
-      name: 'Vela aromática de vainilla',
-      description: 'Vela artesanal con aroma a vainilla.',
-      price: 10990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-38',
-      images: ['imagen-dummy-producto-38'],
-      stock: 19,
-      rating: 4.7,
-      salesLastMonth: 64,
-      createdAt: new Date('2026-10-03'),
-    },
-    {
-      id: 39,
-      subcategoryId: 12,
-      entrepreneurId: 6,
-      brand: 'Aromas del Bosque',
-      name: 'Vela de cera vegetal',
-      description: 'Vela artesanal elaborada con cera vegetal.',
-      price: 12990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-39',
-      images: ['imagen-dummy-producto-39'],
-      stock: 0,
-      rating: null,
-      salesLastMonth: 13,
-      createdAt: new Date('2026-10-04'),
-    },
-
-    // AROMAS Y BIENESTAR - ACEITES ESENCIALES (13)
-    {
-      id: 40,
-      subcategoryId: 13,
-      entrepreneurId: 6,
-      brand: 'Aromas del Bosque',
-      name: 'Aceite esencial de lavanda',
-      description: 'Aceite aromático de lavanda.',
-      price: 8990,
-      salePrice: 7490,
-      imageUrl: 'imagen-dummy-producto-40',
-      images: ['imagen-dummy-producto-40'],
-      stock: 33,
-      rating: 4.8,
-      salesLastMonth: 88,
-      createdAt: new Date('2026-10-05'),
-    },
-    {
-      id: 41,
-      subcategoryId: 13,
-      entrepreneurId: 6,
-      brand: 'Aromas del Bosque',
-      name: 'Aceite esencial de eucalipto',
-      description: 'Aceite aromático de eucalipto.',
-      price: 9490,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-41',
-      images: ['imagen-dummy-producto-41'],
-      stock: 24,
-      rating: 4.6,
-      salesLastMonth: 46,
-      createdAt: new Date('2026-10-06'),
-    },
-    {
-      id: 42,
-      subcategoryId: 13,
-      entrepreneurId: 6,
-      brand: 'Aromas del Bosque',
-      name: 'Mezcla aromática cítrica',
-      description: 'Mezcla de aceites con aroma cítrico.',
-      price: 10990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-42',
-      images: ['imagen-dummy-producto-42'],
-      stock: 8,
-      rating: null,
-      salesLastMonth: 16,
-      createdAt: new Date('2026-10-07'),
-    },
-
-    // ROPA Y ACCESORIOS - BOLSOS Y ACCESORIOS (14)
-    {
-      id: 43,
-      subcategoryId: 14,
-      entrepreneurId: 1,
-      brand: 'EcoWear',
-      name: 'Bolso de tela reutilizable',
-      description: 'Bolso de tela para compras cotidianas.',
-      price: 8990,
-      salePrice: 6990,
-      imageUrl: 'imagen-dummy-producto-43',
-      images: ['imagen-dummy-producto-43'],
-      stock: 44,
-      rating: 4.8,
-      salesLastMonth: 118,
-      createdAt: new Date('2026-10-08'),
-    },
-    {
-      id: 44,
-      subcategoryId: 14,
-      entrepreneurId: 1,
-      brand: 'EcoWear',
-      name: 'Mochila de tela reciclada',
-      description: 'Mochila confeccionada con fibras recuperadas.',
-      price: 24990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-44',
-      images: ['imagen-dummy-producto-44'],
-      stock: 15,
-      rating: 4.6,
-      salesLastMonth: 52,
-      createdAt: new Date('2026-10-09'),
-    },
-    {
-      id: 45,
-      subcategoryId: 14,
-      entrepreneurId: 1,
-      brand: 'EcoWear',
-      name: 'Estuche de algodón',
-      description: 'Estuche reutilizable de algodón.',
-      price: 5990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-45',
-      images: ['imagen-dummy-producto-45'],
-      stock: 32,
-      rating: 4.3,
-      salesLastMonth: 39,
-      createdAt: new Date('2026-10-10'),
-    },
-    {
-      id: 46,
-      subcategoryId: 14,
-      entrepreneurId: 1,
-      brand: 'EcoWear',
-      name: 'Bolsa plegable para compras',
-      description: 'Bolsa compacta reutilizable.',
-      price: 4990,
-      salePrice: 3990,
-      imageUrl: 'imagen-dummy-producto-46',
-      images: ['imagen-dummy-producto-46'],
-      stock: 0,
-      rating: null,
-      salesLastMonth: 14,
-      createdAt: new Date('2026-10-11'),
-    },
-
-    // MASCOTAS - ACCESORIOS PARA MASCOTAS (15)
-    {
-      id: 47,
-      subcategoryId: 15,
-      entrepreneurId: 7,
-      brand: 'Patitas Verdes',
-      name: 'Correa para perros',
-      description: 'Correa resistente para paseos.',
-      price: 12990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-47',
-      images: ['imagen-dummy-producto-47'],
-      stock: 24,
-      rating: 4.7,
-      salesLastMonth: 71,
-      createdAt: new Date('2026-09-20'),
-    },
-    {
-      id: 48,
-      subcategoryId: 15,
-      entrepreneurId: 7,
-      brand: 'Patitas Verdes',
-      name: 'Collar ajustable para mascotas',
-      description: 'Collar ajustable de uso cotidiano.',
-      price: 8990,
-      salePrice: 6990,
-      imageUrl: 'imagen-dummy-producto-48',
-      images: ['imagen-dummy-producto-48'],
-      stock: 27,
-      rating: 4.5,
-      salesLastMonth: 63,
-      createdAt: new Date('2026-09-21'),
-    },
-    {
-      id: 49,
-      subcategoryId: 15,
-      entrepreneurId: 7,
-      brand: 'Patitas Verdes',
-      name: 'Juguete de cuerda',
-      description: 'Juguete para mascotas elaborado con cuerda.',
-      price: 6490,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-49',
-      images: ['imagen-dummy-producto-49'],
-      stock: 35,
-      rating: 4.4,
-      salesLastMonth: 82,
-      createdAt: new Date('2026-09-22'),
-    },
-    {
-      id: 50,
-      subcategoryId: 15,
-      entrepreneurId: 7,
-      brand: 'Patitas Verdes',
-      name: 'Cama para mascotas',
-      description: 'Cama acolchada para descanso de mascotas.',
-      price: 29990,
-      salePrice: 24990,
-      imageUrl: 'imagen-dummy-producto-50',
-      images: ['imagen-dummy-producto-50'],
-      stock: 0,
-      rating: null,
-      salesLastMonth: 18,
-      createdAt: new Date('2026-09-23'),
-    },
-
-    // MASCOTAS - HIGIENE Y CUIDADO (16)
-    {
-      id: 51,
-      subcategoryId: 16,
-      entrepreneurId: 7,
-      brand: 'Patitas Verdes',
-      name: 'Champú para mascotas',
-      description: 'Champú de higiene para mascotas.',
-      price: 10990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-51',
-      images: ['imagen-dummy-producto-51'],
-      stock: 21,
-      rating: 4.7,
-      salesLastMonth: 59,
-      createdAt: new Date('2026-09-24'),
-    },
-    {
-      id: 52,
-      subcategoryId: 16,
-      entrepreneurId: 7,
-      brand: 'Patitas Verdes',
-      name: 'Cepillo para pelaje',
-      description: 'Cepillo reutilizable para el cuidado del pelaje.',
-      price: 7990,
-      salePrice: 5990,
-      imageUrl: 'imagen-dummy-producto-52',
-      images: ['imagen-dummy-producto-52'],
-      stock: 18,
-      rating: 4.5,
-      salesLastMonth: 41,
-      createdAt: new Date('2026-09-25'),
-    },
-    {
-      id: 53,
-      subcategoryId: 16,
-      entrepreneurId: 7,
-      brand: 'Patitas Verdes',
-      name: 'Toalla reutilizable para mascotas',
-      description: 'Toalla lavable para secado de mascotas.',
-      price: 12990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-53',
-      images: ['imagen-dummy-producto-53'],
-      stock: 12,
-      rating: 4.6,
-      salesLastMonth: 34,
-      createdAt: new Date('2026-09-26'),
-    },
-    {
-      id: 54,
-      subcategoryId: 16,
-      entrepreneurId: 7,
-      brand: 'Patitas Verdes',
-      name: 'Guante de aseo para mascotas',
-      description: 'Guante para limpieza y cuidado del pelaje.',
-      price: 6990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-54',
-      images: ['imagen-dummy-producto-54'],
-      stock: 0,
-      rating: null,
-      salesLastMonth: 7,
-      createdAt: new Date('2026-09-27'),
-    },
-
-    // DECORACIÓN Y ARTESANÍAS - CERÁMICA (17)
-    {
-      id: 55,
-      subcategoryId: 17,
-      entrepreneurId: 8,
-      brand: 'Arte Circular',
-      name: 'Taza de cerámica artesanal',
-      description: 'Taza elaborada artesanalmente en cerámica.',
-      price: 10990,
-      salePrice: 8990,
-      imageUrl: 'imagen-dummy-producto-55',
-      images: ['imagen-dummy-producto-55'],
-      stock: 22,
-      rating: 4.9,
-      salesLastMonth: 87,
-      createdAt: new Date('2026-09-28'),
-    },
-    {
-      id: 56,
-      subcategoryId: 17,
-      entrepreneurId: 8,
-      brand: 'Arte Circular',
-      name: 'Plato de cerámica',
-      description: 'Plato artesanal de cerámica.',
-      price: 12990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-56',
-      images: ['imagen-dummy-producto-56'],
-      stock: 16,
-      rating: 4.7,
-      salesLastMonth: 48,
-      createdAt: new Date('2026-09-29'),
-    },
-    {
-      id: 57,
-      subcategoryId: 17,
-      entrepreneurId: 8,
-      brand: 'Arte Circular',
-      name: 'Florero de cerámica',
-      description: 'Florero decorativo elaborado a mano.',
-      price: 18990,
-      salePrice: 14990,
-      imageUrl: 'imagen-dummy-producto-57',
-      images: ['imagen-dummy-producto-57'],
-      stock: 10,
-      rating: 4.8,
-      salesLastMonth: 39,
-      createdAt: new Date('2026-09-30'),
-    },
-    {
-      id: 58,
-      subcategoryId: 17,
-      entrepreneurId: 8,
-      brand: 'Arte Circular',
-      name: 'Cuenco artesanal',
-      description: 'Cuenco de cerámica para el hogar.',
-      price: 9990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-58',
-      images: ['imagen-dummy-producto-58'],
-      stock: 18,
-      rating: 4.5,
-      salesLastMonth: 44,
-      createdAt: new Date('2026-10-01'),
-    },
-    {
-      id: 59,
-      subcategoryId: 17,
-      entrepreneurId: 8,
-      brand: 'Arte Circular',
-      name: 'Maceta de cerámica',
-      description: 'Maceta artesanal decorativa.',
-      price: 14990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-59',
-      images: ['imagen-dummy-producto-59'],
-      stock: 0,
-      rating: null,
-      salesLastMonth: 12,
-      createdAt: new Date('2026-10-02'),
-    },
-
-    // DECORACIÓN Y ARTESANÍAS - DECORACIÓN SUSTENTABLE (18)
-    {
-      id: 60,
-      subcategoryId: 18,
-      entrepreneurId: 8,
-      brand: 'Arte Circular',
-      name: 'Portarretrato de madera recuperada',
-      description: 'Portarretrato elaborado con madera reutilizada.',
-      price: 11990,
-      salePrice: 9990,
-      imageUrl: 'imagen-dummy-producto-60',
-      images: ['imagen-dummy-producto-60'],
-      stock: 27,
-      rating: 4.8,
-      salesLastMonth: 54,
-      createdAt: new Date('2026-10-03'),
-    },
-    {
-      id: 61,
-      subcategoryId: 18,
-      entrepreneurId: 8,
-      brand: 'Arte Circular',
-      name: 'Canasto tejido artesanal',
-      description: 'Canasto decorativo tejido a mano.',
-      price: 17990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-61',
-      images: ['imagen-dummy-producto-61'],
-      stock: 19,
-      rating: 4.7,
-      salesLastMonth: 46,
-      createdAt: new Date('2026-10-04'),
-    },
-    {
-      id: 62,
-      subcategoryId: 18,
-      entrepreneurId: 8,
-      brand: 'Arte Circular',
-      name: 'Adorno de vidrio recuperado',
-      description: 'Pieza decorativa elaborada con vidrio reutilizado.',
-      price: 13990,
-      salePrice: 10990,
-      imageUrl: 'imagen-dummy-producto-62',
-      images: ['imagen-dummy-producto-62'],
-      stock: 11,
-      rating: 4.4,
-      salesLastMonth: 28,
-      createdAt: new Date('2026-10-05'),
-    },
-    {
-      id: 63,
-      subcategoryId: 18,
-      entrepreneurId: 8,
-      brand: 'Arte Circular',
-      name: 'Organizador de escritorio',
-      description: 'Organizador elaborado con materiales reutilizados.',
-      price: 8990,
-      salePrice: null,
-      imageUrl: 'imagen-dummy-producto-63',
-      images: ['imagen-dummy-producto-63'],
-      stock: 31,
-      rating: 4.6,
-      salesLastMonth: 75,
-      createdAt: new Date('2026-10-06'),
-    },
-    {
-      id: 64,
-      subcategoryId: 18,
-      entrepreneurId: 8,
-      brand: 'Arte Circular',
-      name: 'Lámpara decorativa artesanal',
-      description: 'Lámpara decorativa elaborada artesanalmente.',
-      price: 34990,
-      salePrice: 28990,
-      imageUrl: 'imagen-dummy-producto-64',
-      images: ['imagen-dummy-producto-64'],
-      stock: 0,
-      rating: null,
-      salesLastMonth: 9,
-      createdAt: new Date('2026-10-07'),
-    },
-  ];
-
-  private readonly greenFootprints: GreenFootprint[] = [
-    {
-      productId: 1,
-      sustainabilityRating: 4.8,
-      materials: ['Algodón orgánico', 'Tintes naturales'],
-      productionProcess: 'Confección con algodón orgánico.',
-    },
-    {
-      productId: 2,
-      sustainabilityRating: 4.5,
-      materials: ['Algodón orgánico'],
-      productionProcess: 'Confección con materiales de origen natural.',
-    },
-    {
-      productId: 3,
-      sustainabilityRating: null,
-      materials: ['Algodón'],
-      productionProcess: null,
-    },
-    {
-      productId: 4,
-      sustainabilityRating: 4.3,
-      materials: ['Fibras recicladas'],
-      productionProcess: 'Confección con materiales recuperados.',
-    },
-    {
-      productId: 5,
-      sustainabilityRating: 4.4,
-      materials: ['Algodón'],
-      productionProcess: 'Confección artesanal.',
-    },
-    {
-      productId: 6,
-      sustainabilityRating: 4.7,
-      materials: ['Fibras recicladas'],
-      productionProcess: 'Reutilización de fibras textiles.',
-    },
-    {
-      productId: 7,
-      sustainabilityRating: null,
-      materials: [],
-      productionProcess: null,
-    },
-    {
-      productId: 8,
-      sustainabilityRating: 4.5,
-      materials: ['Lino'],
-      productionProcess: 'Confección textil.',
-    },
-    {
-      productId: 9,
-      sustainabilityRating: 4.6,
-      materials: ['Tela reciclada'],
-      productionProcess: 'Reutilización de material textil.',
-    },
-    {
-      productId: 10,
-      sustainabilityRating: 4.8,
-      materials: ['Algodón orgánico'],
-      productionProcess: 'Confección textil.',
-    },
-    {
-      productId: 11,
-      sustainabilityRating: 4.5,
-      materials: ['Algodón'],
-      productionProcess: 'Confección textil.',
-    },
-    {
-      productId: 12,
-      sustainabilityRating: null,
-      materials: ['Fibras recuperadas'],
-      productionProcess: null,
-    },
-    {
-      productId: 13,
-      sustainabilityRating: 4.7,
-      materials: ['Frutillas'],
-      productionProcess: 'Elaboración artesanal.',
-    },
-    {
-      productId: 14,
-      sustainabilityRating: 4.5,
-      materials: ['Moras'],
-      productionProcess: 'Elaboración artesanal.',
-    },
-    {
-      productId: 15,
-      sustainabilityRating: null,
-      materials: ['Tomates'],
-      productionProcess: null,
-    },
-    {
-      productId: 16,
-      sustainabilityRating: 4.6,
-      materials: ['Frutos secos'],
-      productionProcess: 'Preparación y envasado artesanal.',
-    },
-    {
-      productId: 17,
-      sustainabilityRating: 4.5,
-      materials: ['Almendras'],
-      productionProcess: 'Selección y envasado.',
-    },
-    {
-      productId: 18,
-      sustainabilityRating: 4.4,
-      materials: ['Avena'],
-      productionProcess: 'Elaboración artesanal.',
-    },
-    {
-      productId: 19,
-      sustainabilityRating: 4.7,
-      materials: ['Ingredientes de origen vegetal'],
-      productionProcess: 'Elaboración artesanal.',
-    },
-    {
-      productId: 20,
-      sustainabilityRating: 4.6,
-      materials: ['Avena'],
-      productionProcess: 'Elaboración artesanal.',
-    },
-    {
-      productId: 21,
-      sustainabilityRating: null,
-      materials: ['Carbón vegetal'],
-      productionProcess: null,
-    },
-    {
-      productId: 22,
-      sustainabilityRating: 4.6,
-      materials: ['Ingredientes de origen natural'],
-      productionProcess: 'Preparación artesanal.',
-    },
-    {
-      productId: 23,
-      sustainabilityRating: 4.5,
-      materials: ['Ingredientes de origen vegetal'],
-      productionProcess: 'Preparación cosmética.',
-    },
-    {
-      productId: 24,
-      sustainabilityRating: null,
-      materials: [],
-      productionProcess: null,
-    },
-    {
-      productId: 25,
-      sustainabilityRating: 4.7,
-      materials: ['Semillas'],
-      productionProcess: 'Selección y envasado de semillas.',
-    },
-    {
-      productId: 26,
-      sustainabilityRating: 4.7,
-      materials: ['Semillas'],
-      productionProcess: 'Selección y envasado de semillas.',
-    },
-    {
-      productId: 27,
-      sustainabilityRating: null,
-      materials: ['Almácigos'],
-      productionProcess: null,
-    },
-    {
-      productId: 28,
-      sustainabilityRating: 4.8,
-      materials: ['Material recuperado'],
-      productionProcess: 'Fabricación con material reciclado.',
-    },
-    {
-      productId: 29,
-      sustainabilityRating: 4.2,
-      materials: ['Madera', 'Metal'],
-      productionProcess: 'Fabricación de herramientas.',
-    },
-    {
-      productId: 30,
-      sustainabilityRating: 4.5,
-      materials: ['Material reutilizable'],
-      productionProcess: 'Fabricación de accesorios para jardinería.',
-    },
-    {
-      productId: 31,
-      sustainabilityRating: 4.6,
-      materials: ['Ingredientes de limpieza'],
-      productionProcess: 'Preparación de productos de limpieza.',
-    },
-    {
-      productId: 32,
-      sustainabilityRating: null,
-      materials: [],
-      productionProcess: null,
-    },
-  ];
 
 
-  private readonly reviews: Review[] = [
-    {
-      id: 1,
-      productId: 1,
-      author: 'María',
-      comment: 'Muy buen producto y excelente calidad.',
-      rating: 5,
-      published: true,
-    },
-    {
-      id: 2,
-      productId: 1,
-      author: 'Carlos',
-      comment: 'Buena calidad y materiales.',
-      rating: 4,
-      published: true,
-    },
-    {
-      id: 3,
-      productId: 1,
-      author: 'Andrea',
-      comment: 'Comentario pendiente de moderación.',
-      rating: 3,
-      published: false,
-    },
-    {
-      id: 4,
-      productId: 2,
-      author: 'Pedro',
-      comment: 'Producto cómodo y de buena terminación.',
-      rating: 4,
-      published: true,
-    },
-    {
-      id: 5,
-      productId: 3,
-      author: 'Laura',
-      comment: 'Buena relación precio y calidad.',
-      rating: 4,
-      published: true,
-    },
-    {
-      id: 6,
-      productId: 4,
-      author: 'Felipe',
-      comment: 'Muy cómodo.',
-      rating: 5,
-      published: true,
-    },
-    {
-      id: 7,
-      productId: 5,
-      author: 'Sofía',
-      comment: 'Me gustó el diseño.',
-      rating: 4,
-      published: false,
-    },
-    {
-      id: 8,
-      productId: 8,
-      author: 'Valentina',
-      comment: 'Tela cómoda y liviana.',
-      rating: 5,
-      published: true,
-    },
-    {
-      id: 9,
-      productId: 10,
-      author: 'Javier',
-      comment: 'Buena confección.',
-      rating: 5,
-      published: true,
-    },
-    {
-      id: 10,
-      productId: 13,
-      author: 'Camila',
-      comment: 'Muy rica mermelada.',
-      rating: 5,
-      published: true,
-    },
-    {
-      id: 11,
-      productId: 13,
-      author: 'Diego',
-      comment: 'Buen sabor.',
-      rating: 4,
-      published: true,
-    },
-    {
-      id: 12,
-      productId: 13,
-      author: 'Francisca',
-      comment: 'Pendiente de revisión.',
-      rating: 3,
-      published: false,
-    },
-    {
-      id: 13,
-      productId: 16,
-      author: 'Ignacio',
-      comment: 'Muy buena mezcla.',
-      rating: 5,
-      published: true,
-    },
-    {
-      id: 14,
-      productId: 19,
-      author: 'Daniela',
-      comment: 'Aroma agradable.',
-      rating: 5,
-      published: true,
-    },
-    {
-      id: 15,
-      productId: 20,
-      author: 'Pablo',
-      comment: 'Producto correcto.',
-      rating: 4,
-      published: true,
-    },
-    {
-      id: 16,
-      productId: 22,
-      author: 'Fernanda',
-      comment: 'Muy práctico.',
-      rating: 5,
-      published: true,
-    },
-    {
-      id: 17,
-      productId: 25,
-      author: 'Rodrigo',
-      comment: 'Las semillas germinaron.',
-      rating: 5,
-      published: true,
-    },
-    {
-      id: 18,
-      productId: 28,
-      author: 'Paula',
-      comment: 'Buen macetero.',
-      rating: 4,
-      published: true,
-    },
-    {
-      id: 19,
-      productId: 31,
-      author: 'Andrés',
-      comment: 'Rinde bastante.',
-      rating: 5,
-      published: true,
-    },
-    {
-      id: 20,
-      productId: 34,
-      author: 'Natalia',
-      comment: 'Los paños son resistentes.',
-      rating: 5,
-      published: true,
-    },
-    {
-      id: 21,
-      productId: 37,
-      author: 'Constanza',
-      comment: 'Aroma agradable.',
-      rating: 5,
-      published: true,
-    },
-    {
-      id: 22,
-      productId: 40,
-      author: 'Matías',
-      comment: 'Buen producto.',
-      rating: 4,
-      published: false,
-    },
-    {
-      id: 23,
-      productId: 43,
-      author: 'Antonia',
-      comment: 'Bolso resistente.',
-      rating: 5,
-      published: true,
-    },
-    {
-      id: 24,
-      productId: 55,
-      author: 'Tomás',
-      comment: 'Muy bonita taza.',
-      rating: 5,
-      published: true,
-    },
-  ];
+  constructor(
+    @InjectRepository(ProductEntity)
+    private readonly productsRepository:
+      Repository<ProductEntity>,
 
-  searchProducts(search: string): ProductSearchDto[] {
-    if (!search || search.trim() === '') {
-      throw new BadRequestException(
-        'El término de búsqueda es obligatorio',
+    @InjectRepository(ProductImageEntity)
+    private readonly productImagesRepository:
+      Repository<ProductImageEntity>,
+
+    @InjectRepository(ReviewEntity)
+    private readonly reviewsRepository:
+      Repository<ReviewEntity>,
+
+    @InjectRepository(ProductSustainabilityAttributeEntity)
+    private readonly sustainabilityRepository:
+      Repository<ProductSustainabilityAttributeEntity>,
+  ) { }
+
+
+  async findAll(query: ProductQueryDto) {
+    const now = new Date();
+
+    const queryBuilder = this.createPublicProductsQuery();
+
+    if (query.search && query.search.trim() !== '') {
+      queryBuilder.andWhere(
+        'product.name ILIKE :search',
+        {
+          search: `%${query.search.trim()}%`,
+        },
       );
     }
 
-    const filteredProducts = this.products.filter((product) =>
-      product.name.toLowerCase().includes(search.toLowerCase()),
-    );
+    if (query.categoryId !== undefined) {
+      queryBuilder.andWhere(
+        'product.categoryId = :categoryId',
+        {
+          categoryId: query.categoryId,
+        },
+      );
+    }
 
-    return filteredProducts.map((product) => ({
-      id: product.id,
-      brand: product.brand,
-      name: product.name,
-      price: product.price,
-      imageUrl: product.imageUrl ?? '',
-    }));
+    if (query.producerId !== undefined) {
+      queryBuilder.andWhere(
+        'product.producerId = :producerId',
+        {
+          producerId: query.producerId,
+        },
+      );
+    }
+
+    return this.paginateProducts(
+      queryBuilder,
+      query,
+      now,
+    );
   }
 
-  findProductsOnSale(): ProductOfferDto[] {
-    const productsOnSale = this.products.filter(
-      (product) => product.salePrice !== null,
+  async findProductsOnSale(
+    pagination: PaginationDto,
+  ) {
+
+    const now = new Date();
+
+    const queryBuilder =
+      this.createPublicProductsQuery()
+        .andWhere(
+          'product.offerPrice IS NOT NULL')
+        .andWhere(
+          'product.offerStartAt <= :now',
+          { now })
+        .andWhere(
+          'product.offerEndAt > :now',
+          { now });
+
+    return this.paginateProducts(
+      queryBuilder,
+      pagination,
+      now,
+    );
+  }
+
+  async findNewProducts(
+    pagination: PaginationDto,
+  ) {
+
+    const now = new Date();
+
+    const queryBuilder = this.createPublicProductsQuery();
+
+    return this.paginateProducts(
+      queryBuilder,
+      pagination,
+      now,
+    );
+  }
+
+  async findBestSellingProducts(quantity: number): Promise<BestSellingProductDto[]> {
+
+    this.validateQuantity(quantity);
+
+    const now = new Date();
+    const since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const sales: {
+      productId: number;
+      unitsSold: string;
+    }[] = await this.productsRepository.query(
+      `
+            SELECT
+                oi.product_id AS "productId",
+
+                SUM(
+                    oi.quantity
+                    - COALESCE(
+                        returned.quantity,
+                        0
+                    )
+                ) AS "unitsSold"
+
+            FROM order_items oi
+
+            JOIN orders o
+                ON o.id = oi.order_id
+
+            JOIN products p
+                ON p.id = oi.product_id
+
+            JOIN producers pr
+                ON pr.id = p.producer_id
+
+            JOIN users u
+                ON u.id = pr.user_id
+
+            LEFT JOIN (
+                SELECT
+                    ri.order_item_id,
+                    SUM(ri.quantity) AS quantity
+
+                FROM return_items ri
+
+                JOIN returns r
+                    ON r.id = ri.return_id
+
+                WHERE r.status = 'COMPLETED'
+                AND r.completed_at <= $2
+
+                GROUP BY ri.order_item_id
+            ) returned
+                ON returned.order_item_id = oi.id
+
+            WHERE o.status = 'DELIVERED'
+            AND o.delivered_at >= $1
+            AND o.delivered_at <= $2
+
+            AND p.is_active = true
+            AND u.is_active = true
+            AND u.role = 'PRODUCER'
+
+            GROUP BY oi.product_id
+
+            HAVING SUM(
+                oi.quantity
+                - COALESCE(returned.quantity, 0)
+            ) > 0
+
+            ORDER BY
+                "unitsSold" DESC,
+                oi.product_id ASC
+
+            LIMIT $3
+            `,
+      [since, now, quantity]);
+
+    if (sales.length === 0) {
+      return [];
+    }
+
+    const productIds = sales.map(
+      (sale) => Number(sale.productId),
     );
 
-    return productsOnSale.map((product) => {
-      const discountedPrice = product.salePrice as number;
+    const products = await this.createPublicProductsQuery()
+      .andWhere(
+        'product.id IN (:...productIds)',
+        { productIds }).getMany();
 
-      return {
-        id: product.id,
-        brand: product.brand,
-        name: product.name,
-        originalPrice: product.price,
-        discountedPrice,
-        discountPercentage: Math.round(
-          ((product.price - discountedPrice) / product.price) * 100,
+    const summaries =
+      await this.toSummaryDtos(
+        products,
+        now);
+
+    const productMap = new Map(
+      summaries.map((product) => [
+        product.id,
+        product,
+      ]),
+    );
+
+    const result: BestSellingProductDto[] = [];
+
+    for (const sale of sales) {
+
+      const product = productMap.get(
+        Number(sale.productId),
+      );
+
+      if (product) {
+
+        result.push({
+          ...product,
+          unitsSold: Number(sale.unitsSold),
+        });
+      }
+    }
+
+    return result;
+  }
+
+  async findOne(productId: number): Promise<ProductDetailDto> {
+    const product = await this.findPublicProduct(productId);
+
+    const [summary] =
+      await this.toSummaryDtos(
+        [product],
+        new Date(),
+      );
+
+    const images =
+      await this.productImagesRepository.find({
+        where: {
+          productId,
+        },
+        order: {
+          displayOrder: 'ASC',
+        },
+      });
+
+    const details =
+      await this.findSpecializedDetails(
+        product,
+      );
+
+    return {
+      ...summary,
+      description: product.description,
+      categoryName: product.category.name,
+      imageFileIds: images.map(
+        (image) => image.fileId,
+      ),
+      details,
+    };
+  }
+
+  async findGreenFootprint(productId: number): Promise<ProductGreenFootprintDto> {
+
+    const product = await this.findPublicProduct(productId);
+
+    const attributes =
+      await this.sustainabilityRepository.find({
+        where: {
+          productId,
+        },
+        relations: {
+          sustainabilityAttribute: true,
+        },
+        order: {
+          sustainabilityAttributeId: 'ASC',
+        },
+      });
+
+    return {
+      productId: product.id,
+
+      co2Avoided:
+        Number(product.co2Avoided),
+
+      greenPoints:
+        this.calculateGreenPoints(
+          product.co2Avoided,
         ),
-        imageUrl: product.imageUrl ?? '',
-      };
+
+      sustainabilityAttributes:
+        attributes.map((item) => ({
+          id: item.sustainabilityAttribute.id,
+
+          name:
+            item.sustainabilityAttribute.name,
+
+          description:
+            item.sustainabilityAttribute.description,
+        })),
+    };
+  }
+
+  async findReviews(productId: number, pagination: PaginationDto) {
+
+    await this.findPublicProduct(productId);
+
+    const {
+      page,
+      size,
+      sortBy,
+      sortDirection,
+    } = pagination;
+
+    const allowedSortFields = [
+      'id',
+      'rating',
+      'createdAt',
+    ];
+
+    if (!allowedSortFields.includes(sortBy)) {
+
+      throw new BadRequestException(
+        'Campo de ordenamiento inválido.',
+      );
+    }
+
+    const queryBuilder =
+      this.reviewsRepository
+        .createQueryBuilder('review')
+        .innerJoin(
+          'review.customer',
+          'customer',
+        )
+        .innerJoin(
+          'customer.user',
+          'user',
+        )
+        .where(
+          'review.productId = :productId',
+          { productId },
+        );
+
+    const totalElements =
+      await queryBuilder.getCount();
+
+    queryBuilder
+      .select('review.id', 'id')
+      .addSelect('user.firstName', 'author')
+      .addSelect('review.comment', 'comment')
+      .addSelect('review.rating', 'rating')
+      .addSelect('review.createdAt', 'createdAt')
+      .orderBy(
+        `review.${sortBy}`,
+        sortDirection,
+      );
+
+    if (sortBy !== 'id') {
+
+      queryBuilder.addOrderBy(
+        'review.id',
+        'ASC',
+      );
+    }
+
+    const reviews =
+      await queryBuilder
+        .offset(page * size)
+        .limit(size)
+        .getRawMany<ProductReviewDto>();
+
+    const content: ProductReviewDto[] =
+      reviews.map((review) => ({
+        id: review.id,
+        author: review.author,
+        comment: review.comment,
+        rating: review.rating,
+        createdAt: review.createdAt,
+      }));
+
+    return {
+      content,
+      page,
+      size,
+      totalElements,
+      totalPages: Math.ceil(totalElements / size),
+      sortBy,
+      sortDirection,
+    };
+  }
+
+  async findRelatedProducts(productId: number, quantity: number): Promise<ProductSummaryDto[]> {
+
+    this.validateQuantity(quantity);
+    const product =
+      await this.findPublicProduct(productId);
+
+    const relatedProducts =
+      await this.createPublicProductsQuery()
+        .andWhere(
+          'product.categoryId = :categoryId',
+          {
+            categoryId: product.categoryId,
+          },
+        )
+        .andWhere(
+          'product.id <> :productId',
+          { productId },
+        )
+        .orderBy(
+          'product.id',
+          'ASC',
+        )
+        .limit(quantity)
+        .getMany();
+
+    return this.toSummaryDtos(
+      relatedProducts,
+      new Date(),
+    );
+  }
+
+  async findProductsByProducer(producerId: number, pagination: PaginationDto) {
+
+    const queryBuilder =
+      this.createPublicProductsQuery()
+        .andWhere(
+          'product.producerId = :producerId',
+          { producerId },
+        );
+
+    return this.paginateProducts(
+      queryBuilder,
+      pagination,
+      new Date(),
+    );
+  }
+
+  async findFavoriteProduct(productId: number): Promise<FavoriteProductDto> {
+
+    const product =
+      await this.findPublicProduct(productId);
+
+    const [summary] =
+      await this.toSummaryDtos(
+        [product],
+        new Date(),
+      );
+
+    return summary;
+  }
+
+
+  private createPublicProductsQuery(): SelectQueryBuilder<ProductEntity> {
+
+    return this.productsRepository
+      .createQueryBuilder('product')
+      .innerJoinAndSelect(
+        'product.producer',
+        'producer',
+      )
+      .innerJoin(
+        'producer.user',
+        'user',
+      )
+      .where(
+        'product.isActive = :productActive',
+        { productActive: true },
+      )
+      .andWhere(
+        'user.isActive = :userActive',
+        { userActive: true },
+      )
+      .andWhere(
+        'user.role = :role',
+        { role: UserRole.PRODUCER },
+      );
+  }
+
+  private async paginateProducts(queryBuilder: SelectQueryBuilder<ProductEntity>, pagination: PaginationDto, now: Date) {
+
+    const {
+      page,
+      size,
+      sortBy,
+      sortDirection,
+    } = pagination;
+
+    const allowedSortFields = [
+      'id',
+      'name',
+      'price',
+      'finalPrice',
+      'stock',
+      'co2Avoided',
+      'createdAt',
+    ];
+
+    if (!allowedSortFields.includes(sortBy)) {
+
+      throw new BadRequestException(
+        'Campo de ordenamiento inválido.',
+      );
+    }
+
+    const totalElements =
+      await queryBuilder.getCount();
+
+    if (sortBy === 'finalPrice') {
+
+      queryBuilder
+        .addSelect(
+          `CASE
+                WHEN product.offer_price IS NOT NULL
+                AND product.offer_start_at <= :now
+                AND product.offer_end_at > :now
+                THEN product.offer_price
+                ELSE product.price
+            END`,
+          'effective_price',
+        )
+        .setParameter('now', now)
+        .orderBy(
+          'effective_price',
+          sortDirection,
+        );
+
+    } else {
+
+      queryBuilder.orderBy(
+        `product.${sortBy}`,
+        sortDirection,
+      );
+    }
+
+    if (sortBy !== 'id') {
+
+      queryBuilder.addOrderBy(
+        'product.id',
+        'ASC',
+      );
+    }
+
+    const products =
+      await queryBuilder
+        .offset(page * size)
+        .limit(size)
+        .getMany();
+
+    const content =
+      await this.toSummaryDtos(
+        products,
+        now,
+      );
+
+    return {
+      content,
+      page,
+      size,
+      totalElements,
+      totalPages: Math.ceil(totalElements / size),
+      sortBy,
+      sortDirection,
+    };
+  }
+  private async findPublicProduct(productId: number): Promise<ProductEntity> {
+
+    if (
+      !Number.isInteger(productId) ||
+      productId <= 0
+    ) {
+
+      throw new BadRequestException(
+        'El identificador debe ser un número entero positivo.',
+      );
+    }
+
+    const product =
+      await this.createPublicProductsQuery()
+        .innerJoinAndSelect(
+          'product.category',
+          'category',
+        )
+        .andWhere(
+          'product.id = :productId',
+          { productId },
+        )
+        .getOne();
+
+    if (!product) {
+      throw new ProductNotFoundError();
+    }
+
+    return product;
+  }
+
+  private getActiveOfferPrice(product: ProductEntity, now: Date): number | null {
+
+    if (
+      product.offerPrice !== null &&
+      product.offerStartAt !== null &&
+      product.offerEndAt !== null &&
+      product.offerStartAt <= now &&
+      now < product.offerEndAt
+    ) {
+      return product.offerPrice;
+    }
+
+    return null;
+  }
+
+  private calculateGreenPoints(co2Avoided: string): number {
+
+    const [integerPart, decimalPart = ''] =
+      co2Avoided.split('.');
+
+    const hundredths =
+      decimalPart
+        .padEnd(2, '0')
+        .slice(0, 2);
+
+    return (
+      Number(integerPart) * 100 +
+      Number(hundredths)
+    );
+  }
+
+  private validateQuantity(quantity: number): void {
+
+    if (
+      !Number.isInteger(quantity) ||
+      quantity < 1 ||
+      quantity > 100
+    ) {
+
+      throw new BadRequestException(
+        'La cantidad debe ser un número entero entre 1 y 100.',
+      );
+    }
+  }
+
+  private async toSummaryDtos(products: ProductEntity[], now: Date): Promise<ProductSummaryDto[]> {
+
+    if (products.length === 0) {
+      return [];
+    }
+
+    const productIds = products.map((product) => product.id);
+
+    const reviews =
+      await this.reviewsRepository
+        .createQueryBuilder('review')
+        .select(
+          'review.productId',
+          'productId',
+        )
+        .addSelect(
+          'AVG(review.rating)',
+          'rating',
+        )
+        .addSelect(
+          'COUNT(review.id)',
+          'reviewCount',
+        )
+        .where(
+          'review.productId IN (:...productIds)',
+          { productIds },
+        )
+        .groupBy('review.productId')
+        .getRawMany<{
+          productId: number;
+          rating: string;
+          reviewCount: string;
+        }>();
+
+    const images =
+      await this.productImagesRepository.find({
+        where: {
+          productId: In(productIds),
+          isPrimary: true,
+        },
+      });
+
+    const reviewMap = new Map(
+      reviews.map((review) => [
+        Number(review.productId),
+        review,
+      ]),
+    );
+
+    const imageMap = new Map(
+      images.map((image) => [
+        image.productId,
+        image.fileId,
+      ]),
+    );
+
+    return products.map((product) => {
+      const review =
+        reviewMap.get(product.id);
+
+      const rating = review
+        ? Number(
+          Number(review.rating).toFixed(2),
+        )
+        : null;
+
+      const reviewCount = review
+        ? Number(review.reviewCount)
+        : 0;
+
+      return ProductMapper.toSummaryDto(
+        product,
+
+        this.getActiveOfferPrice(
+          product,
+          now,
+        ),
+
+        this.calculateGreenPoints(
+          product.co2Avoided,
+        ),
+
+        rating,
+
+        reviewCount,
+
+        imageMap.get(product.id) ?? null,
+      );
     });
   }
 
-  findBestSellingProducts(quantity: number): BestSellingProductDto[] {
-    if (quantity <= 0) {
-      throw new BadRequestException(
-        'La cantidad debe ser un número entero positivo.',
-      );
-    }
-    const sortedProducts = this.products.slice().sort(
-      (a, b) => b.salesLastMonth - a.salesLastMonth,
-    );
+  private async findSpecializedDetails(product: ProductEntity): Promise<Record<string, string | number | null> | null> {
 
-    return sortedProducts.slice(0, quantity).map((product) => ({
-      id: product.id,
-      brand: product.brand,
-      name: product.name,
-      price: product.price,
-      rating: product.rating,
-      imageUrl: product.imageUrl,
-    }));
+    const manager = this.productsRepository.manager;
+
+    const productId = product.id;
+
+    switch (product.category.name) {
+
+      case 'Alimentos': {
+
+        const detail =
+          await manager.findOneBy(
+            FoodDetailEntity,
+            { productId },
+          );
+
+        return detail ? {
+          weightG: this.toNumber(detail.weightG),
+          ingredients: detail.ingredients,
+          allergens: detail.allergens,
+          expirationDate: detail.expirationDate,
+        } : null;
+      }
+
+      case 'Cuidado personal': {
+
+        const detail =
+          await manager.findOneBy(
+            PersonalCareDetailEntity,
+            { productId },
+          );
+
+        return detail ? {
+          volumeMl: this.toNumber(detail.volumeMl),
+          ingredients: detail.ingredients,
+          skinType: detail.skinType,
+        } : null;
+      }
+
+      case 'Huerto y jardín': {
+
+        const detail =
+          await manager.findOneBy(
+            GardenDetailEntity,
+            { productId },
+          );
+
+        return detail ? {
+          material: detail.material,
+          heightCm: this.toNumber(detail.heightCm),
+          widthCm: this.toNumber(detail.widthCm),
+          depthCm: this.toNumber(detail.depthCm),
+          weightG: this.toNumber(detail.weightG),
+          usageType: detail.usageType,
+        } : null;
+      }
+
+      case 'Limpieza del hogar': {
+
+        const detail =
+          await manager.findOneBy(
+            HomeCleaningDetailEntity,
+            { productId },
+          );
+
+        return detail ? {
+          volumeMl: this.toNumber(detail.volumeMl),
+          composition: detail.composition,
+          applicationSurface:
+            detail.applicationSurface,
+        } : null;
+      }
+
+      case 'Aromas y bienestar': {
+
+        const detail =
+          await manager.findOneBy(
+            WellnessDetailEntity,
+            { productId },
+          );
+
+        return detail ? {
+          fragrance: detail.fragrance,
+          volumeMl: this.toNumber(detail.volumeMl),
+          durationHours:
+            this.toNumber(detail.durationHours),
+          format: detail.format,
+        } : null;
+      }
+
+      case 'Ropa y accesorios': {
+
+        const detail =
+          await manager.findOneBy(
+            ClothingDetailEntity,
+            { productId },
+          );
+
+        return detail ? {
+          size: detail.size,
+          color: detail.color,
+          material: detail.material,
+        } : null;
+      }
+
+      case 'Mascotas': {
+
+        const detail =
+          await manager.findOneBy(
+            PetDetailEntity,
+            { productId },
+          );
+
+        return detail ? {
+          petType: detail.petType,
+          size: detail.size,
+          weightG: this.toNumber(detail.weightG),
+          material: detail.material,
+        } : null;
+      }
+
+      case 'Decoración y artesanía': {
+
+        const detail =
+          await manager.findOneBy(
+            CraftDetailEntity,
+            { productId },
+          );
+
+        return detail ? {
+          material: detail.material,
+          heightCm: this.toNumber(detail.heightCm),
+          widthCm: this.toNumber(detail.widthCm),
+          depthCm: this.toNumber(detail.depthCm),
+          color: detail.color,
+          weightG: this.toNumber(detail.weightG),
+        } : null;
+      }
+
+      default:
+        return null;
+    }
   }
 
-  findNewProducts(): NewProductSummaryDto[] {
-    const sortedProducts = this.products.slice().sort(
-      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-    );
+  private toNumber(value: string | null): number | null {
 
-    return sortedProducts.map((product) => ({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      salePrice: product.salePrice,
-      imageUrl: product.imageUrl,
-    }));
-  }
-
-  findOne(productId: number): ProductDetailDto {
-    const product = this.products.find(
-      (item) => item.id === productId,
-    );
-
-    if (!product) {
-      throw new ProductNotFoundError();
-    }
-
-    return {
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      description: product.description,
-      images: product.images,
-      colors: product.colors,
-      sizes: product.sizes,
-    };
-  }
-
-  findGreenFootprint(productId: number): ProductGreenFootprintDto {
-    const product = this.products.find(
-      (item) => item.id === productId,
-    );
-
-    if (!product) {
-      throw new ProductNotFoundError();
-    }
-
-    const footprint = this.greenFootprints.find(
-      (item) => item.productId === productId,
-    );
-
-    if (!footprint) {
-      return {
-        sustainabilityRating: null,
-        materials: [],
-        productionProcess: null,
-      };
-    }
-
-    return {
-      sustainabilityRating: footprint.sustainabilityRating,
-      materials: footprint.materials,
-      productionProcess: footprint.productionProcess,
-    };
-  }
-
-  findReviews(productId: number): ProductReviewDto[] {
-    const product = this.products.find(
-      (item) => item.id === productId,
-    );
-
-    if (!product) {
-      throw new ProductNotFoundError();
-    }
-
-    const publishedReviews = this.reviews.filter(
-      (review) =>
-        review.productId === productId && review.published,
-    );
-
-    return publishedReviews.map((review) => ({
-      id: review.id,
-      author: review.author,
-      comment: review.comment,
-      rating: review.rating,
-    }));
-  }
-
-  findRelatedProducts(productId: number, quantity: number): RelatedProductDto[] {
-    if (quantity <= 0) {
-      throw new BadRequestException('La cantidad debe ser un número entero positivo.');
-    }
-    const product = this.products.find(
-      (item) => item.id === productId,
-    );
-
-    if (!product) {
-      throw new ProductNotFoundError();
-    }
-
-    const relatedProducts = this.products
-      .filter(
-        (item) =>
-          item.subcategoryId === product.subcategoryId &&
-          item.id !== productId,
-      )
-      .sort(
-        (a, b) => b.salesLastMonth - a.salesLastMonth,
-      )
-      .slice(0, quantity);
-
-    return relatedProducts.map((item) => ({
-      id: item.id,
-      brand: item.brand,
-      name: item.name,
-      price: item.price,
-      imageUrl: item.imageUrl,
-    }));
-  }
-
-
-  findFavoriteProduct(productId: number): FavoriteProductDto {
-    const product = this.products.find((item) => item.id === productId);
-
-    if (!product) {
-      throw new ProductNotFoundError();
-    }
-
-    return {
-      id: product.id,
-      brand: product.brand,
-      name: product.name,
-      price: product.price,
-      imageUrl: product.imageUrl ?? '',
-    };
-  }
-
-  findProductsBySubcategory(subcategoryId: number): Product[] {
-    return this.products.filter(
-      (product) => product.subcategoryId === subcategoryId,
-    );
-  }
-
-  findProductsByEntrepreneur(
-    entrepreneurId: number,
-  ): ProductSummaryDto[] {
-    const entrepreneurProducts = this.products.filter(
-      (product) => product.entrepreneurId === entrepreneurId,
-    );
-
-    return entrepreneurProducts.map((product) => ({
-      id: product.id,
-      brand: product.brand,
-      name: product.name,
-      price: product.price,
-      imageUrl: product.imageUrl,
-    }));
+    return value === null
+      ? null
+      : Number(value);
   }
 }

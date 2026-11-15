@@ -1,14 +1,13 @@
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
-import { ProductSearchDto } from '../dto/product-search.dto';
-import { ProductOfferDto } from '../dto/product-offer.dto';
-import { BestSellingProductDto } from '../dto/best-selling-product.dto';
-import { NewProductSummaryDto } from '../dto/new-product-summary.dto';
+import { PaginationDto } from '../dto/pagination.dto';
+import { ProductQueryDto } from '../dto/product-query.dto';
+import { NewProductsQueryDto } from '../dto/new-products-query.dto';
+import { ProductSummaryDto } from '../dto/product-summary.dto';
 import { ProductDetailDto } from '../dto/product-detail.dto';
+import { BestSellingProductDto } from '../dto/best-selling-product.dto';
 import { ProductGreenFootprintDto } from '../dto/product-green-footprint.dto';
-import { ProductReviewDto } from '../dto/product-review.dto';
-import { RelatedProductDto } from '../dto/related-product.dto';
 
 @ApiTags('Products')
 @Controller('products')
@@ -18,207 +17,211 @@ export class ProductsController {
 
   @Get()
   @ApiOperation({
-    summary: 'Buscar productos',
-    description:
-      'Busca productos del catálogo mediante un término de búsqueda obligatorio. Devuelve los productos coincidentes o un arreglo vacío si no encuentra resultados.',
-  })
-  @ApiQuery({
-    name: 'search',
-    type: String,
-    required: true,
-    description: 'Texto utilizado para buscar productos',
-    example: 'polera',
+    summary: 'Obtener catálogo paginado de productos',
   })
   @ApiOkResponse({
-    description: 'Productos encontrados.',
-    type: ProductSearchDto,
-    isArray: true,
+    description: 'Catálogo paginado de productos',
+    schema: {
+      example: {
+        content: [
+          {
+            id: 65,
+            name: 'Miel de Ulmo Artesanal 500 g',
+            producerId: 12,
+            producerName: 'Sabores de la Tierra',
+            categoryId: 9,
+            price: 6990,
+            offerPrice: 6291,
+            finalPrice: 6291,
+            discountPercentage: 10,
+            stock: 19,
+            available: true,
+            co2Avoided: 3.0562,
+            greenPoints: 305,
+            rating: 5,
+            reviewCount: 1,
+            primaryImageFileId: null,
+          },
+        ],
+        page: 0,
+        size: 20,
+        totalElements: 64,
+        totalPages: 4,
+        sortBy: 'id',
+        sortDirection: 'ASC',
+      },
+    },
   })
   @ApiBadRequestResponse({
-    description: 'El término de búsqueda es obligatorio.',
+    description: 'Parámetros de consulta inválidos',
   })
-  searchProducts(@Query('search') search: string): ProductSearchDto[] {
-    return this.productsService.searchProducts(search);
+  findAll(@Query() query: ProductQueryDto) {
+    return this.productsService.findAll(query);
   }
 
   @Get('offers')
   @ApiOperation({
-    summary: 'Obtener productos en oferta',
-    description:
-      'Obtiene los productos que actualmente poseen una oferta vigente.',
+    summary: 'Obtener ofertas vigentes paginadas',
   })
   @ApiOkResponse({
-    description: 'Productos en oferta obtenidos correctamente.',
-    type: ProductOfferDto,
-    isArray: true,
+    description: 'Listado paginado de ofertas',
   })
-  findProductsOnSale(): ProductOfferDto[] {
-    return this.productsService.findProductsOnSale();
+  @ApiBadRequestResponse({
+    description: 'Parámetros de paginación inválidos',
+  })
+  findProductsOnSale(@Query() pagination: PaginationDto) {
+    return this.productsService.findProductsOnSale(pagination)
   }
 
   @Get('best-sellers')
   @ApiOperation({
     summary: 'Obtener productos más vendidos',
     description:
-      'Obtiene una cantidad determinada de productos ordenados según su nivel de ventas.',
+      'Unidades netas vendidas durante los últimos 30 días.',
   })
   @ApiQuery({
     name: 'quantity',
     type: Number,
     required: true,
     example: 5,
-    description:
-      'Cantidad de productos más vendidos que se desea obtener. Debe ser un número entero positivo.',
   })
   @ApiOkResponse({
-    description: 'Productos más vendidos obtenidos correctamente.',
     type: BestSellingProductDto,
     isArray: true,
   })
   @ApiBadRequestResponse({
-    description:
-      'El parámetro cantidad debe ser un número entero positivo.',
+    description: 'Cantidad inválida',
   })
-  findBestSellingProducts(@Query('quantity', ParseIntPipe) quantity: number): BestSellingProductDto[] {
-  return this.productsService.findBestSellingProducts(quantity);
-}
+  findBestSellingProducts(@Query('quantity', ParseIntPipe) quantity: number): Promise<BestSellingProductDto[]> {
+    return this.productsService.findBestSellingProducts(quantity)
+  }
 
   @Get('new')
   @ApiOperation({
-    summary: 'Obtener productos nuevos',
-    description:
-      'Obtiene los productos recientemente incorporados al catálogo de BuenOrigen.',
+    summary: 'Obtener productos nuevos paginados',
   })
   @ApiOkResponse({
-    description: 'Productos nuevos obtenidos correctamente.',
-    type: NewProductSummaryDto,
-    isArray: true,
+    description: 'Listado paginado de productos nuevos',
   })
-  findNewProducts(): NewProductSummaryDto[] {
-    return this.productsService.findNewProducts();
+  @ApiBadRequestResponse({
+    description: 'Parámetros de paginación inválidos',
+  })
+  findNewProducts(@Query() pagination: NewProductsQueryDto) {
+    return this.productsService.findNewProducts(pagination);
   }
 
   @Get(':productId')
   @ApiOperation({
-    summary: 'Obtener producto por ID',
-    description:
-      'Obtiene el detalle de un producto a partir de su identificador.',
+    summary: 'Obtener detalle de un producto',
   })
   @ApiParam({
     name: 'productId',
     type: Number,
-    example: 1,
-    description: 'Identificador único del producto.',
+    example: 65,
   })
   @ApiOkResponse({
-    description: 'Producto obtenido correctamente.',
     type: ProductDetailDto,
   })
   @ApiBadRequestResponse({
-    description: 'El identificador debe ser un número entero.',
+    description: 'Identificador inválido',
   })
   @ApiNotFoundResponse({
-    description: 'Producto no encontrado.',
+    description: 'Producto no encontrado',
   })
-  findOne(
-    @Param('productId', ParseIntPipe) productId: number): ProductDetailDto {
-    return this.productsService.findOne(productId);
+  findOne(@Param('productId', ParseIntPipe) productId: number): Promise<ProductDetailDto> {
+    return this.productsService.findOne(productId)
   }
 
   @Get(':productId/green-footprint')
   @ApiOperation({
-    summary: 'Obtener Huella Verde de un producto',
-    description:
-      'Obtiene la información de sustentabilidad asociada a un producto.',
+    summary: 'Obtener huella verde del producto',
   })
   @ApiParam({
     name: 'productId',
     type: Number,
-    example: 1,
-    description: 'Identificador único del producto.',
+    example: 65,
   })
   @ApiOkResponse({
-    description:
-      'Información de Huella Verde obtenida correctamente.',
     type: ProductGreenFootprintDto,
   })
   @ApiBadRequestResponse({
-    description: 'El identificador debe ser un número entero.',
+    description: 'Identificador inválido',
   })
   @ApiNotFoundResponse({
-    description: 'Producto no encontrado.',
+    description: 'Producto no encontrado',
   })
-  findGreenFootprint(
-    @Param('productId', ParseIntPipe) productId: number): ProductGreenFootprintDto {
-    return this.productsService.findGreenFootprint(
-      productId,
-    );
+  findGreenFootprint(@Param('productId', ParseIntPipe) productId: number): Promise<ProductGreenFootprintDto> {
+    return this.productsService.findGreenFootprint(productId)
   }
 
   @Get(':productId/reviews')
   @ApiOperation({
-    summary: 'Obtener valoraciones de un producto',
-    description:
-      'Obtiene las valoraciones públicas asociadas a un producto.',
+    summary: 'Obtener valoraciones paginadas',
   })
   @ApiParam({
     name: 'productId',
     type: Number,
-    example: 1,
-    description: 'Identificador único del producto.',
+    example: 65,
   })
   @ApiOkResponse({
-    description: 'Valoraciones obtenidas correctamente.',
-    type: ProductReviewDto,
-    isArray: true,
+    description: 'Listado paginado de valoraciones',
+    schema: {
+      example: {
+        content: [
+          {
+            id: 1,
+            author: 'María',
+            comment: 'Muy buen producto.',
+            rating: 5,
+            createdAt: '2026-11-01T12:00:00Z',
+          },
+        ],
+        page: 0,
+        size: 20,
+        totalElements: 1,
+        totalPages: 1,
+        sortBy: 'id',
+        sortDirection: 'ASC',
+      },
+    },
   })
   @ApiBadRequestResponse({
-    description: 'El identificador debe ser un número entero.',
+    description: 'Parámetros inválidos',
   })
   @ApiNotFoundResponse({
-    description: 'Producto no encontrado.',
+    description: 'Producto no encontrado',
   })
-  findReviews(
-    @Param('productId', ParseIntPipe) productId: number): ProductReviewDto[] {
-    return this.productsService.findReviews(productId);
-  }
+  findReviews(@Param('productId', ParseIntPipe) productId: number,
+    @Query() pagination: PaginationDto) {
+    return this.productsService.findReviews(productId, pagination)  }
 
   @Get(':productId/related')
   @ApiOperation({
-    summary: 'Obtener productos relacionados',
-    description:
-      'Obtiene productos de la misma subcategoría relacionados con el producto consultado.',
+    summary: 'Obtener productos de la misma categoría',
   })
   @ApiParam({
     name: 'productId',
     type: Number,
-    example: 1,
-    description: 'Identificador único del producto.',
+    example: 65,
   })
   @ApiQuery({
     name: 'quantity',
     type: Number,
     required: true,
     example: 5,
-    description:
-      'Cantidad de productos más vendidos que se desea obtener. Debe ser un número entero positivo.',
   })
   @ApiOkResponse({
-    description:
-      'Productos relacionados obtenidos correctamente.',
-    type: RelatedProductDto,
+    type: ProductSummaryDto,
     isArray: true,
   })
   @ApiBadRequestResponse({
-    description:
-      'El identificador y la cantidad deben ser números enteros válidos. La cantidad debe ser positiva.',
+    description: 'Identificador o cantidad inválida',
   })
   @ApiNotFoundResponse({
-    description: 'Producto no encontrado.',
+    description: 'Producto no encontrado',
   })
-  findRelatedProducts(
-    @Param('productId', ParseIntPipe) productId: number,
-    @Query('quantity', ParseIntPipe) quantity: number): RelatedProductDto[] {
-    return this.productsService.findRelatedProducts(productId, quantity);
+  findRelatedProducts(@Param('productId', ParseIntPipe) productId: number,
+    @Query('quantity', ParseIntPipe) quantity: number): Promise<ProductSummaryDto[]> {
+    return this.productsService.findRelatedProducts(productId, quantity)
   }
 }

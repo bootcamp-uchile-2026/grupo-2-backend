@@ -1,25 +1,34 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+export class SustainabilityAttributeDto {
+
+  @ApiProperty({ example: 1 })
+  id: number;
+
+  @ApiProperty({ example: 'Reciclable' })
+  name: string;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+  })
+  description: string | null;
+}
+
 export class ProductGreenFootprintDto {
-  @ApiProperty({
-    example: 4.8,
-    nullable: true,
-    description: 'Calificación sustentable del producto en una escala de 1 a 5',
-  })
-  sustainabilityRating: number | null;
+
+  @ApiProperty({ example: 65 })
+  productId: number;
+
+  @ApiProperty({ example: 3.0562 })
+  co2Avoided: number;
+
+  @ApiProperty({ example: 305 })
+  greenPoints: number;
 
   @ApiProperty({
-    type: [String],
-    example: ['Algodón orgánico', 'Tintes naturales'],
-    description: 'Materiales utilizados en la elaboración del producto',
+    type: SustainabilityAttributeDto,
+    isArray: true,
   })
-  materials: string[];
-
-  @ApiProperty({
-    example:
-      'Producto confeccionado mediante procesos de bajo impacto ambiental',
-    nullable: true,
-    description: 'Descripción resumida del proceso de elaboración',
-  })
-  productionProcess: string | null;
+  sustainabilityAttributes: SustainabilityAttributeDto[];
 }
