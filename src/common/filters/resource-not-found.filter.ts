@@ -8,6 +8,7 @@ import { CategoryNotFoundError } from '../errors/category-not-found.error';
 import { FavoriteNotFoundError } from '../errors/favorite-not-found.error';
 import { CartNotFoundError } from '../errors/cart-not-found.error';
 import { CartItemNotFoundError } from '../errors/cart-item-not-found.error';
+import { AddressNotFoundError } from '../errors/address-not-found.error';
 
 @Catch(
   CustomerNotFoundError,
@@ -18,6 +19,7 @@ import { CartItemNotFoundError } from '../errors/cart-item-not-found.error';
   FavoriteNotFoundError,
   CartNotFoundError,
   CartItemNotFoundError,
+  AddressNotFoundError,
 )
 export class ResourceNotFoundFilter implements ExceptionFilter {
 
