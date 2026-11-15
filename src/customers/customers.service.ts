@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import * as argon2 from 'argon2';
@@ -164,6 +164,15 @@ export class CustomersService {
 
   async validateCustomer(customerId: number): Promise<void> {
     await this.findCustomer(customerId);
+  }
+
+  async validateActiveCustomer(customerId: number): Promise<void> {
+    const customer = await this.findCustomer(customerId);
+
+    if (!customer.user.isActive) {
+      throw new ForbiddenException(
+        'El cliente se encuentra inactivo.');
+    }
   }
 
   async update(customerId: number, dto: UpdateCustomerDto): Promise<CustomerResponseDto> {
