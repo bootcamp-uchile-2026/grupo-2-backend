@@ -8,10 +8,10 @@ import { CustomersModule } from './customers/customers.module';
 import { ArticlesModule } from './articles/articles.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { CartsModule } from './carts/carts.module';
+import { AddressesModule } from './addresses/addresses.module';
 import { RequestTracingMiddleware } from './common/middleware/request-tracing.middleware';
 import { FileEntity } from './models/file.entity';
 import { SustainabilityAttributeEntity } from './models/sustainability-attribute.entity';
-import { AddressEntity } from './models/address.entity';
 import { OrderEntity } from './models/order.entity';
 import { ReturnEntity } from './models/return.entity';
 
@@ -20,7 +20,6 @@ import { ReturnEntity } from './models/return.entity';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
@@ -34,16 +33,17 @@ import { ReturnEntity } from './models/return.entity';
     TypeOrmModule.forFeature([
       FileEntity,
       SustainabilityAttributeEntity,
-      AddressEntity,
       OrderEntity,
-      ReturnEntity]),
+      ReturnEntity,
+    ]),
     FavoritesModule,
     CategoriesModule,
     ProductsModule,
     ProducersModule,
     CustomersModule,
     ArticlesModule,
-    CartsModule],
+    CartsModule,
+    AddressesModule],
   controllers: [],
   providers: [],
 })
