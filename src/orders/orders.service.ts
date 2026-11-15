@@ -17,6 +17,16 @@ import { AddressNotFoundError } from '../common/errors/address-not-found.error';
 import { EmptyCartError } from '../common/errors/empty-cart.error';
 import { InsufficientStockError } from '../common/errors/insufficient-stock.error';
 import { InsufficientGreenPointsError } from '../common/errors/insufficient-green-points.error';
+import { CreateOrderDto } from 'src/dto/create-order.dto';
+import { OrderResponseDto } from 'src/dto/order-response.dto';
+import { CustomerEntity } from 'src/models/customer.entity';
+import { CustomerNotFoundError } from 'src/common/errors/customer-not-found.error';
+import { CheckoutTotalChangedError } from 'src/common/errors/checkout-total-changed.error';
+import { OrderEntity, OrderStatus, PaymentStatus } from 'src/models/order.entity';
+import { OrderItemEntity } from 'src/models/order-item.entity';
+import { GreenPointMovementEntity, GreenPointMovementType } from 'src/models/green-point-movement.entity';
+import { OrderMapper } from './order.mapper';
+
 
 @Injectable()
 export class OrdersService {
@@ -30,6 +40,44 @@ export class OrdersService {
         private readonly cartsService: CartsService,
         private readonly dataSource: DataSource) { }
 
+    private async lockCustomer(customerId: number, manager: EntityManager): Promise<void> {
+
+        const customer = await manager.findOne(CustomerEntity, {
+            where: {
+                id: customerId,
+            },
+            lock: {
+                mode: 'pessimistic_write',
+            },
+        });
+
+        if (!customer) {
+            throw new CustomerNotFoundError();
+        }
+    }
+
+    private async lockProducts(items: CartItemEntity[], manager: EntityManager): Promise<void> {
+
+        const productIds = items
+            .map(item => item.productId)
+            .sort((a, b) => a - b);
+
+        for (const productId of productIds) {
+            const product = await manager.findOne(ProductEntity, {
+                where: {
+                    id: productId,
+                },
+                lock: {
+                    mode: 'pessimistic_write',
+                },
+            });
+            if (!product) {
+                throw new ConflictException(
+                    'Uno de los productos ya no está disponible.',
+                );
+            }
+        }
+    }
     async preview(customerId: number, dto: CheckoutPreviewDto, userId: number): Promise<CheckoutPreviewResponseDto> {
         const manager = this.dataSource.manager;
 
@@ -48,6 +96,164 @@ export class OrdersService {
             dto.greenPointsToRedeem ?? 0,
             manager,
         );
+    }
+
+    async confirm(customerId: number, dto: CreateOrderDto, userId: number): Promise<OrderResponseDto> {
+
+        return this.dataSource.transaction(async manager => {
+
+            await this.customersService.validateOwnership(
+                customerId,
+                userId,
+                true,
+                manager,
+            );
+
+            await this.lockCustomer(customerId, manager);
+
+            await this.customersService.validateOwnership(
+                customerId,
+                userId,
+                true,
+                manager,
+            );
+
+            const cart = await this.cartsService.findCartForUpdate(
+                customerId,
+                manager,
+            );
+
+            const address = await this.findShippingAddress(
+                customerId,
+                dto.addressId,
+                manager,
+            );
+
+            const cartItems = await this.findCartItems(
+                cart.id,
+                manager,
+            );
+
+            await this.lockProducts(cartItems, manager);
+
+            const updatedCartItems = await this.findCartItems(
+                cart.id,
+                manager,
+            );
+
+            const checkout = await this.calculateCheckout(
+                customerId,
+                address.id,
+                updatedCartItems,
+                dto.greenPointsToRedeem ?? 0,
+                manager,
+            );
+
+            if (checkout.total !== dto.expectedTotal) {
+                throw new CheckoutTotalChangedError();
+            }
+
+            const now = new Date();
+
+            const order = await manager.save(OrderEntity, {
+                customerId,
+                addressId: address.id,
+                status: OrderStatus.CONFIRMED,
+                paymentMethod: dto.paymentMethod,
+                paymentStatus: PaymentStatus.PAID,
+                shippingCost: checkout.shippingCost,
+                shippingRecipientName: address.recipientName,
+                shippingRecipientPhone: address.recipientPhone,
+                shippingStreet: address.street,
+                shippingStreetNumber: address.streetNumber,
+                shippingApartment: address.apartment,
+                shippingCommune: address.commune,
+                shippingRegion: address.region,
+                shippingReference: address.reference,
+                createdAt: now,
+                updatedAt: now,
+                confirmedAt: now,
+                shippedAt: null,
+                deliveredAt: null,
+                cancelledAt: null,
+            });
+
+            const orderItems: OrderItemEntity[] = [];
+
+            for (const item of checkout.items) {
+
+                const product = updatedCartItems.find(
+                    cartItem => cartItem.productId === item.productId,
+                )!.product;
+
+                const details =
+                    await this.productsService.findSpecializedDetails(
+                        product,
+                        manager,
+                    );
+
+                const orderItem = await manager.save(OrderItemEntity, {
+                    orderId: order.id,
+                    productId: product.id,
+                    productName: product.name,
+                    productDescription: product.description,
+                    productSize:
+                        typeof details?.size === 'string'
+                            ? details.size
+                            : null,
+                    productColor:
+                        typeof details?.color === 'string'
+                            ? details.color
+                            : null,
+                    productMaterial:
+                        typeof details?.material === 'string'
+                            ? details.material
+                            : null,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    unitCo2Avoided: product.co2Avoided,
+                    unitGreenPoints: item.unitGreenPoints,
+                    greenPointDiscount: item.greenPointDiscount,
+                    isPrepared: false,
+                    preparedAt: null,
+                });
+
+                orderItems.push(orderItem);
+
+                await manager.update(
+                    ProductEntity,
+                    product.id,
+                    {
+                        stock: product.stock - item.quantity,
+                        updatedAt: now,
+                    },
+                );
+            }
+
+            if (checkout.greenPointsRedeemed > 0) {
+
+                await manager.save(GreenPointMovementEntity, {
+                    customerId,
+                    type: GreenPointMovementType.REDEMPTION,
+                    points: -checkout.greenPointsRedeemed,
+                    orderId: order.id,
+                    returnId: null,
+                    reviewId: null,
+                    description: 'Canje de puntos verdes en compra',
+                    createdAt: now,
+                });
+            }
+
+            await manager.delete(CartItemEntity, {
+                cartId: cart.id,
+            });
+
+            await manager.update(CartEntity, cart.id, {
+                updatedAt: now,
+            });
+
+            return OrderMapper.toResponseDto(order, orderItems);
+        });
     }
 
     private async findShippingAddress(customerId: number, addressId: number, manager: EntityManager): Promise<AddressEntity> {
@@ -249,7 +455,7 @@ export class OrdersService {
         }
     }
 
-    private validateRedemption(greenPointsToRedeem: number,availableGreenPoints: number,maxDiscount: number): void {
+    private validateRedemption(greenPointsToRedeem: number, availableGreenPoints: number, maxDiscount: number): void {
 
         if (!Number.isInteger(greenPointsToRedeem) ||
             greenPointsToRedeem < 0
