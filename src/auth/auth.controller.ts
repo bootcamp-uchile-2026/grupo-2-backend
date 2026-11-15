@@ -1,51 +1,58 @@
-
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-
+import { Controller, Post, Body, UseGuards, Get } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBody, ApiCreatedResponse, ApiOkResponse, ApiBadRequestResponse, ApiUnauthorizedResponse, ApiForbiddenResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { LoginDto } from '../dto/auth/login.dto';
-import { UserRole } from 'src/models/user.entity';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { RolesGuard } from 'src/common/guards/roles/roles.guard';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth/jwt-auth.guard';
-import { LoginResponseDto } from '../dto/auth/login-response.dto';
+import { LoginDto } from '../dto/login.dto';
+import { LoginResponseDto } from '../dto/login-response.dto';
+import { UserRole } from '../models/user.entity';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles/roles.guard';
+import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
 
 @ApiTags('Autenticación')
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-  ) { }
+
+  constructor(private readonly authService: AuthService) { }
 
   @Post('login')
-  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Iniciar sesión',
     description: 'Autentica un usuario y devuelve un JWT.',
   })
-  @ApiResponse({
-    status: 200,
+  @ApiBody({ type: LoginDto })
+  @ApiCreatedResponse({
     description: 'Autenticación exitosa.',
     type: LoginResponseDto,
   })
-  @ApiResponse({
-    status: 401,
+  @ApiBadRequestResponse({
+    description: 'Datos de autenticación inválidos.',
+  })
+  @ApiUnauthorizedResponse({
     description: 'Credenciales inválidas o cuenta desactivada.',
   })
-  login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  login(@Body() dto: LoginDto): Promise<LoginResponseDto> {
+    return this.authService.login(dto);
   }
 
-  @ApiBearerAuth()
   @Get('admin-test')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Verificar acceso de administrador',
+  })
+  @ApiOkResponse({
+    description: 'Acceso autorizado.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token inválido o inexistente.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Acceso denegado.',
+  })
   adminTest() {
     return {
       message: 'Acceso autorizado para administradores',
     };
   }
-
-
-
 }
