@@ -5,8 +5,10 @@ import { OrderItemEntity } from '../models/order-item.entity';
 import { CustomersModule } from '../customers/customers.module';
 import { ProductsModule } from '../products/products.module';
 import { CartsModule } from '../carts/carts.module';
+import { ProducersModule } from '../producers/producers.module';
 import { CheckoutController } from './checkout.controller';
 import { CustomerOrdersController } from './customer-orders.controller';
+import { ProducerOrdersController } from './producer-orders.controller';
 import { OrdersService } from './orders.service';
 
 @Module({
@@ -18,10 +20,12 @@ import { OrdersService } from './orders.service';
         CustomersModule,
         ProductsModule,
         CartsModule,
+        ProducersModule,
     ],
     controllers: [
         CheckoutController,
         CustomerOrdersController,
+        ProducerOrdersController,
     ],
     providers: [OrdersService],
     exports: [OrdersService],

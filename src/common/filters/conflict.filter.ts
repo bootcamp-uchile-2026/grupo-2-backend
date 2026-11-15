@@ -7,6 +7,7 @@ import { EmptyCartError } from '../errors/empty-cart.error';
 import { InsufficientStockError } from '../errors/insufficient-stock.error';
 import { InsufficientGreenPointsError } from '../errors/insufficient-green-points.error';
 import { CheckoutTotalChangedError } from '../errors/checkout-total-changed.error';
+import { InvalidOrderStatusError } from '../errors/invalid-order-status.error';
 
 @Catch(
   DuplicateEmailError,
@@ -14,6 +15,7 @@ import { CheckoutTotalChangedError } from '../errors/checkout-total-changed.erro
   EmptyCartError,
   InsufficientStockError,
   InsufficientGreenPointsError,
+  InvalidOrderStatusError,
   CheckoutTotalChangedError,
   QueryFailedError)
 export class ConflictFilter implements ExceptionFilter {

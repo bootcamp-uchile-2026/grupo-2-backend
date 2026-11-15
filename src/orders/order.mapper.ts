@@ -4,6 +4,8 @@ import { OrderResponseDto } from '../dto/order-response.dto';
 import { OrderItemResponseDto } from '../dto/order-item-response.dto';
 import { OrderAddressResponseDto } from '../dto/order-address-response.dto';
 import { OrderSummaryDto } from 'src/dto/order-summary.dto';
+import { ProducerOrderSummaryDto } from 'src/dto/producer-order-summary.dto';
+import { ProducerOrderDetailDto } from 'src/dto/producer-order-detail.dto';
 
 export class OrderMapper {
 
@@ -100,6 +102,40 @@ export class OrderMapper {
             estimatedGreenPoints: detail.estimatedGreenPoints,
             estimatedCo2Avoided: detail.estimatedCo2Avoided,
             createdAt: detail.createdAt,
+        };
+    }
+    static toProducerSummaryDto(order: OrderEntity, orderItems: OrderItemEntity[]): ProducerOrderSummaryDto {
+
+        const items = orderItems.map(item => this.toItemResponseDto(item));
+
+        const totalProducts = items.length;
+
+        const totalItems = items.reduce((total, item) => total + item.quantity, 0);
+
+        const subtotal = items.reduce((total, item) => total + item.subtotal, 0);
+
+        const preparedProducts = items.filter(item => item.isPrepared).length;
+
+        return {
+            id: order.id,
+            status: order.status,
+            totalProducts,
+            totalItems,
+            subtotal,
+            preparedProducts,
+            isPrepared: totalProducts > 0 &&
+                preparedProducts === totalProducts,
+            createdAt: order.createdAt,
+            updatedAt: order.updatedAt,
+        };
+    }
+
+    static toProducerDetailDto(order: OrderEntity, orderItems: OrderItemEntity[]): ProducerOrderDetailDto {
+
+        return {
+            ...this.toProducerSummaryDto(order, orderItems),
+
+            items: orderItems.map(item =>this.toItemResponseDto(item)),
         };
     }
 }

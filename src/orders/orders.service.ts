@@ -28,6 +28,10 @@ import { GreenPointMovementEntity, GreenPointMovementType } from 'src/models/gre
 import { OrderMapper } from './order.mapper';
 import { OrderQueryDto } from 'src/dto/order-query.dto';
 import { OrderNotFoundError } from 'src/common/errors/order-not-found.error';
+import { ProducersService } from 'src/producers/producers.service';
+import { ProducerOrderDetailDto } from 'src/dto/producer-order-detail.dto';
+import { OrderItemNotFoundError } from 'src/common/errors/order-item-not-found.error';
+import { InvalidOrderStatusError } from 'src/common/errors/invalid-order-status.error';
 
 
 @Injectable()
@@ -40,7 +44,8 @@ export class OrdersService {
         private readonly customersService: CustomersService,
         private readonly productsService: ProductsService,
         private readonly cartsService: CartsService,
-        private readonly dataSource: DataSource) { }
+        private readonly dataSource: DataSource,
+        private readonly producersService: ProducersService,) { }
 
     private async lockCustomer(customerId: number, manager: EntityManager): Promise<void> {
 
@@ -353,8 +358,230 @@ export class OrdersService {
         return OrderMapper.toResponseDto(order, orderItems);
     }
 
-    private async findShippingAddress(customerId: number, addressId: number, manager: EntityManager): Promise<AddressEntity> {
+    async findOrdersByProducer(producerId: number, query: OrderQueryDto, userId: number) {
+        await this.producersService.validateOwnership(producerId, userId);
 
+        const { page, size, sortBy, sortDirection, status } = query;
+
+        const allowedSortFields = [
+            'id',
+            'status',
+            'createdAt',
+            'updatedAt',
+        ];
+
+        if (!allowedSortFields.includes(sortBy)) {
+            throw new BadRequestException(
+                'Campo de ordenamiento inválido.',
+            );
+        }
+
+        const queryBuilder = this.dataSource.manager
+            .createQueryBuilder(OrderEntity, 'order')
+            .innerJoin(
+                OrderItemEntity,
+                'item',
+                'item.orderId = order.id',
+            )
+            .innerJoin(
+                ProductEntity,
+                'product',
+                'product.id = item.productId',
+            )
+            .where('product.producerId = :producerId', {
+                producerId,
+            })
+            .distinct(true);
+
+        if (status !== undefined) {
+            queryBuilder.andWhere('order.status = :status', {
+                status,
+            });
+        }
+
+        const totalElements = await queryBuilder.getCount();
+
+        queryBuilder.orderBy(`order.${sortBy}`, sortDirection);
+
+        if (sortBy !== 'id') {
+            queryBuilder.addOrderBy('order.id', 'ASC');
+        }
+
+        const orders = await queryBuilder
+            .offset(page * size)
+            .limit(size)
+            .getMany();
+
+        const orderItems = await this.findItemsByProducer(
+            producerId,
+            orders.map(order => order.id),
+        );
+
+        const content = orders.map(order =>
+            OrderMapper.toProducerSummaryDto(
+                order,
+                orderItems.filter(item => item.orderId === order.id),
+            ),
+        );
+
+        return {
+            content,
+            page,
+            size,
+            totalElements,
+            totalPages: Math.ceil(totalElements / size),
+            sortBy,
+            sortDirection,
+        };
+    }
+
+    async prepareOrderItem(producerId: number, orderId: number, itemId: number, userId: number): Promise<ProducerOrderDetailDto> {
+
+        if (!Number.isInteger(orderId) || orderId <= 0 ||
+            !Number.isInteger(itemId) || itemId <= 0) {
+
+            throw new BadRequestException(
+                'Los identificadores deben ser números enteros positivos.',
+            );
+        }
+
+        return this.dataSource.transaction(async manager => {
+
+            await this.producersService.validateOwnership(producerId, userId, manager);
+
+            const order = await manager.findOne(OrderEntity, {
+                where: {
+                    id: orderId,
+                },
+                lock: {
+                    mode: 'pessimistic_write',
+                },
+            });
+
+            if (!order) {
+                throw new OrderNotFoundError();
+            }
+
+            const orderItems = await this.findItemsByProducer(
+                producerId,
+                [orderId],
+                manager,
+            );
+
+            if (orderItems.length === 0) {
+                throw new OrderNotFoundError();
+            }
+
+            const item = orderItems.find(
+                item => item.id === itemId,
+            );
+
+            if (!item) {
+                throw new OrderItemNotFoundError();
+            }
+
+            const allowedStatuses = [
+                OrderStatus.CONFIRMED,
+                OrderStatus.PREPARING,
+            ];
+
+            if (!allowedStatuses.includes(order.status)) {
+                throw new InvalidOrderStatusError(
+                    'El estado actual del pedido no permite preparar sus productos.',
+                );
+            }
+
+            if (item.isPrepared) {
+                return OrderMapper.toProducerDetailDto(
+                    order,
+                    orderItems,
+                );
+            }
+
+            const now = new Date();
+
+            item.isPrepared = true;
+            item.preparedAt = now;
+
+            await manager.save(OrderItemEntity, item);
+
+            if (order.status === OrderStatus.CONFIRMED) {
+                order.status = OrderStatus.PREPARING;
+            }
+
+            order.updatedAt = now;
+
+            await manager.save(OrderEntity, order);
+
+            return OrderMapper.toProducerDetailDto(
+                order,
+                orderItems,
+            );
+        });
+    }
+
+    async findOrderByProducer(producerId: number, orderId: number, userId: number): Promise<ProducerOrderDetailDto> {
+
+        await this.producersService.validateOwnership(producerId, userId);
+
+        if (!Number.isInteger(orderId) || orderId <= 0) {
+            throw new BadRequestException(
+                'El identificador debe ser un número entero positivo.',
+            );
+        }
+
+        const order = await this.dataSource.manager.findOne(
+            OrderEntity,
+            {
+                where: {
+                    id: orderId,
+                },
+            },
+        );
+
+        if (!order) {
+            throw new OrderNotFoundError();
+        }
+
+        const orderItems = await this.findItemsByProducer(
+            producerId,
+            [order.id],
+        );
+
+        if (orderItems.length === 0) {
+            throw new OrderNotFoundError();
+        }
+
+        return OrderMapper.toProducerDetailDto(
+            order,
+            orderItems,
+        );
+    }
+
+    private async findItemsByProducer(producerId: number, orderIds: number[], manager: EntityManager = this.dataSource.manager): Promise<OrderItemEntity[]> {
+
+        if (orderIds.length === 0) {
+            return [];
+        }
+
+        return manager
+            .createQueryBuilder(OrderItemEntity, 'item')
+            .innerJoin(
+                ProductEntity,
+                'product',
+                'product.id = item.productId',
+            )
+            .where('product.producerId = :producerId', {
+                producerId,
+            })
+            .andWhere('item.orderId IN (:...orderIds)', {
+                orderIds,
+            })
+            .orderBy('item.id', 'ASC')
+            .getMany();
+    }
+
+    private async findShippingAddress(customerId: number, addressId: number, manager: EntityManager): Promise<AddressEntity> {
         const address = await manager.findOne(AddressEntity, {
             where: {
                 id: addressId,

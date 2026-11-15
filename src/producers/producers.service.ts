@@ -1,6 +1,6 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, EntityManager } from 'typeorm';
 import { ProducerEntity } from '../models/producer.entity';
 import { UserRole } from '../models/user.entity';
 import { PaginationDto } from '../dto/pagination.dto';
@@ -16,15 +16,22 @@ export class ProducersService {
     constructor(
         @InjectRepository(ProducerEntity)
         private readonly producersRepository: Repository<ProducerEntity>,
-        private readonly productsService: ProductsService) {}
+        private readonly productsService: ProductsService) { }
 
     async findAll(pagination: PaginationDto) {
         const { page, size, sortBy, sortDirection } = pagination;
-
-        const allowedSortFields = ['id', 'businessName', 'location', 'createdAt'];
+        const allowedSortFields = [
+            'id',
+            'businessName',
+            'location',
+            'createdAt',
+        ];
 
         if (!allowedSortFields.includes(sortBy)) {
-            throw new BadRequestException('Campo de ordenamiento inválido.')}
+            throw new BadRequestException(
+                'Campo de ordenamiento inválido.',
+            );
+        }
 
         const where = {
             user: {
@@ -43,9 +50,12 @@ export class ProducersService {
             },
         });
 
-        const totalElements = await this.producersRepository.count({ where });
+        const totalElements =
+            await this.producersRepository.count({ where });
 
-        const content: ProducerSummaryDto[] = producers.map(producer => ProducerMapper.toSummaryDto(producer));
+        const content: ProducerSummaryDto[] = producers.map(
+            producer => ProducerMapper.toSummaryDto(producer),
+        );
 
         return {
             content,
@@ -59,12 +69,40 @@ export class ProducersService {
     }
 
     async findOne(producerId: number): Promise<ProducerDetailDto> {
+        const producer = await this.findProducer(producerId);
+        return ProducerMapper.toDetailDto(producer);
+    }
 
-        if (producerId <= 0) {
+    async findProductsByProducer(producerId: number, pagination: PaginationDto) {
+
+        await this.findProducer(producerId);
+
+        return this.productsService.findProductsByProducer(producerId, pagination);
+    }
+
+    async validateOwnership(producerId: number,userId: number, manager?: EntityManager): Promise<void> {
+
+        const producer = await this.findProducer(producerId, manager);
+
+        if (producer.userId !== userId) {
+            throw new ForbiddenException(
+                'No tienes permisos para acceder a este perfil.',
+            );
+        }
+    }
+
+    private async findProducer(producerId: number,manager?: EntityManager): Promise<ProducerEntity> {
+
+        if (!Number.isInteger(producerId) || producerId <= 0) {
             throw new BadRequestException(
-                'El identificador debe ser un número entero positivo.');}
+                'El identificador debe ser un número entero positivo.',
+            );
+        }
+        const repository = manager
+            ? manager.getRepository(ProducerEntity)
+            : this.producersRepository;
 
-        const producer = await this.producersRepository.findOne({
+        const producer = await repository.findOne({
             where: {
                 id: producerId,
                 user: {
@@ -75,15 +113,8 @@ export class ProducersService {
         });
 
         if (!producer) {
-            throw new ProducerNotFoundError()}
-
-        return ProducerMapper.toDetailDto(producer);
-    }
-
-    async findProductsByProducer(producerId: number, pagination: PaginationDto) {
-
-        await this.findOne(producerId);
-
-        return this.productsService.findProductsByProducer(producerId, pagination);
+            throw new ProducerNotFoundError();
+        }
+        return producer;
     }
 }
