@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { FavoriteEntity } from '../models/favorite.entity';
 import { FavoriteProductDto } from '../dto/favorite-product.dto';
 import { CustomersService } from '../customers/customers.service';
@@ -19,11 +19,11 @@ export class FavoritesService {
 
     async findAll(customerId: number): Promise<FavoriteProductDto[]> {
         await this.customersService.validateCustomer(customerId);
+
         return this.productsService.findFavoriteProducts(customerId);
     }
 
     async add(customerId: number, productId: number): Promise<FavoriteProductDto> {
-
         await this.customersService.validateCustomer(customerId);
 
         const product = await this.productsService.findFavoriteProduct(productId);
@@ -35,26 +35,19 @@ export class FavoritesService {
         if (existingFavorite) {
             throw new FavoriteAlreadyExistsError();
         }
-        try {
-            await this.favoriteRepository.insert({ customerId, productId });
-        } catch (error) {
-            if (
-                error instanceof QueryFailedError &&
-                error.driverError.code === '23505'
-            ) { throw new FavoriteAlreadyExistsError() }
-            throw error
-        }
+
+        await this.favoriteRepository.insert({ customerId, productId });
 
         return product;
     }
 
     async remove(customerId: number, productId: number): Promise<void> {
-
         if (!Number.isInteger(productId) || productId <= 0) {
             throw new BadRequestException(
                 'El identificador debe ser un número entero positivo.',
             );
         }
+
         await this.customersService.validateCustomer(customerId);
 
         const result = await this.favoriteRepository.delete({

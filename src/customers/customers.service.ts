@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, QueryFailedError, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import * as argon2 from 'argon2';
 import { UserEntity, UserRole } from '../models/user.entity';
 import { CustomerEntity } from '../models/customer.entity';
@@ -25,120 +25,86 @@ export class CustomersService {
     private readonly customerRepository: Repository<CustomerEntity>,
 
     @InjectRepository(GreenPointMovementEntity)
-    private readonly greenPointRepository:
-      Repository<GreenPointMovementEntity>,
+    private readonly greenPointRepository: Repository<GreenPointMovementEntity>,
 
     private readonly dataSource: DataSource) { }
 
   async create(dto: CreateCustomerDto): Promise<CustomerResponseDto> {
+
     const email = dto.email.trim().toLowerCase();
     const firstName = dto.firstName.trim();
 
     if (!firstName) {
-      throw new BadRequestException(
-        'El nombre del cliente es obligatorio.',
-      );
+      throw new BadRequestException('El nombre del cliente es obligatorio.');
     }
 
     if (dto.privacyAccepted !== true) {
-      throw new BadRequestException(
-        'Debe aceptar la política de privacidad.',
-      );
+      throw new BadRequestException('Debe aceptar la política de privacidad.');
     }
 
     await this.validateEmail(email);
 
-    const passwordHash = await argon2.hash(
-      dto.password,
-      { type: argon2.argon2id },
-    );
+    const passwordHash = await argon2.hash(dto.password, {
+      type: argon2.argon2id,
+    });
 
-    try {
-      return await this.dataSource.transaction(
-        async (manager) => {
+    return this.dataSource.transaction(async manager => {
 
-          const user = manager.create(
-            UserEntity,
-            {
-              email,
-              passwordHash,
-              firstName,
-              lastName: dto.lastName?.trim() || null,
-              phone: dto.phone?.trim() || null,
-              profileFileId: null,
-              role: UserRole.CUSTOMER,
-              isActive: true,
-              privacyAcceptedAt: new Date(),
-            },
-          );
+      const user = manager.create(UserEntity, {
+        email,
+        passwordHash,
+        firstName,
+        lastName: dto.lastName?.trim() || null,
+        phone: dto.phone?.trim() || null,
+        profileFileId: null,
+        role: UserRole.CUSTOMER,
+        isActive: true,
+        privacyAcceptedAt: new Date(),
+      });
 
-          const savedUser = await manager.save(user);
+      const savedUser = await manager.save(user);
 
-          const customer = manager.create(
-            CustomerEntity,
-            {
-              userId: savedUser.id,
-            },
-          );
+      const customer = manager.create(CustomerEntity, {
+        userId: savedUser.id,
+      });
 
-          const savedCustomer =
-            await manager.save(customer);
+      const savedCustomer = await manager.save(customer);
 
-          const cart = manager.create(
-            CartEntity,
-            {
-              customerId: savedCustomer.id,
-            },
-          );
+      const cart = manager.create(CartEntity, {
+        customerId: savedCustomer.id,
+      });
 
-          await manager.save(cart);
+      await manager.save(cart);
 
-          const welcomeMovement = manager.create(
-            GreenPointMovementEntity,
-            {
-              customerId: savedCustomer.id,
-              type: GreenPointMovementType.WELCOME,
-              points: 80,
-              orderId: null,
-              returnId: null,
-              reviewId: null,
-              description: 'Puntos verdes de bienvenida',
-            },
-          );
+      const welcomeMovement = manager.create(GreenPointMovementEntity, {
+        customerId: savedCustomer.id,
+        type: GreenPointMovementType.WELCOME,
+        points: 80,
+        orderId: null,
+        returnId: null,
+        reviewId: null,
+        description: 'Puntos verdes de bienvenida',
+      });
 
-          await manager.save(welcomeMovement);
+      await manager.save(welcomeMovement);
 
-          savedCustomer.user = savedUser;
+      savedCustomer.user = savedUser;
 
-          return CustomerMapper.toResponseDto(
-            savedCustomer,
-            80,
-          );
-        },
-      );
-
-    } catch (error) {
-      this.handleDatabaseError(error);
-    }
+      return CustomerMapper.toResponseDto(savedCustomer, 80);
+    });
   }
 
-
   async findAll(pagination: PaginationDto) {
+
     const { page, size, sortBy, sortDirection } = pagination;
 
     const allowedSortFields = [
-      'id',
-      'firstName',
-      'lastName',
-      'email',
-      'createdAt',
-      'isActive',
+      'id', 'firstName', 'lastName',
+      'email', 'createdAt', 'isActive',
     ];
 
     if (!allowedSortFields.includes(sortBy)) {
-      throw new BadRequestException(
-        'Campo de ordenamiento inválido.',
-      );
+      throw new BadRequestException('Campo de ordenamiento inválido.');
     }
 
     let sortField = `user.${sortBy}`;
@@ -150,9 +116,7 @@ export class CustomersService {
     const query = this.customerRepository
       .createQueryBuilder('customer')
       .innerJoinAndSelect('customer.user', 'user')
-      .where('user.role = :role', {
-        role: UserRole.CUSTOMER,
-      });
+      .where('user.role = :role', { role: UserRole.CUSTOMER });
 
     const totalElements = await query.getCount();
 
@@ -168,11 +132,11 @@ export class CustomersService {
       .getMany();
 
     const points = await this.getGreenPoints(
-      customers.map((customer) => customer.id),
+      customers.map(customer => customer.id),
     );
 
     return {
-      content: customers.map((customer) =>
+      content: customers.map(customer =>
         CustomerMapper.toResponseDto(
           customer,
           points.get(customer.id) ?? 0,
@@ -188,10 +152,9 @@ export class CustomersService {
   }
 
   async findOne(customerId: number): Promise<CustomerResponseDto> {
+
     const customer = await this.findCustomer(customerId);
-    const points = await this.getGreenPoints([
-      customer.id,
-    ]);
+    const points = await this.getGreenPoints([customer.id]);
 
     return CustomerMapper.toResponseDto(
       customer,
@@ -209,7 +172,6 @@ export class CustomersService {
     const user = customer.user;
 
     if (dto.email !== undefined) {
-
       const email = dto.email.trim().toLowerCase();
 
       await this.validateEmail(email, user.id);
@@ -218,13 +180,10 @@ export class CustomersService {
     }
 
     if (dto.firstName !== undefined) {
-
       const firstName = dto.firstName.trim();
 
       if (!firstName) {
-        throw new BadRequestException(
-          'El nombre del cliente es obligatorio.',
-        );
+        throw new BadRequestException('El nombre del cliente es obligatorio.');
       }
 
       user.firstName = firstName;
@@ -239,29 +198,16 @@ export class CustomersService {
     }
 
     if (dto.password !== undefined) {
-
-      user.passwordHash = await argon2.hash(
-        dto.password,
-        {
-          type: argon2.argon2id,
-        },
-      );
+      user.passwordHash = await argon2.hash(dto.password, {
+        type: argon2.argon2id,
+      });
     }
 
     user.updatedAt = new Date();
 
-    try {
+    customer.user = await this.userRepository.save(user);
 
-      customer.user =
-        await this.userRepository.save(user);
-
-    } catch (error) {
-      this.handleDatabaseError(error);
-    }
-
-    const points = await this.getGreenPoints([
-      customer.id,
-    ]);
+    const points = await this.getGreenPoints([customer.id]);
 
     return CustomerMapper.toResponseDto(
       customer,
@@ -300,9 +246,7 @@ export class CustomersService {
 
     const existingUser = await this.userRepository
       .createQueryBuilder('user')
-      .where('LOWER(user.email) = :email', {
-        email,
-      })
+      .where('LOWER(user.email) = :email', { email })
       .getOne();
 
     if (existingUser && existingUser.id !== userId) {
@@ -311,50 +255,24 @@ export class CustomersService {
   }
 
   private async getGreenPoints(customerIds: number[]): Promise<Map<number, number>> {
+
     if (customerIds.length === 0) {
       return new Map();
     }
 
     const results = await this.greenPointRepository
       .createQueryBuilder('movement')
-      .select(
-        'movement.customerId',
-        'customerId',
-      )
-      .addSelect(
-        'SUM(movement.points)',
-        'greenPoints',
-      )
-      .where(
-        'movement.customerId IN (:...customerIds)',
-        {
-          customerIds,
-        },
-      )
+      .select('movement.customerId', 'customerId')
+      .addSelect('SUM(movement.points)', 'greenPoints')
+      .where('movement.customerId IN (:...customerIds)', { customerIds })
       .groupBy('movement.customerId')
       .getRawMany();
 
     return new Map<number, number>(
-      results.map((result) => [
+      results.map(result => [
         Number(result.customerId),
         Number(result.greenPoints),
       ]),
     );
-  }
-
-  private handleDatabaseError(error: unknown): never {
-
-    if (error instanceof QueryFailedError) {
-
-      const driverError = error.driverError;
-
-      if (driverError.code === '23505' &&
-        typeof driverError.detail === 'string' &&
-        driverError.detail.startsWith('Key (email)=')
-      ) {
-        throw new DuplicateEmailError();
-      }
-    }
-    throw error;
   }
 }
