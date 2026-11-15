@@ -1,11 +1,16 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
 import {
-  ApiBadRequestResponse, ApiBody, ApiConflictResponse, ApiCreatedResponse, ApiNoContentResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation,
+  ApiBadRequestResponse, ApiBearerAuth, ApiBody, ApiConflictResponse, ApiCreatedResponse, ApiNoContentResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation,
   ApiParam, ApiTags
 } from '@nestjs/swagger';
 import { FavoritesService } from './favorites.service';
 import { AddFavoriteDto } from '../dto/add-favorite.dto';
 import { FavoriteProductDto } from '../dto/favorite-product.dto';
+import { UserRole } from 'src/models/user.entity';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles/roles.guard';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 
 @ApiTags('Favorites')
 @Controller('customers/:customerId/favorites')
@@ -13,6 +18,9 @@ export class FavoritesController {
 
   constructor(private readonly favoritesService: FavoritesService) { }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
   @Get()
   @ApiParam({
     name: 'customerId',
@@ -28,10 +36,16 @@ export class FavoritesController {
   })
   @ApiBadRequestResponse({ description: 'Identificador inválido.' })
   @ApiNotFoundResponse({ description: 'Cliente no encontrado.' })
-  findAll(@Param('customerId', ParseIntPipe) customerId: number): Promise<FavoriteProductDto[]> {
-    return this.favoritesService.findAll(customerId)
+  findAll(
+    @Param('customerId', ParseIntPipe) customerId: number,
+    @CurrentUser() user: { id: number; role: UserRole }
+  ): Promise<FavoriteProductDto[]> {
+    return this.favoritesService.findAll(customerId, user.id, user.role);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
   @Post()
   @ApiParam({
     name: 'customerId',
@@ -48,10 +62,22 @@ export class FavoritesController {
   @ApiBadRequestResponse({ description: 'Identificador o body inválido.' })
   @ApiNotFoundResponse({ description: 'Cliente o producto no encontrado.' })
   @ApiConflictResponse({ description: 'El producto ya está en favoritos.' })
-  add(@Param('customerId', ParseIntPipe) customerId: number, @Body() dto: AddFavoriteDto): Promise<FavoriteProductDto> {
-    return this.favoritesService.add(customerId, dto.productId)
+  add(
+    @Param('customerId', ParseIntPipe) customerId: number,
+    @Body() dto: AddFavoriteDto,
+    @CurrentUser() user: { id: number; role: UserRole }
+  ): Promise<FavoriteProductDto> {
+    return this.favoritesService.add(
+    customerId,
+    dto.productId,
+    user.id,
+    user.role
+);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
   @Delete(':productId')
   @ApiParam({
     name: 'customerId',
@@ -72,7 +98,16 @@ export class FavoritesController {
   @ApiNotFoundResponse({
     description: 'Cliente o favorito no encontrado.',
   })
-  remove(@Param('customerId', ParseIntPipe) customerId: number, @Param('productId', ParseIntPipe) productId: number): Promise<void> {
-    return this.favoritesService.remove(customerId, productId)
+  remove(
+    @Param('customerId', ParseIntPipe) customerId: number,
+    @Param('productId', ParseIntPipe) productId: number,
+    @CurrentUser() user: { id: number; role: UserRole }
+  ): Promise<void> {
+    return this.favoritesService.remove(
+    customerId,
+    productId,
+    user.id,
+    user.role
+);
   }
 }

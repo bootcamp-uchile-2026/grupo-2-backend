@@ -14,6 +14,7 @@ import { CartItemEntity } from './models/cart-item.entity';
 import { AddressEntity } from './models/address.entity';
 import { OrderEntity } from './models/order.entity';
 import { ReturnEntity } from './models/return.entity';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { ReturnEntity } from './models/return.entity';
     ProducersModule,
     CustomersModule,
     ArticlesModule,
+    AuthModule,
   ],
   controllers: [],
   providers: [],

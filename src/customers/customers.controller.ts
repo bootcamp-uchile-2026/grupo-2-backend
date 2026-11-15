@@ -1,18 +1,25 @@
-import { Body,Controller, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards} from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBody, ApiCreatedResponse, ApiOkResponse, ApiBadRequestResponse, ApiConflictResponse, ApiForbiddenResponse, ApiNotFoundResponse,
-    ApiHeader, ApiParam} from '@nestjs/swagger';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+    ApiTags, ApiOperation, ApiBody, ApiCreatedResponse, ApiOkResponse, ApiBadRequestResponse, ApiConflictResponse, ApiForbiddenResponse, ApiNotFoundResponse,
+    ApiParam,
+    ApiBearerAuth
+} from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
 import { UpdateCustomerDto } from '../dto/update-customer.dto';
 import { CustomerResponseDto } from '../dto/customer-response.dto';
 import { PaginationDto } from '../dto/pagination.dto';
-import { AdminGuard } from '../common/guards/admin-access/admin.guard';
+import { UserRole } from 'src/models/user.entity';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { RolesGuard } from 'src/common/guards/roles/roles.guard';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth/jwt-auth.guard';
 
 @ApiTags('Customers')
 @Controller('customers')
 export class CustomersController {
 
-    constructor(private readonly customersService: CustomersService) {}
+    constructor(private readonly customersService: CustomersService) { }
 
     @Post()
     @ApiOperation({
@@ -31,17 +38,16 @@ export class CustomersController {
         description: 'El correo electrónico ya está registrado.',
     })
     create(@Body() dto: CreateCustomerDto): Promise<CustomerResponseDto> {
-        return this.customersService.create(dto);}
+        return this.customersService.create(dto);
+    }
 
+
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.ADMIN)
     @Get()
-    @UseGuards(AdminGuard)
     @ApiOperation({
         summary: 'Obtener listado paginado de clientes',
-    })
-    @ApiHeader({
-        name: 'x-api-key',
-        description: 'API Key de administrador.',
-        required: true,
     })
     @ApiOkResponse({
         description: 'Listado paginado de clientes.',
@@ -53,10 +59,13 @@ export class CustomersController {
         description: 'Acceso denegado.',
     })
     findAll(@Query() pagination: PaginationDto) {
-        return this.customersService.findAll(pagination)}
+        return this.customersService.findAll(pagination)
+    }
 
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.CUSTOMER, UserRole.ADMIN)
     @Get(':id')
-    @UseGuards(AdminGuard)
     @ApiOperation({
         summary: 'Consultar cliente por ID',
     })
@@ -64,11 +73,6 @@ export class CustomersController {
         name: 'id',
         type: Number,
         example: 6,
-    })
-    @ApiHeader({
-        name: 'x-api-key',
-        description: 'API Key de administrador.',
-        required: true,
     })
     @ApiOkResponse({
         description: 'Cliente obtenido correctamente.',
@@ -81,13 +85,24 @@ export class CustomersController {
         description: 'Cliente no encontrado.',
     })
     @ApiForbiddenResponse({
-        description: 'Acceso denegado.',
+        description: 'No tienes permisos para consultar este perfil.',
     })
-    findOne(@Param('id', ParseIntPipe) id: number): Promise<CustomerResponseDto> {
-        return this.customersService.findOne(id)}
+    async findOne(
+        @Param('id', ParseIntPipe) id: number,
+        @CurrentUser() user: { id: number; role: UserRole },
+    ): Promise<CustomerResponseDto> {
 
+        if (user.role === UserRole.CUSTOMER) {
+            await this.customersService.validateOwnership(id, user.id);
+        }
+
+        return this.customersService.findOne(id);
+    }
+
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.CUSTOMER, UserRole.ADMIN)
     @Patch(':id')
-    @UseGuards(AdminGuard)
     @ApiOperation({
         summary: 'Actualizar cliente por ID',
     })
@@ -95,11 +110,6 @@ export class CustomersController {
         name: 'id',
         type: Number,
         example: 6,
-    })
-    @ApiHeader({
-        name: 'x-api-key',
-        description: 'API Key de administrador.',
-        required: true,
     })
     @ApiBody({ type: UpdateCustomerDto })
     @ApiOkResponse({
@@ -116,9 +126,18 @@ export class CustomersController {
         description: 'El correo electrónico ya está registrado.',
     })
     @ApiForbiddenResponse({
-        description: 'Acceso denegado.',
+        description: 'No tienes permisos para actualizar este perfil.',
     })
-    update(@Param('id', ParseIntPipe) id: number,
-        @Body() dto: UpdateCustomerDto): Promise<CustomerResponseDto> {
-        return this.customersService.update(id, dto)}
+    async update(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() dto: UpdateCustomerDto,
+        @CurrentUser() user: { id: number; role: UserRole },
+    ): Promise<CustomerResponseDto> {
+
+        if (user.role === UserRole.CUSTOMER) {
+            await this.customersService.validateOwnership(id, user.id);
+        }
+
+        return this.customersService.update(id, dto);
+    }
 }

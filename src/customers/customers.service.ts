@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import * as argon2 from 'argon2';
@@ -161,6 +161,21 @@ export class CustomersService {
       points.get(customer.id) ?? 0,
     );
   }
+
+
+async validateOwnership(
+  customerId: number,
+  userId: number,
+): Promise<void> {
+  const customer = await this.findCustomer(customerId);
+
+  if (customer.userId !== userId) {
+    throw new ForbiddenException(
+      'No tienes permisos para acceder a este perfil.',
+    );
+  }
+}
+
 
   async validateCustomer(customerId: number): Promise<void> {
     await this.findCustomer(customerId);

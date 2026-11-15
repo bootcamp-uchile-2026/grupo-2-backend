@@ -25,6 +25,7 @@ async function bootstrap() {
     .setTitle('BuenOrigen API')
     .setDescription('Backend API for BuenOrigen')
     .setVersion('3.0')
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
