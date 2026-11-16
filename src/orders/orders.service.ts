@@ -64,13 +64,13 @@ export class OrdersService {
         }
     }
 
-    private async lockProducts(items: CartItemEntity[], manager: EntityManager): Promise<void> {
+    private async lockProducts(productIds: number[], manager: EntityManager): Promise<void> {
 
-        const productIds = items
-            .map(item => item.productId)
+        const sortedProductIds = [...productIds]
             .sort((a, b) => a - b);
 
-        for (const productId of productIds) {
+        for (const productId of sortedProductIds) {
+
             const product = await manager.findOne(ProductEntity, {
                 where: {
                     id: productId,
@@ -79,6 +79,7 @@ export class OrdersService {
                     mode: 'pessimistic_write',
                 },
             });
+
             if (!product) {
                 throw new ConflictException(
                     'Uno de los productos ya no está disponible.',
@@ -86,6 +87,7 @@ export class OrdersService {
             }
         }
     }
+
     async preview(customerId: number, dto: CheckoutPreviewDto, userId: number): Promise<CheckoutPreviewResponseDto> {
         const manager = this.dataSource.manager;
 
@@ -110,52 +112,25 @@ export class OrdersService {
 
         return this.dataSource.transaction(async manager => {
 
-            await this.customersService.validateOwnership(
-                customerId,
-                userId,
-                true,
-                manager,
-            );
+            await this.customersService.validateOwnership(customerId, userId, true, manager);
 
             await this.lockCustomer(customerId, manager);
 
-            await this.customersService.validateOwnership(
-                customerId,
-                userId,
-                true,
+            await this.customersService.validateOwnership(customerId, userId, true, manager);
+
+            const cart = await this.cartsService.findCartForUpdate(customerId, manager);
+
+            const address = await this.findShippingAddress(customerId, dto.addressId, manager);
+
+            const cartItems = await this.findCartItems(cart.id, manager);
+
+            await this.lockProducts(
+                cartItems.map(item => item.productId),
                 manager,
             );
+            const updatedCartItems = await this.findCartItems(cart.id, manager);
 
-            const cart = await this.cartsService.findCartForUpdate(
-                customerId,
-                manager,
-            );
-
-            const address = await this.findShippingAddress(
-                customerId,
-                dto.addressId,
-                manager,
-            );
-
-            const cartItems = await this.findCartItems(
-                cart.id,
-                manager,
-            );
-
-            await this.lockProducts(cartItems, manager);
-
-            const updatedCartItems = await this.findCartItems(
-                cart.id,
-                manager,
-            );
-
-            const checkout = await this.calculateCheckout(
-                customerId,
-                address.id,
-                updatedCartItems,
-                dto.greenPointsToRedeem ?? 0,
-                manager,
-            );
+            const checkout = await this.calculateCheckout(customerId, address.id, updatedCartItems, dto.greenPointsToRedeem ?? 0, manager);
 
             if (checkout.total !== dto.expectedTotal) {
                 throw new CheckoutTotalChangedError();
@@ -421,6 +396,61 @@ export class OrdersService {
         };
     }
 
+    async cancelOrderByCustomer(customerId: number,orderId: number,userId: number): Promise<OrderResponseDto> {
+
+        if (!Number.isInteger(orderId) || orderId <= 0) {
+            throw new BadRequestException(
+                'El identificador debe ser un número entero positivo.',
+            );
+        }
+
+        return this.dataSource.transaction(async manager => {
+
+            await this.customersService.validateOwnership(
+                customerId,
+                userId,
+                true,
+                manager,
+            );
+
+            await this.lockCustomer(
+                customerId,
+                manager,
+            );
+
+            const order = await manager.findOne(OrderEntity, {
+                where: {
+                    id: orderId,
+                    customerId,
+                },
+                lock: {
+                    mode: 'pessimistic_write',
+                },
+            });
+
+            if (!order) {
+                throw new OrderNotFoundError();
+            }
+
+            if (order.status !== OrderStatus.CONFIRMED) {
+                throw new InvalidOrderStatusError(
+                    'El cliente solo puede cancelar pedidos confirmados.',
+                );
+            }
+
+            const orderItems = await this.findItemsByOrders(
+                [order.id],
+                manager,
+            );
+
+            return this.cancelOrder(
+                order,
+                orderItems,
+                manager,
+            );
+        });
+    }
+
     async updateOrderStatus(orderId: number, dto: UpdateOrderStatusDto): Promise<OrderResponseDto> {
 
         if (!Number.isInteger(orderId) || orderId <= 0) {
@@ -465,7 +495,9 @@ export class OrdersService {
             );
 
             switch (dto.status) {
+
                 case OrderStatus.SHIPPED:
+
                     return this.shipOrder(
                         order,
                         orderItems,
@@ -473,12 +505,23 @@ export class OrdersService {
                     );
 
                 case OrderStatus.DELIVERED:
+
                     return this.deliverOrder(
                         order,
                         orderItems,
                         manager,
                     );
+
+                case OrderStatus.CANCELLED:
+
+                    return this.cancelOrder(
+                        order,
+                        orderItems,
+                        manager,
+                    );
+
                 default:
+
                     throw new InvalidOrderStatusError(
                         'La transición solicitada no está permitida.',
                     );
@@ -1011,6 +1054,90 @@ export class OrdersService {
             sortBy,
             sortDirection,
         };
+    }
+
+    private async cancelOrder(order: OrderEntity, orderItems: OrderItemEntity[], manager: EntityManager): Promise<OrderResponseDto> {
+
+        const allowedStatuses = [
+            OrderStatus.PENDING,
+            OrderStatus.CONFIRMED,
+            OrderStatus.PREPARING,
+        ];
+
+        if (!allowedStatuses.includes(order.status)) {
+            throw new InvalidOrderStatusError(
+                'El estado actual del pedido no permite su cancelación.',
+            );
+        }
+
+        const now = new Date();
+
+        if (order.status === OrderStatus.CONFIRMED ||
+            order.status === OrderStatus.PREPARING) {
+
+            await this.lockProducts(
+                orderItems.map(item => item.productId),
+                manager,
+            );
+
+            for (const item of orderItems) {
+
+                await manager.increment(
+                    ProductEntity,
+                    { id: item.productId },
+                    'stock',
+                    item.quantity,
+                );
+
+                await manager.update(
+                    ProductEntity,
+                    item.productId,
+                    {
+                        updatedAt: now,
+                    },
+                );
+            }
+
+            const redemption = await manager.findOne(
+                GreenPointMovementEntity,
+                {
+                    where: {
+                        orderId: order.id,
+                        customerId: order.customerId,
+                        type: GreenPointMovementType.REDEMPTION,
+                    },
+                },
+            );
+
+            if (redemption) {
+
+                await manager.save(GreenPointMovementEntity, {
+                    customerId: order.customerId,
+                    type: GreenPointMovementType.REFUND,
+                    points: -redemption.points,
+                    orderId: order.id,
+                    returnId: null,
+                    reviewId: null,
+                    description: 'Restitución de puntos verdes por cancelación',
+                    createdAt: now,
+                });
+            }
+        }
+
+        if (order.paymentStatus === PaymentStatus.PAID) {
+            order.paymentStatus = PaymentStatus.REFUNDED;
+        }
+
+        order.status = OrderStatus.CANCELLED;
+        order.cancelledAt = now;
+        order.updatedAt = now;
+
+        await manager.save(OrderEntity, order);
+
+        return OrderMapper.toResponseDto(
+            order,
+            orderItems,
+        );
     }
 
     private distributeDiscount(items: CheckoutItemResponseDto[], subtotal: number, greenPointsToRedeem: number): void {

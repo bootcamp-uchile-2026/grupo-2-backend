@@ -1,5 +1,5 @@
-import { Controller, Get, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiOkResponse, ApiBadRequestResponse, ApiUnauthorizedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiParam } from '@nestjs/swagger';
+import { Controller, Get, Param, ParseIntPipe, Patch, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiOkResponse, ApiBadRequestResponse, ApiUnauthorizedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiParam, ApiConflictResponse } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles/roles.guard';
@@ -88,5 +88,45 @@ export class CustomerOrdersController {
             orderId,
             user.id,
         );
+    }
+
+    @Patch(':orderId/cancel')
+    @ApiOperation({
+        summary: 'Cancelar un pedido del cliente.',
+        description:
+            'Permite cancelar un pedido propio en estado CONFIRMED.',
+    })
+    @ApiParam({
+        name: 'customerId',
+        type: Number,
+        example: 6,
+    })
+    @ApiParam({
+        name: 'orderId',
+        type: Number,
+        example: 16,
+    })
+    @ApiOkResponse({
+        type: OrderResponseDto,
+    })
+    @ApiBadRequestResponse({
+        description: 'Identificador inválido.',
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Autenticación requerida.',
+    })
+    @ApiForbiddenResponse({
+        description: 'Usuario no autorizado.',
+    })
+    @ApiNotFoundResponse({
+        description: 'Cliente o pedido no encontrado.',
+    })
+    @ApiConflictResponse({
+        description: 'El estado del pedido no permite su cancelación.',
+    })
+    cancel(@Param('customerId', ParseIntPipe) customerId: number,
+        @Param('orderId', ParseIntPipe) orderId: number,
+        @CurrentUser() user: { id: number; role: UserRole }): Promise<OrderResponseDto> {
+        return this.ordersService.cancelOrderByCustomer(customerId,orderId, user.id);
     }
 }
