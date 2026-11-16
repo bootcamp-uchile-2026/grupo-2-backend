@@ -129,7 +129,76 @@ export class ProductsService {
     `, { attributeIds: query.sustainabilityAttributeIds, attributeCount: query.sustainabilityAttributeIds.length });
     }
 
+    this.applySpecializedFilters(queryBuilder, query);
+
     return this.paginateProducts(queryBuilder, query, now);
+  }
+
+  private applySpecializedFilters(queryBuilder: SelectQueryBuilder<ProductEntity>, query: ProductQueryDto): void {
+
+    if (query.minWeightG !== undefined && query.maxWeightG !== undefined && query.minWeightG > query.maxWeightG) {
+      throw new BadRequestException('El peso mínimo no puede ser superior al peso máximo.');
+    }
+
+    if (query.minVolumeMl !== undefined && query.maxVolumeMl !== undefined && query.minVolumeMl > query.maxVolumeMl) {
+      throw new BadRequestException('El volumen mínimo no puede ser superior al volumen máximo.');
+    }
+
+    if (query.minWeightG !== undefined || query.maxWeightG !== undefined) {
+      const tables = ['food_details', 'garden_details', 'pet_details', 'craft_details'];
+      const conditions = ['detail.product_id = product.id'];
+
+      if (query.minWeightG !== undefined) {
+        conditions.push('detail.weight_g >= :minWeightG');
+      }
+
+      if (query.maxWeightG !== undefined) {
+        conditions.push('detail.weight_g <= :maxWeightG');
+      }
+
+      const filters = tables.map(table => `EXISTS (SELECT 1 FROM ${table} detail WHERE ${conditions.join(' AND ')})`);
+
+      queryBuilder.andWhere(`(${filters.join(' OR ')})`, { minWeightG: query.minWeightG, maxWeightG: query.maxWeightG });
+    }
+
+    if (query.minVolumeMl !== undefined || query.maxVolumeMl !== undefined) {
+      const tables = ['personal_care_details', 'home_cleaning_details', 'wellness_details'];
+      const conditions = ['detail.product_id = product.id'];
+
+      if (query.minVolumeMl !== undefined) {
+        conditions.push('detail.volume_ml >= :minVolumeMl');
+      }
+
+      if (query.maxVolumeMl !== undefined) {
+        conditions.push('detail.volume_ml <= :maxVolumeMl');
+      }
+
+      const filters = tables.map(table => `EXISTS (SELECT 1 FROM ${table} detail WHERE ${conditions.join(' AND ')})`);
+
+      queryBuilder.andWhere(`(${filters.join(' OR ')})`, { minVolumeMl: query.minVolumeMl, maxVolumeMl: query.maxVolumeMl });
+    }
+
+    const textFilters = [
+      { field: 'skinType', column: 'skin_type', value: query.skinType, tables: ['personal_care_details'] },
+      { field: 'material', column: 'material', value: query.material, tables: ['garden_details', 'clothing_details', 'pet_details', 'craft_details'] },
+      { field: 'usageType', column: 'usage_type', value: query.usageType, tables: ['garden_details'] },
+      { field: 'applicationSurface', column: 'application_surface', value: query.applicationSurface, tables: ['home_cleaning_details'] },
+      { field: 'fragrance', column: 'fragrance', value: query.fragrance, tables: ['wellness_details'] },
+      { field: 'format', column: 'format', value: query.format, tables: ['wellness_details'] },
+      { field: 'productSize', column: 'size', value: query.productSize, tables: ['clothing_details', 'pet_details'] },
+      { field: 'color', column: 'color', value: query.color, tables: ['clothing_details', 'craft_details'] },
+      { field: 'petType', column: 'pet_type', value: query.petType, tables: ['pet_details'] },
+    ];
+
+    for (const filter of textFilters) {
+      if (filter.value === undefined || filter.value.trim() === '') {
+        continue;
+      }
+
+      const filters = filter.tables.map(table => `EXISTS (SELECT 1 FROM ${table} detail WHERE detail.product_id = product.id AND detail.${filter.column} ILIKE :${filter.field})`);
+
+      queryBuilder.andWhere(`(${filters.join(' OR ')})`, { [filter.field]: `%${filter.value.trim()}%` });
+    }
   }
 
   async findProductsOnSale(pagination: PaginationDto) {
