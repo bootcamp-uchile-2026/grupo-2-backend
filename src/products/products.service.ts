@@ -32,6 +32,7 @@ import { ManagedProductDto } from '../dto/managed-product.dto';
 import { ProductSpecializedDetailsDto } from '../dto/product-specialized-details.dto';
 import { CategoryNotFoundError } from '../common/errors/category-not-found.error';
 import { InvalidProductError } from '../common/errors/invalid-product.error';
+import { UpdateProductDto } from '../dto/update-product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -234,6 +235,133 @@ export class ProductsService {
       offerEndAt: product.offerEndAt,
       sustainabilityAttributeIds: attributes.map(item => item.sustainabilityAttributeId),
     };
+  }
+
+  async findManagedProducts(producerId: number, pagination: PaginationDto) {
+
+    const queryBuilder = this.productsRepository
+      .createQueryBuilder('product')
+      .innerJoinAndSelect('product.producer', 'producer')
+      .where('product.producerId = :producerId', { producerId });
+
+    return this.paginateProducts(queryBuilder, pagination, new Date(), true);
+  }
+
+  async update(producerId: number, productId: number, dto: UpdateProductDto): Promise<ManagedProductDto> {
+
+    if (!Number.isInteger(productId) || productId <= 0) {
+      throw new BadRequestException('El identificador debe ser un número entero positivo.');
+    }
+
+    if (!Object.values(dto).some(value => value !== undefined)) {
+      throw new BadRequestException('Debe proporcionar al menos un atributo para actualizar.');
+    }
+
+    await this.dataSource.transaction(async manager => {
+
+      const product = await manager.findOne(ProductEntity, {
+        where: { id: productId, producerId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!product) {
+        throw new ProductNotFoundError();
+      }
+
+      if (dto.name !== undefined) {
+        const name = dto.name.trim();
+
+        if (!name) {
+          throw new BadRequestException('El nombre del producto es obligatorio.');
+        }
+
+        product.name = name;
+      }
+
+      if (dto.description !== undefined) {
+        const description = dto.description.trim();
+
+        if (!description) {
+          throw new BadRequestException('La descripción del producto es obligatoria.');
+        }
+
+        product.description = description;
+      }
+
+      if (dto.price !== undefined) {
+        product.price = dto.price;
+      }
+
+      if (dto.stock !== undefined) {
+        product.stock = dto.stock;
+      }
+
+      if (dto.co2Avoided !== undefined) {
+        product.co2Avoided = dto.co2Avoided.toFixed(4);
+      }
+
+      if (dto.isActive !== undefined) {
+        product.isActive = dto.isActive;
+      }
+
+      if (dto.offerPrice !== undefined) {
+        product.offerPrice = dto.offerPrice;
+      }
+
+      if (dto.offerStartAt !== undefined) {
+        product.offerStartAt = dto.offerStartAt === null ? null : new Date(dto.offerStartAt);
+      }
+
+      if (dto.offerEndAt !== undefined) {
+        product.offerEndAt = dto.offerEndAt === null ? null : new Date(dto.offerEndAt);
+      }
+
+      this.validateOffer(product);
+
+      product.updatedAt = new Date();
+
+      await manager.save(ProductEntity, product);
+
+      if (dto.details !== undefined) {
+
+        const category = await manager.findOne(CategoryEntity, {
+          where: { id: product.categoryId },
+        });
+
+        if (!category) {
+          throw new CategoryNotFoundError();
+        }
+
+        await this.saveSpecializedDetails(product.id, category.name, dto.details, manager);
+      }
+
+      if (dto.sustainabilityAttributeIds !== undefined) {
+        await this.saveSustainabilityAttributes(product.id, dto.sustainabilityAttributeIds, manager);
+      }
+    });
+
+    return this.findManagedProduct(producerId, productId);
+  }
+
+  private validateOffer(product: ProductEntity): void {
+
+    const { price, offerPrice, offerStartAt, offerEndAt } = product;
+
+    if (offerPrice === null && offerStartAt === null && offerEndAt === null) {
+      return;
+    }
+
+    if (offerPrice === null || offerStartAt === null || offerEndAt === null) {
+      throw new InvalidProductError('La oferta debe incluir precio, fecha de inicio y fecha de término.');
+    }
+
+    if (offerPrice <= 0 || offerPrice >= price) {
+      throw new InvalidProductError('El precio de oferta debe ser mayor que cero y menor que el precio normal.');
+    }
+
+    if (offerEndAt <= offerStartAt) {
+      throw new InvalidProductError('La fecha de término de la oferta debe ser posterior a la fecha de inicio.');
+    }
   }
 
   private validateSpecializedDetails(categoryName: string, details: ProductSpecializedDetailsDto): void {
@@ -568,14 +696,18 @@ export class ProductsService {
       .andWhere('user.role = :role', { role: UserRole.PRODUCER });
   }
 
+  private async paginateProducts(queryBuilder: SelectQueryBuilder<ProductEntity>, pagination: PaginationDto, now: Date, managed: boolean = false) {
 
-  private async paginateProducts(queryBuilder: SelectQueryBuilder<ProductEntity>, pagination: PaginationDto, now: Date) {
     const { page, size, sortBy, sortDirection } = pagination;
 
     const allowedSortFields = [
       'id', 'name', 'price', 'finalPrice',
       'stock', 'co2Avoided', 'createdAt',
     ];
+
+    if (managed) {
+      allowedSortFields.push('isActive');
+    }
 
     if (!allowedSortFields.includes(sortBy)) {
       throw new BadRequestException('Campo de ordenamiento inválido.');
@@ -612,7 +744,14 @@ export class ProductsService {
       .limit(size)
       .getMany();
 
-    const content = await this.toSummaryDtos(products, now);
+    const summaries = await this.toSummaryDtos(products, now);
+
+    const content = managed
+      ? summaries.map((summary, index) => ({
+        ...summary,
+        isActive: products[index].isActive,
+      }))
+      : summaries;
 
     return {
       content,

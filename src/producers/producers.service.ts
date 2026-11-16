@@ -13,6 +13,7 @@ import { ProducerMapper } from './producer.mapper';
 import { ProductsService } from '../products/products.service';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { ManagedProductDto } from '../dto/managed-product.dto';
+import { UpdateProductDto } from '../dto/update-product.dto';
 
 @Injectable()
 export class ProducersService {
@@ -231,6 +232,20 @@ export class ProducersService {
                 'No tienes permisos para acceder a este perfil.',
             );
         }
+    }
+
+    async updateProduct(producerId: number, productId: number, dto: UpdateProductDto, userId: number): Promise<ManagedProductDto> {
+
+        await this.validateOwnership(producerId, userId);
+
+        return this.productsService.update(producerId, productId, dto);
+    }
+
+    async findManagedProducts(producerId: number, pagination: PaginationDto, userId: number) {
+
+        await this.validateOwnership(producerId, userId);
+
+        return this.productsService.findManagedProducts(producerId, pagination);
     }
 
     private async findProducer(producerId: number, manager?: EntityManager): Promise<ProducerEntity> {
