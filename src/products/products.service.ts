@@ -222,7 +222,7 @@ export class ProductsService {
     );
   }
 
-  async findBestSellingProducts(quantity: number): Promise<BestSellingProductDto[]> {
+  async findBestSellingProducts(quantity: number, categoryId?: number): Promise<BestSellingProductDto[]> {
     this.validateQuantity(quantity);
 
     const now = new Date();
@@ -256,14 +256,14 @@ export class ProductsService {
           AND o.delivered_at <= $2
           AND p.is_active = true
           AND u.is_active = true
-          AND u.role = 'PRODUCER'
+        AND u.role = 'PRODUCER'
+        AND ($4::integer IS NULL OR p.category_id = $4)
         GROUP BY oi.product_id
         HAVING SUM(oi.quantity - COALESCE(returned.quantity, 0)) > 0
         ORDER BY "unitsSold" DESC, oi.product_id ASC
         LIMIT $3
         `,
-      [since, now, quantity],
-    );
+      [since, now, quantity, categoryId ?? null]);
 
     if (sales.length === 0) {
       return []

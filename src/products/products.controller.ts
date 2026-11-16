@@ -8,6 +8,7 @@ import { ProductSummaryDto } from '../dto/product-summary.dto';
 import { ProductDetailDto } from '../dto/product-detail.dto';
 import { BestSellingProductDto } from '../dto/best-selling-product.dto';
 import { ProductGreenFootprintDto } from '../dto/product-green-footprint.dto';
+import { BestSellingProductsQueryDto } from 'src/dto/best-selling-products-query.dto';
 
 @ApiTags('Products')
 @Controller('products')
@@ -46,24 +47,17 @@ export class ProductsController {
   @Get('best-sellers')
   @ApiOperation({
     summary: 'Obtener productos más vendidos',
-    description:
-      'Unidades netas vendidas durante los últimos 30 días.',
-  })
-  @ApiQuery({
-    name: 'quantity',
-    type: Number,
-    required: true,
-    example: 5,
+    description: 'Unidades netas vendidas durante los últimos 30 días, con filtro opcional por categoría.'
   })
   @ApiOkResponse({
     type: BestSellingProductDto,
-    isArray: true,
+    isArray: true
   })
   @ApiBadRequestResponse({
-    description: 'Cantidad inválida',
+    description: 'Parámetros de consulta inválidos'
   })
-  findBestSellingProducts(@Query('quantity', ParseIntPipe) quantity: number): Promise<BestSellingProductDto[]> {
-    return this.productsService.findBestSellingProducts(quantity)
+  findBestSellingProducts(@Query() query: BestSellingProductsQueryDto): Promise<BestSellingProductDto[]> {
+    return this.productsService.findBestSellingProducts(query.quantity, query.categoryId);
   }
 
   @Get('new')
