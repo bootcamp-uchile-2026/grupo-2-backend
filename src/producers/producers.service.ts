@@ -11,6 +11,8 @@ import { StatisticsQueryDto } from '../dto/statistics-query.dto';
 import { ProducerNotFoundError } from '../common/errors/producer-not-found.error';
 import { ProducerMapper } from './producer.mapper';
 import { ProductsService } from '../products/products.service';
+import { CreateProductDto } from '../dto/create-product.dto';
+import { ManagedProductDto } from '../dto/managed-product.dto';
 
 @Injectable()
 export class ProducersService {
@@ -85,8 +87,8 @@ export class ProducersService {
         return this.productsService.findProductsByProducer(producerId, pagination);
     }
 
-    async getStatistics(producerId: number, query: StatisticsQueryDto,userId: number): Promise<ProducerStatisticsDto> {
-        await this.validateOwnership( producerId, userId);
+    async getStatistics(producerId: number, query: StatisticsQueryDto, userId: number): Promise<ProducerStatisticsDto> {
+        await this.validateOwnership(producerId, userId);
 
         const products = await this.dataSource.query(
             `
@@ -208,6 +210,16 @@ export class ProducersService {
             co2Avoided:
                 Number(sales[0].co2Avoided),
         };
+    }
+
+    async createProduct(producerId: number, dto: CreateProductDto, userId: number): Promise<ManagedProductDto> {
+        await this.validateOwnership(producerId, userId);
+        return this.productsService.create(producerId, dto);
+    }
+
+    async findManagedProduct(producerId: number, productId: number, userId: number): Promise<ManagedProductDto> {
+        await this.validateOwnership(producerId, userId);
+        return this.productsService.findManagedProduct(producerId, productId);
     }
 
     async validateOwnership(producerId: number, userId: number, manager?: EntityManager): Promise<void> {

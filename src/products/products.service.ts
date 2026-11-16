@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder, In, EntityManager } from 'typeorm';
+import { Repository, SelectQueryBuilder, In, EntityManager, DataSource } from 'typeorm';
 import { ProductEntity } from '../models/product.entity';
 import { ProductImageEntity } from '../models/product-image.entity';
 import { ReviewEntity } from '../models/review.entity';
@@ -25,6 +25,13 @@ import { FavoriteProductDto } from '../dto/favorite-product.dto';
 import { ProductNotFoundError } from '../common/errors/product-not-found.error';
 import { ProductMapper } from './product.mapper';
 import { FavoriteEntity } from '../models/favorite.entity';
+import { CategoryEntity } from '../models/category.entity';
+import { SustainabilityAttributeEntity } from '../models/sustainability-attribute.entity';
+import { CreateProductDto } from '../dto/create-product.dto';
+import { ManagedProductDto } from '../dto/managed-product.dto';
+import { ProductSpecializedDetailsDto } from '../dto/product-specialized-details.dto';
+import { CategoryNotFoundError } from '../common/errors/category-not-found.error';
+import { InvalidProductError } from '../common/errors/invalid-product.error';
 
 @Injectable()
 export class ProductsService {
@@ -64,7 +71,10 @@ export class ProductsService {
     private readonly petDetailsRepository: Repository<PetDetailEntity>,
 
     @InjectRepository(CraftDetailEntity)
-    private readonly craftDetailsRepository: Repository<CraftDetailEntity>) { }
+    private readonly craftDetailsRepository: Repository<CraftDetailEntity>,
+
+    private readonly dataSource: DataSource,
+  ) { }
 
   async findAll(query: ProductQueryDto) {
     const now = new Date();
@@ -186,11 +196,14 @@ export class ProductsService {
 
   async findOne(productId: number): Promise<ProductDetailDto> {
     const product = await this.findPublicProduct(productId);
+    return this.toDetailDto(product);
+  }
 
+  private async toDetailDto(product: ProductEntity): Promise<ProductDetailDto> {
     const [summary] = await this.toSummaryDtos([product], new Date());
 
     const images = await this.productImagesRepository.find({
-      where: { productId },
+      where: { productId: product.id },
       order: { displayOrder: 'ASC' },
     });
 
@@ -202,7 +215,234 @@ export class ProductsService {
       categoryName: product.category.name,
       imageFileIds: images.map(image => image.fileId),
       details,
+    };
+  }
+
+  private async toManagedProductDto(product: ProductEntity): Promise<ManagedProductDto> {
+    const detail = await this.toDetailDto(product);
+
+    const attributes = await this.sustainabilityRepository.find({
+      where: { productId: product.id },
+      order: { sustainabilityAttributeId: 'ASC' },
+    });
+
+    return {
+      ...detail,
+      isActive: product.isActive,
+      configuredOfferPrice: product.offerPrice,
+      offerStartAt: product.offerStartAt,
+      offerEndAt: product.offerEndAt,
+      sustainabilityAttributeIds: attributes.map(item => item.sustainabilityAttributeId),
+    };
+  }
+
+  private validateSpecializedDetails(categoryName: string, details: ProductSpecializedDetailsDto): void {
+
+    const allowedFields: Record<string, string[]> = {
+      'Alimentos': ['weightG', 'ingredients', 'allergens', 'expirationDate'],
+      'Cuidado personal': ['volumeMl', 'ingredients', 'skinType'],
+      'Huerto y jardín': ['material', 'heightCm', 'widthCm', 'depthCm', 'weightG', 'usageType'],
+      'Limpieza del hogar': ['volumeMl', 'composition', 'applicationSurface'],
+      'Aromas y bienestar': ['fragrance', 'volumeMl', 'durationHours', 'format'],
+      'Ropa y accesorios': ['size', 'color', 'material'],
+      'Mascotas': ['petType', 'size', 'weightG', 'material'],
+      'Decoración y artesanía': ['material', 'heightCm', 'widthCm', 'depthCm', 'color', 'weightG'],
+    };
+
+    const categoryFields = allowedFields[categoryName];
+
+    if (!categoryFields) {
+      throw new InvalidProductError('La categoría no admite atributos especializados.');
     }
+
+    for (const [field, value] of Object.entries(details)) {
+      if (value !== undefined && !categoryFields.includes(field)) {
+        throw new InvalidProductError(`El atributo ${field} no corresponde a la categoría ${categoryName}.`);
+      }
+    }
+  }
+
+  private async saveSpecializedDetails(productId: number, categoryName: string, details: ProductSpecializedDetailsDto, manager: EntityManager): Promise<void> {
+    this.validateSpecializedDetails(categoryName, details);
+
+    switch (categoryName) {
+
+      case 'Alimentos':
+        await manager.save(FoodDetailEntity, {
+          productId,
+          weightG: details.weightG == null ? details.weightG : String(details.weightG), ingredients: details.ingredients,
+          allergens: details.allergens,
+          expirationDate: details.expirationDate,
+        });
+        break;
+
+      case 'Cuidado personal':
+        await manager.save(PersonalCareDetailEntity, {
+          productId,
+          volumeMl: details.volumeMl == null ? details.volumeMl : String(details.volumeMl),
+          ingredients: details.ingredients,
+          skinType: details.skinType,
+        });
+        break;
+
+      case 'Huerto y jardín':
+        await manager.save(GardenDetailEntity, {
+          productId,
+          material: details.material,
+          heightCm: details.heightCm == null ? details.heightCm : String(details.heightCm),
+          widthCm: details.widthCm == null ? details.widthCm : String(details.widthCm),
+          depthCm: details.depthCm == null ? details.depthCm : String(details.depthCm),
+          weightG: details.weightG == null ? details.weightG : String(details.weightG),
+          usageType: details.usageType,
+        });
+        break;
+
+      case 'Limpieza del hogar':
+        await manager.save(HomeCleaningDetailEntity, {
+          productId,
+          volumeMl: details.volumeMl == null ? details.volumeMl : String(details.volumeMl),
+          composition: details.composition,
+          applicationSurface: details.applicationSurface,
+        });
+        break;
+
+      case 'Aromas y bienestar':
+        await manager.save(WellnessDetailEntity, {
+          productId,
+          fragrance: details.fragrance,
+          volumeMl: details.volumeMl == null ? details.volumeMl : String(details.volumeMl),
+          durationHours: details.durationHours == null ? details.durationHours : String(details.durationHours), format: details.format,
+        });
+        break;
+
+      case 'Ropa y accesorios':
+        await manager.save(ClothingDetailEntity, {
+          productId,
+          size: details.size,
+          color: details.color,
+          material: details.material,
+        });
+        break;
+
+      case 'Mascotas':
+        await manager.save(PetDetailEntity, {
+          productId,
+          petType: details.petType,
+          size: details.size,
+          weightG: details.weightG == null ? details.weightG : String(details.weightG),
+          material: details.material,
+        });
+        break;
+
+      case 'Decoración y artesanía':
+        await manager.save(CraftDetailEntity, {
+          productId,
+          material: details.material,
+          heightCm: details.heightCm == null ? details.heightCm : String(details.heightCm),
+          widthCm: details.widthCm == null ? details.widthCm : String(details.widthCm),
+          depthCm: details.depthCm == null ? details.depthCm : String(details.depthCm),
+          color: details.color,
+          weightG: details.weightG == null ? details.weightG : String(details.weightG),
+        });
+        break;
+    }
+  }
+
+  private async validateSustainabilityAttributes(attributeIds: number[], manager: EntityManager): Promise<void> {
+    if (attributeIds.length === 0) {
+      return;
+    }
+
+    const attributes = await manager.find(SustainabilityAttributeEntity, {
+      where: { id: In(attributeIds) },
+    });
+
+    if (attributes.length !== attributeIds.length) {
+      throw new InvalidProductError('Uno o más atributos de sustentabilidad no existen.');
+    }
+  }
+
+  private async saveSustainabilityAttributes(productId: number, attributeIds: number[], manager: EntityManager): Promise<void> {
+    await this.validateSustainabilityAttributes(attributeIds, manager);
+
+    await manager.delete(ProductSustainabilityAttributeEntity, { productId });
+
+    for (const attributeId of attributeIds) {
+      await manager.save(ProductSustainabilityAttributeEntity, {
+        productId,
+        sustainabilityAttributeId: attributeId,
+      });
+    }
+  }
+
+  async create(producerId: number, dto: CreateProductDto): Promise<ManagedProductDto> {
+    const name = dto.name.trim();
+    const description = dto.description.trim();
+
+    if (!name || !description) {
+      throw new BadRequestException('El nombre y la descripción del producto son obligatorios.');
+    }
+
+    const productId = await this.dataSource.transaction(async manager => {
+
+      const category = await manager.findOne(CategoryEntity, {
+        where: { id: dto.categoryId },
+      });
+
+      if (!category) {
+        throw new CategoryNotFoundError();
+      }
+
+      const details = dto.details ?? {};
+
+      this.validateSpecializedDetails(category.name, details);
+
+      const now = new Date();
+
+      const product = await manager.save(ProductEntity, {
+        producerId,
+        categoryId: category.id,
+        name,
+        description,
+        price: dto.price,
+        stock: dto.stock,
+        co2Avoided: dto.co2Avoided.toFixed(4),
+        isActive: dto.isActive ?? true,
+        offerPrice: null,
+        offerStartAt: null,
+        offerEndAt: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      await this.saveSpecializedDetails(product.id, category.name, details, manager);
+
+      await this.saveSustainabilityAttributes(product.id, dto.sustainabilityAttributeIds ?? [], manager);
+
+      return product.id;
+    });
+
+    return this.findManagedProduct(producerId, productId);
+  }
+
+  async findManagedProduct(producerId: number, productId: number): Promise<ManagedProductDto> {
+    if (!Number.isInteger(productId) || productId <= 0) {
+      throw new BadRequestException('El identificador debe ser un número entero positivo.');
+    }
+
+    const product = await this.productsRepository.findOne({
+      where: { id: productId, producerId },
+      relations: {
+        producer: true,
+        category: true,
+      },
+    });
+
+    if (!product) {
+      throw new ProductNotFoundError();
+    }
+
+    return this.toManagedProductDto(product);
   }
 
   async findGreenFootprint(productId: number): Promise<ProductGreenFootprintDto> {
