@@ -8,6 +8,8 @@ import { InsufficientStockError } from '../errors/insufficient-stock.error';
 import { InsufficientGreenPointsError } from '../errors/insufficient-green-points.error';
 import { CheckoutTotalChangedError } from '../errors/checkout-total-changed.error';
 import { InvalidOrderStatusError } from '../errors/invalid-order-status.error';
+import { ReviewAlreadyExistsError } from '../errors/review-already-exists.error';
+import { ReviewNotAllowedError } from '../errors/review-not-allowed.error';
 
 @Catch(
   DuplicateEmailError,
@@ -17,7 +19,10 @@ import { InvalidOrderStatusError } from '../errors/invalid-order-status.error';
   InsufficientGreenPointsError,
   InvalidOrderStatusError,
   CheckoutTotalChangedError,
-  QueryFailedError)
+  ReviewAlreadyExistsError,
+  ReviewNotAllowedError,
+  QueryFailedError,
+)
 export class ConflictFilter implements ExceptionFilter {
 
   catch(exception: Error, host: ArgumentsHost) {
@@ -35,6 +40,9 @@ export class ConflictFilter implements ExceptionFilter {
 
         } else if (error.constraint === 'favorites_pkey') {
           exception = new FavoriteAlreadyExistsError();
+
+        } else if (error.constraint === 'uq_reviews_customer_product') {
+          exception = new ReviewAlreadyExistsError();
         }
       }
     }

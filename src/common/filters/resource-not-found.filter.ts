@@ -11,6 +11,7 @@ import { CartItemNotFoundError } from '../errors/cart-item-not-found.error';
 import { AddressNotFoundError } from '../errors/address-not-found.error';
 import { OrderNotFoundError } from '../errors/order-not-found.error';
 import { OrderItemNotFoundError } from '../errors/order-item-not-found.error';
+import { ReviewNotFoundError } from '../errors/review-not-found.error';
 
 @Catch(
   CustomerNotFoundError,
@@ -24,6 +25,7 @@ import { OrderItemNotFoundError } from '../errors/order-item-not-found.error';
   AddressNotFoundError,
   OrderItemNotFoundError,
   OrderNotFoundError,
+  ReviewNotFoundError,
 )
 export class ResourceNotFoundFilter implements ExceptionFilter {
 
