@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/com
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager, DataSource } from 'typeorm';
 import { ProducerEntity } from '../models/producer.entity';
-import { UserRole } from '../models/user.entity';
+import { UserEntity, UserRole } from '../models/user.entity';
 import { PaginationDto } from '../dto/pagination.dto';
 import { ProducerSummaryDto } from '../dto/producer-summary.dto';
 import { ProducerDetailDto } from '../dto/producer-detail.dto';
@@ -14,6 +14,10 @@ import { ProductsService } from '../products/products.service';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { ManagedProductDto } from '../dto/managed-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
+import * as argon2 from 'argon2';
+import { CreateProducerDto } from '../dto/create-producer.dto';
+import { ProducerProfileDto } from '../dto/producer-profile.dto';
+import { DuplicateEmailError } from '../common/errors/duplicate-email.error';
 
 @Injectable()
 export class ProducersService {
@@ -25,6 +29,56 @@ export class ProducersService {
         private readonly productsService: ProductsService,
 
         private readonly dataSource: DataSource) { }
+
+    async create(dto: CreateProducerDto): Promise<ProducerProfileDto> {
+        const email = dto.email.trim().toLowerCase();
+        const firstName = dto.firstName.trim();
+        const businessName = dto.businessName.trim();
+
+        if (!firstName || !businessName) {
+            throw new BadRequestException('El nombre y el nombre comercial son obligatorios.');
+        }
+
+        if (dto.privacyAccepted !== true) {
+            throw new BadRequestException('Debe aceptar la política de privacidad.');
+        }
+
+        await this.validateEmail(email);
+
+        const passwordHash = await argon2.hash(dto.password, { type: argon2.argon2id });
+
+        return this.dataSource.transaction(async manager => {
+            const user = manager.create(UserEntity, {
+                email,
+                passwordHash,
+                firstName,
+                lastName: dto.lastName?.trim() || null,
+                phone: dto.phone?.trim() || null,
+                profileFileId: null,
+                role: UserRole.PRODUCER,
+                isActive: true,
+                privacyAcceptedAt: new Date(),
+            });
+
+            const savedUser = await manager.save(user);
+
+            const producer = manager.create(ProducerEntity, {
+                userId: savedUser.id,
+                businessName,
+                description: dto.description?.trim() || null,
+                location: dto.location?.trim() || null,
+                websiteUrl: dto.websiteUrl?.trim() || null,
+                logoFileId: null,
+                bannerFileId: null,
+            });
+
+            const savedProducer = await manager.save(producer);
+
+            savedProducer.user = savedUser;
+
+            return ProducerMapper.toProfileDto(savedProducer);
+        });
+    }
 
     async findAll(pagination: PaginationDto) {
         const { page, size, sortBy, sortDirection } = pagination;
@@ -246,6 +300,17 @@ export class ProducersService {
         await this.validateOwnership(producerId, userId);
 
         return this.productsService.findManagedProducts(producerId, pagination);
+    }
+
+    private async validateEmail(email: string, userId?: number): Promise<void> {
+        const existingUser = await this.dataSource.getRepository(UserEntity)
+            .createQueryBuilder('user')
+            .where('LOWER(user.email) = :email', { email })
+            .getOne();
+
+        if (existingUser && existingUser.id !== userId) {
+            throw new DuplicateEmailError();
+        }
     }
 
     private async findProducer(producerId: number, manager?: EntityManager): Promise<ProducerEntity> {
