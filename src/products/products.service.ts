@@ -82,21 +82,51 @@ export class ProductsService {
     const queryBuilder = this.createPublicProductsQuery();
 
     if (query.search && query.search.trim() !== '') {
-      queryBuilder.andWhere('product.name ILIKE :search', {
-        search: `%${query.search.trim()}%`
-      });
+      queryBuilder.andWhere('product.name ILIKE :search', { search: `%${query.search.trim()}%` });
     }
 
     if (query.categoryId !== undefined) {
-      queryBuilder.andWhere('product.categoryId = :categoryId', {
-        categoryId: query.categoryId
-      });
+      queryBuilder.andWhere('product.categoryId = :categoryId', { categoryId: query.categoryId });
     }
 
     if (query.producerId !== undefined) {
-      queryBuilder.andWhere('product.producerId = :producerId', {
-        producerId: query.producerId
-      });
+      queryBuilder.andWhere('product.producerId = :producerId', { producerId: query.producerId });
+    }
+
+    if (query.minPrice !== undefined && query.maxPrice !== undefined && query.minPrice > query.maxPrice) {
+      throw new BadRequestException('El precio mínimo no puede ser superior al precio máximo.');
+    }
+
+    const activeOffer = `product.offer_price IS NOT NULL AND product.offer_start_at <= :now AND product.offer_end_at > :now`;
+
+    const effectivePrice = `CASE WHEN ${activeOffer} THEN product.offer_price ELSE product.price END`;
+
+    if (query.minPrice !== undefined) {
+      queryBuilder.andWhere(`(${effectivePrice}) >= :minPrice`, { minPrice: query.minPrice, now });
+    }
+
+    if (query.maxPrice !== undefined) {
+      queryBuilder.andWhere(`(${effectivePrice}) <= :maxPrice`, { maxPrice: query.maxPrice, now });
+    }
+
+    if (query.available !== undefined) {
+      queryBuilder.andWhere(query.available ? 'product.stock > 0' : 'product.stock = 0');
+    }
+
+    if (query.onSale !== undefined) {
+      queryBuilder.andWhere(query.onSale ? `(${activeOffer})` : `NOT (${activeOffer})`, { now });
+    }
+
+    if (query.sustainabilityAttributeIds?.length) {
+      queryBuilder.andWhere(`
+      product.id IN (
+        SELECT psa.product_id
+        FROM product_sustainability_attributes psa
+        WHERE psa.sustainability_attribute_id IN (:...attributeIds)
+        GROUP BY psa.product_id
+        HAVING COUNT(DISTINCT psa.sustainability_attribute_id) = :attributeCount
+      )
+    `, { attributeIds: query.sustainabilityAttributeIds, attributeCount: query.sustainabilityAttributeIds.length });
     }
 
     return this.paginateProducts(queryBuilder, query, now);
