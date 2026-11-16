@@ -33,6 +33,8 @@ import { ProducerOrderDetailDto } from 'src/dto/producer-order-detail.dto';
 import { OrderItemNotFoundError } from 'src/common/errors/order-item-not-found.error';
 import { InvalidOrderStatusError } from 'src/common/errors/invalid-order-status.error';
 import { UpdateOrderStatusDto } from 'src/dto/update-order-status.dto';
+import { StatisticsQueryDto } from 'src/dto/statistics-query.dto';
+import { OrderStatisticsDto } from 'src/dto/order-statistics.dto';
 
 
 @Injectable()
@@ -396,7 +398,7 @@ export class OrdersService {
         };
     }
 
-    async cancelOrderByCustomer(customerId: number,orderId: number,userId: number): Promise<OrderResponseDto> {
+    async cancelOrderByCustomer(customerId: number, orderId: number, userId: number): Promise<OrderResponseDto> {
 
         if (!Number.isInteger(orderId) || orderId <= 0) {
             throw new BadRequestException(
@@ -527,6 +529,127 @@ export class OrdersService {
                     );
             }
         });
+    }
+
+    async getStatistics(query: StatisticsQueryDto): Promise<OrderStatisticsDto> {
+
+        const orders = await this.dataSource.query(
+            `
+        SELECT
+            COUNT(*) AS "totalOrders",
+
+            COUNT(*) FILTER (
+                WHERE status = 'PENDING'
+            ) AS "pendingOrders",
+
+            COUNT(*) FILTER (
+                WHERE status = 'CONFIRMED'
+            ) AS "confirmedOrders",
+
+            COUNT(*) FILTER (
+                WHERE status = 'PREPARING'
+            ) AS "preparingOrders",
+
+            COUNT(*) FILTER (
+                WHERE status = 'SHIPPED'
+            ) AS "shippedOrders",
+
+            COUNT(*) FILTER (
+                WHERE status = 'DELIVERED'
+            ) AS "deliveredOrders",
+
+            COUNT(*) FILTER (
+                WHERE status = 'CANCELLED'
+            ) AS "cancelledOrders"
+
+        FROM orders
+        `,
+        );
+
+        const sales = await this.dataSource.query(
+            `
+        SELECT
+            COALESCE(
+                SUM(
+                    oi.quantity - COALESCE(returned.quantity, 0)
+                ),
+                0
+            ) AS "netUnitsSold",
+
+            COALESCE(
+                SUM(
+                    (oi.quantity - COALESCE(returned.quantity, 0))
+                    * oi.unit_price
+                ),
+                0
+            ) AS "netSales",
+
+            COALESCE(
+                SUM(
+                    (oi.quantity - COALESCE(returned.quantity, 0))
+                    * oi.unit_co2_avoided
+                ),
+                0
+            ) AS "co2Avoided"
+
+        FROM order_items oi
+        JOIN orders o ON o.id = oi.order_id
+
+        LEFT JOIN (
+            SELECT
+                ri.order_item_id,
+                SUM(ri.quantity) AS quantity
+            FROM return_items ri
+            JOIN returns r ON r.id = ri.return_id
+            WHERE r.status = 'COMPLETED'
+            GROUP BY ri.order_item_id
+        ) returned ON returned.order_item_id = oi.id
+
+        WHERE o.status = 'DELIVERED'
+          AND (
+              $1::text IS NULL
+              OR o.delivered_at >= (
+                  DATE_TRUNC(
+                      $1::text,
+                      NOW() AT TIME ZONE 'America/Santiago'
+                  ) AT TIME ZONE 'America/Santiago'
+              )
+          )
+        `,
+            [query.period ?? null],
+        );
+
+        return {
+            totalOrders:
+                Number(orders[0].totalOrders),
+
+            pendingOrders:
+                Number(orders[0].pendingOrders),
+
+            confirmedOrders:
+                Number(orders[0].confirmedOrders),
+
+            preparingOrders:
+                Number(orders[0].preparingOrders),
+
+            shippedOrders:
+                Number(orders[0].shippedOrders),
+
+            deliveredOrders:
+                Number(orders[0].deliveredOrders),
+
+            cancelledOrders:
+                Number(orders[0].cancelledOrders),
+
+            netUnitsSold:
+                Number(sales[0].netUnitsSold),
+
+            netSales:
+                Number(sales[0].netSales),
+
+            co2Avoided:
+                Number(sales[0].co2Avoided),
+        };
     }
 
     private async shipOrder(order: OrderEntity, orderItems: OrderItemEntity[], manager: EntityManager): Promise<OrderResponseDto> {
