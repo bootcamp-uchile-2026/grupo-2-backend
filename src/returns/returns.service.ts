@@ -16,6 +16,8 @@ import { ReturnNotFoundError } from '../common/errors/return-not-found.error';
 import { InvalidReturnError } from '../common/errors/invalid-return.error';
 
 import { ReturnMapper } from './return.mapper';
+import { UpdateReturnStatusDto } from 'src/dto/update-return-status.dto';
+import { InvalidReturnStatusError } from 'src/common/errors/invalid-return-status.error';
 
 @Injectable()
 export class ReturnsService {
@@ -24,7 +26,7 @@ export class ReturnsService {
         private readonly customersService: CustomersService,
         private readonly dataSource: DataSource) { }
 
-    async create(customerId: number,dto: CreateReturnDto, userId: number): Promise<ReturnResponseDto> {
+    async create(customerId: number, dto: CreateReturnDto, userId: number): Promise<ReturnResponseDto> {
         const reason = dto.reason.trim();
 
         if (!reason) {
@@ -171,7 +173,7 @@ export class ReturnsService {
 
     async findAllByCustomer(customerId: number, query: ReturnQueryDto, userId: number) {
 
-        await this.customersService.validateOwnership(customerId,userId, true);
+        await this.customersService.validateOwnership(customerId, userId, true);
 
         const queryBuilder = this.dataSource.manager
             .createQueryBuilder(ReturnEntity, 'returnRequest')
@@ -186,7 +188,7 @@ export class ReturnsService {
         return this.paginateReturns(queryBuilder, query);
     }
 
-    async findOneByCustomer(customerId: number,returnId: number,userId: number): Promise<ReturnResponseDto> {
+    async findOneByCustomer(customerId: number, returnId: number, userId: number): Promise<ReturnResponseDto> {
 
         await this.customersService.validateOwnership(customerId, userId, true);
 
@@ -220,7 +222,223 @@ export class ReturnsService {
         );
     }
 
-    private async paginateReturns(queryBuilder: SelectQueryBuilder<ReturnEntity>,query: ReturnQueryDto) {
+    async findAllByAdmin(query: ReturnQueryDto) {
+
+        const queryBuilder = this.dataSource.manager
+            .createQueryBuilder(ReturnEntity, 'returnRequest')
+            .innerJoinAndSelect(
+                'returnRequest.order',
+                'order',
+            );
+
+        return this.paginateReturns(queryBuilder, query);
+    }
+
+    async findOneByAdmin(returnId: number): Promise<ReturnResponseDto> {
+
+        this.validateReturnId(returnId);
+
+        const returnRequest = await this.dataSource.manager.findOne(
+            ReturnEntity,
+            {
+                where: {
+                    id: returnId,
+                },
+                relations: {
+                    order: true,
+                },
+            },
+        );
+
+        if (!returnRequest) {
+            throw new ReturnNotFoundError();
+        }
+
+        const returnItems = await this.findItemsByReturns([
+            returnRequest.id,
+        ]);
+
+        return ReturnMapper.toResponseDto(
+            returnRequest,
+            returnItems,
+        );
+    }
+
+    async updateStatus(returnId: number, dto: UpdateReturnStatusDto, userId: number): Promise<ReturnResponseDto> {
+
+        this.validateReturnId(returnId);
+
+        return this.dataSource.transaction(async manager => {
+
+            const existingReturn = await manager.findOne(
+                ReturnEntity,
+                {
+                    where: {
+                        id: returnId,
+                    },
+                    relations: {
+                        order: true,
+                    },
+                },
+            );
+
+            if (!existingReturn) {
+                throw new ReturnNotFoundError();
+            }
+
+            await this.lockCustomer(
+                existingReturn.order.customerId,
+                manager,
+            );
+
+            const order = await manager.findOne(
+                OrderEntity,
+                {
+                    where: {
+                        id: existingReturn.orderId,
+                    },
+                    lock: {
+                        mode: 'pessimistic_write',
+                    },
+                },
+            );
+
+            if (!order) {
+                throw new OrderNotFoundError();
+            }
+
+            const returnRequest = await manager.findOne(
+                ReturnEntity,
+                {
+                    where: {
+                        id: returnId,
+                    },
+                    lock: {
+                        mode: 'pessimistic_write',
+                    },
+                },
+            );
+
+            if (!returnRequest) {
+                throw new ReturnNotFoundError();
+            }
+
+            returnRequest.order = order;
+
+            if (order.status !== OrderStatus.DELIVERED) {
+                throw new InvalidReturnError(
+                    'El pedido debe estar entregado para gestionar su devolución.',
+                );
+            }
+
+            const returnItems = await this.findItemsByReturns(
+                [returnRequest.id],
+                manager,
+            );
+
+            if (returnItems.length === 0) {
+                throw new InvalidReturnError(
+                    'La devolución no contiene productos.',
+                );
+            }
+
+            if (
+                dto.status !== ReturnStatus.COMPLETED &&
+                dto.restockOrderItemIds !== undefined
+            ) {
+                throw new BadRequestException(
+                    'La reposición de stock solo puede indicarse al completar una devolución.',
+                );
+            }
+
+            switch (dto.status) {
+
+                case ReturnStatus.APPROVED:
+
+                    return this.approveReturn(
+                        returnRequest,
+                        returnItems,
+                        dto,
+                        userId,
+                        manager,
+                    );
+
+                case ReturnStatus.REJECTED:
+
+                    return this.rejectReturn(
+                        returnRequest,
+                        returnItems,
+                        dto,
+                        userId,
+                        manager,
+                    );
+
+                default:
+
+                    throw new InvalidReturnStatusError(
+                        'La transición solicitada no está permitida.',
+                    );
+            }
+        });
+    }
+
+    private async approveReturn(returnRequest: ReturnEntity, returnItems: ReturnItemEntity[], dto: UpdateReturnStatusDto, userId: number, manager: EntityManager): Promise<ReturnResponseDto> {
+
+        if (returnRequest.status !== ReturnStatus.REQUESTED) {
+            throw new InvalidReturnStatusError(
+                'Solo se pueden aprobar devoluciones solicitadas.',
+            );
+        }
+
+        returnRequest.status = ReturnStatus.APPROVED;
+        returnRequest.processedBy = userId;
+        returnRequest.updatedAt = new Date();
+
+        if (dto.adminNotes !== undefined) {
+            returnRequest.adminNotes =
+                dto.adminNotes?.trim() || null;
+        }
+
+        await manager.save(
+            ReturnEntity,
+            returnRequest,
+        );
+
+        return ReturnMapper.toResponseDto(
+            returnRequest,
+            returnItems,
+        );
+    }
+
+    private async rejectReturn(returnRequest: ReturnEntity,returnItems: ReturnItemEntity[],dto: UpdateReturnStatusDto,userId: number,manager: EntityManager): Promise<ReturnResponseDto> {
+
+        if (returnRequest.status !== ReturnStatus.REQUESTED) {
+            throw new InvalidReturnStatusError(
+                'Solo se pueden rechazar devoluciones solicitadas.',
+            );
+        }
+
+        returnRequest.status = ReturnStatus.REJECTED;
+        returnRequest.processedBy = userId;
+        returnRequest.updatedAt = new Date();
+
+        if (dto.adminNotes !== undefined) {
+            returnRequest.adminNotes =
+                dto.adminNotes?.trim() || null;
+        }
+
+        await manager.save(
+            ReturnEntity,
+            returnRequest,
+        );
+
+        return ReturnMapper.toResponseDto(
+            returnRequest,
+            returnItems,
+        );
+    }
+
+    private async paginateReturns(queryBuilder: SelectQueryBuilder<ReturnEntity>, query: ReturnQueryDto) {
 
         const {
             page,
@@ -359,7 +577,7 @@ export class ReturnsService {
         }
     }
 
-    private async lockCustomer(customerId: number,manager: EntityManager): Promise<void> {
+    private async lockCustomer(customerId: number, manager: EntityManager): Promise<void> {
 
         const customer = await manager.findOne(CustomerEntity, {
             where: {
