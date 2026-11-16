@@ -10,6 +10,8 @@ import { CheckoutTotalChangedError } from '../errors/checkout-total-changed.erro
 import { InvalidOrderStatusError } from '../errors/invalid-order-status.error';
 import { ReviewAlreadyExistsError } from '../errors/review-already-exists.error';
 import { ReviewNotAllowedError } from '../errors/review-not-allowed.error';
+import { InvalidReturnError } from '../errors/invalid-return.error';
+import { InvalidReturnStatusError } from '../errors/invalid-return-status.error';
 
 @Catch(
   DuplicateEmailError,
@@ -21,6 +23,8 @@ import { ReviewNotAllowedError } from '../errors/review-not-allowed.error';
   CheckoutTotalChangedError,
   ReviewAlreadyExistsError,
   ReviewNotAllowedError,
+  InvalidReturnError,
+  InvalidReturnStatusError,
   QueryFailedError,
 )
 export class ConflictFilter implements ExceptionFilter {
