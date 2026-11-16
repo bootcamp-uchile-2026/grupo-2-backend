@@ -2,10 +2,13 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { DataSource, EntityManager, In, SelectQueryBuilder } from 'typeorm';
 import { CustomersService } from '../customers/customers.service';
 import { CustomerEntity } from '../models/customer.entity';
-import { OrderEntity, OrderStatus } from '../models/order.entity';
+import { OrderEntity, OrderStatus, PaymentStatus } from '../models/order.entity';
 import { OrderItemEntity } from '../models/order-item.entity';
 import { ReturnEntity, ReturnStatus } from '../models/return.entity';
 import { ReturnItemEntity } from '../models/return-item.entity';
+import { ProductEntity } from '../models/product.entity';
+import { GreenPointMovementEntity, GreenPointMovementType } from '../models/green-point-movement.entity';
+import { ProductNotFoundError } from '../common/errors/product-not-found.error';
 import { CreateReturnDto } from '../dto/create-return.dto';
 import { ReturnQueryDto } from '../dto/return-query.dto';
 import { ReturnResponseDto } from '../dto/return-response.dto';
@@ -14,7 +17,6 @@ import { OrderNotFoundError } from '../common/errors/order-not-found.error';
 import { OrderItemNotFoundError } from '../common/errors/order-item-not-found.error';
 import { ReturnNotFoundError } from '../common/errors/return-not-found.error';
 import { InvalidReturnError } from '../common/errors/invalid-return.error';
-
 import { ReturnMapper } from './return.mapper';
 import { UpdateReturnStatusDto } from 'src/dto/update-return-status.dto';
 import { InvalidReturnStatusError } from 'src/common/errors/invalid-return-status.error';
@@ -373,6 +375,16 @@ export class ReturnsService {
                         manager,
                     );
 
+                case ReturnStatus.COMPLETED:
+
+                    return this.completeReturn(
+                        returnRequest,
+                        returnItems,
+                        dto,
+                        userId,
+                        manager,
+                    );
+
                 default:
 
                     throw new InvalidReturnStatusError(
@@ -410,7 +422,7 @@ export class ReturnsService {
         );
     }
 
-    private async rejectReturn(returnRequest: ReturnEntity,returnItems: ReturnItemEntity[],dto: UpdateReturnStatusDto,userId: number,manager: EntityManager): Promise<ReturnResponseDto> {
+    private async rejectReturn(returnRequest: ReturnEntity, returnItems: ReturnItemEntity[], dto: UpdateReturnStatusDto, userId: number, manager: EntityManager): Promise<ReturnResponseDto> {
 
         if (returnRequest.status !== ReturnStatus.REQUESTED) {
             throw new InvalidReturnStatusError(
@@ -436,6 +448,301 @@ export class ReturnsService {
             returnRequest,
             returnItems,
         );
+    }
+
+    private async completeReturn(returnRequest: ReturnEntity, returnItems: ReturnItemEntity[], dto: UpdateReturnStatusDto, userId: number, manager: EntityManager): Promise<ReturnResponseDto> {
+
+        if (returnRequest.status !== ReturnStatus.APPROVED) {
+            throw new InvalidReturnStatusError(
+                'Solo se pueden completar devoluciones aprobadas.',
+            );
+        }
+
+        const order = returnRequest.order;
+
+        const allowedPaymentStatuses = [
+            PaymentStatus.PAID,
+            PaymentStatus.PARTIALLY_REFUNDED,
+        ];
+
+        if (!allowedPaymentStatuses.includes(order.paymentStatus)) {
+            throw new InvalidReturnError(
+                'El estado del pago no permite completar la devolución.',
+            );
+        }
+
+        const restockOrderItemIds = dto.restockOrderItemIds ?? [];
+
+        for (const orderItemId of restockOrderItemIds) {
+
+            const item = returnItems.find(
+                item => item.orderItemId === orderItemId,
+            );
+
+            if (!item) {
+                throw new InvalidReturnError(
+                    'Uno de los ítems indicados para reposición no pertenece a la devolución.',
+                );
+            }
+        }
+
+        const previousItems = await this.findCompletedReturnItems(
+            order.id,
+            manager,
+        );
+
+        for (const item of returnItems) {
+
+            const orderItem = item.orderItem;
+
+            if (orderItem.orderId !== order.id) {
+                throw new InvalidReturnError(
+                    'Uno de los ítems no pertenece al pedido.',
+                );
+            }
+
+            const previousQuantity = previousItems
+                .filter(previous =>
+                    previous.orderItemId === item.orderItemId,
+                )
+                .reduce(
+                    (total, previous) => total + previous.quantity,
+                    0,
+                );
+
+            if (previousQuantity + item.quantity > orderItem.quantity) {
+                throw new InvalidReturnError(
+                    `La devolución supera las unidades compradas de ${orderItem.productName}.`,
+                );
+            }
+        }
+
+        const productIds = returnItems
+            .filter(item =>
+                restockOrderItemIds.includes(item.orderItemId),
+            )
+            .map(item => item.orderItem.productId);
+
+        await this.lockProducts(productIds, manager);
+
+        const now = new Date();
+
+        let totalGreenPointsRestored = 0;
+        let totalGreenPointsReversed = 0;
+
+        for (const item of returnItems) {
+
+            const orderItem = item.orderItem;
+
+            const previousReturns = previousItems.filter(
+                previous =>
+                    previous.orderItemId === item.orderItemId,
+            );
+
+            const previousQuantity = previousReturns.reduce(
+                (total, previous) => total + previous.quantity,
+                0,
+            );
+
+            const previouslyRestoredPoints = previousReturns.reduce(
+                (total, previous) =>
+                    total + previous.greenPointsRestored,
+                0,
+            );
+
+            const accumulatedQuantity =
+                previousQuantity + item.quantity;
+
+            const accumulatedRestoredPoints = Math.floor(
+                orderItem.greenPointDiscount *
+                accumulatedQuantity /
+                orderItem.quantity,
+            );
+
+            const greenPointsRestored =
+                accumulatedRestoredPoints -
+                previouslyRestoredPoints;
+
+            const grossAmount =
+                orderItem.unitPrice * item.quantity;
+
+            if (
+                greenPointsRestored < 0 ||
+                greenPointsRestored > grossAmount
+            ) {
+                throw new InvalidReturnError(
+                    'La restitución de puntos verdes es inconsistente con el historial del pedido.',
+                );
+            }
+
+            item.greenPointsRestored = greenPointsRestored;
+
+            item.refundAmount =
+                grossAmount - greenPointsRestored;
+
+            item.restock = restockOrderItemIds.includes(
+                item.orderItemId,
+            );
+
+            totalGreenPointsRestored +=
+                item.greenPointsRestored;
+
+            totalGreenPointsReversed +=
+                orderItem.unitGreenPoints * item.quantity;
+
+            await manager.save(
+                ReturnItemEntity,
+                item,
+            );
+
+            if (item.restock) {
+
+                await manager.increment(
+                    ProductEntity,
+                    {
+                        id: orderItem.productId,
+                    },
+                    'stock',
+                    item.quantity,
+                );
+
+                await manager.update(
+                    ProductEntity,
+                    orderItem.productId,
+                    {
+                        updatedAt: now,
+                    },
+                );
+            }
+        }
+
+        if (totalGreenPointsReversed > 0) {
+
+            await manager.save(GreenPointMovementEntity, {
+                customerId: order.customerId,
+                type: GreenPointMovementType.RETURN,
+                points: -totalGreenPointsReversed,
+                orderId: null,
+                returnId: returnRequest.id,
+                reviewId: null,
+                description: 'Reversión de puntos verdes por devolución',
+                createdAt: now,
+            });
+        }
+
+        if (totalGreenPointsRestored > 0) {
+
+            await manager.save(GreenPointMovementEntity, {
+                customerId: order.customerId,
+                type: GreenPointMovementType.REFUND,
+                points: totalGreenPointsRestored,
+                orderId: null,
+                returnId: returnRequest.id,
+                reviewId: null,
+                description: 'Restitución de puntos verdes canjeados',
+                createdAt: now,
+            });
+        }
+
+        returnRequest.status = ReturnStatus.COMPLETED;
+        returnRequest.processedBy = userId;
+        returnRequest.completedAt = now;
+        returnRequest.updatedAt = now;
+
+        if (dto.adminNotes !== undefined) {
+            returnRequest.adminNotes =
+                dto.adminNotes?.trim() || null;
+        }
+
+        await manager.save(
+            ReturnEntity,
+            returnRequest,
+        );
+
+        await this.updateOrderPaymentStatus(
+            order,
+            manager,
+        );
+
+        return ReturnMapper.toResponseDto(
+            returnRequest,
+            returnItems,
+        );
+    }
+
+    private async updateOrderPaymentStatus(order: OrderEntity, manager: EntityManager): Promise<void> {
+        const orderItems = await manager.find(
+            OrderItemEntity,
+            {
+                where: {
+                    orderId: order.id,
+                },
+            },
+        );
+
+        if (orderItems.length === 0) {
+            throw new InvalidReturnError(
+                'El pedido no contiene productos.',
+            );
+        }
+
+        const completedItems =
+            await this.findCompletedReturnItems(
+                order.id,
+                manager,
+            );
+
+        const allItemsReturned = orderItems.every(
+            orderItem => {
+
+                const returnedQuantity = completedItems
+                    .filter(item =>
+                        item.orderItemId === orderItem.id,
+                    )
+                    .reduce(
+                        (total, item) => total + item.quantity,
+                        0,
+                    );
+
+                return returnedQuantity === orderItem.quantity;
+            },
+        );
+
+        order.paymentStatus = allItemsReturned
+            ? PaymentStatus.REFUNDED
+            : PaymentStatus.PARTIALLY_REFUNDED;
+
+        order.updatedAt = new Date();
+
+        await manager.save(
+            OrderEntity,
+            order,
+        );
+    }
+
+    private async lockProducts( productIds: number[], manager: EntityManager): Promise<void> {
+
+        const sortedProductIds = [...new Set(productIds)]
+            .sort((a, b) => a - b);
+
+        for (const productId of sortedProductIds) {
+
+            const product = await manager.findOne(
+                ProductEntity,
+                {
+                    where: {
+                        id: productId,
+                    },
+                    lock: {
+                        mode: 'pessimistic_write',
+                    },
+                },
+            );
+
+            if (!product) {
+                throw new ProductNotFoundError();
+            }
+        }
     }
 
     private async paginateReturns(queryBuilder: SelectQueryBuilder<ReturnEntity>, query: ReturnQueryDto) {
@@ -509,6 +816,22 @@ export class ReturnsService {
             sortBy,
             sortDirection,
         };
+    }
+
+    private async findCompletedReturnItems(orderId: number, manager: EntityManager): Promise<ReturnItemEntity[]> {
+        return manager
+            .createQueryBuilder(ReturnItemEntity, 'item')
+            .innerJoin(
+                'item.returnRequest',
+                'returnRequest',
+            )
+            .where('returnRequest.orderId = :orderId', {
+                orderId,
+            })
+            .andWhere('returnRequest.status = :status', {
+                status: ReturnStatus.COMPLETED,
+            })
+            .getMany();
     }
 
     private async findItemsByReturns(returnIds: number[], manager: EntityManager = this.dataSource.manager): Promise<ReturnItemEntity[]> {
