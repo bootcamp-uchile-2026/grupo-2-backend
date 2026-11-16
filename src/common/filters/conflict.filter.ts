@@ -12,6 +12,7 @@ import { ReviewAlreadyExistsError } from '../errors/review-already-exists.error'
 import { ReviewNotAllowedError } from '../errors/review-not-allowed.error';
 import { InvalidReturnError } from '../errors/invalid-return.error';
 import { InvalidReturnStatusError } from '../errors/invalid-return-status.error';
+import { InvalidProductError } from '../errors/invalid-product.error';
 
 @Catch(
   DuplicateEmailError,
@@ -26,6 +27,7 @@ import { InvalidReturnStatusError } from '../errors/invalid-return-status.error'
   InvalidReturnError,
   InvalidReturnStatusError,
   QueryFailedError,
+  InvalidProductError
 )
 export class ConflictFilter implements ExceptionFilter {
 
