@@ -1,5 +1,5 @@
-import {Body,Controller, Get,Patch,Param,ParseIntPipe, Query,UseGuards} from '@nestjs/common';
-import {ApiTags,ApiBearerAuth,ApiOperation,ApiOkResponse,ApiBadRequestResponse,ApiUnauthorizedResponse,ApiForbiddenResponse, ApiNotFoundResponse, ApiConflictResponse,ApiParam} from '@nestjs/swagger';
+import { Body, Controller, Get, Patch, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiOkResponse, ApiBadRequestResponse, ApiUnauthorizedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiConflictResponse, ApiParam } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles/roles.guard';
@@ -8,6 +8,8 @@ import { UserRole } from '../models/user.entity';
 import { OrderQueryDto } from '../dto/order-query.dto';
 import { OrderResponseDto } from '../dto/order-response.dto';
 import { UpdateOrderStatusDto } from '../dto/update-order-status.dto';
+import { StatisticsQueryDto } from 'src/dto/statistics-query.dto';
+import { OrderStatisticsDto } from 'src/dto/order-statistics.dto';
 
 @ApiTags('Orders')
 @ApiBearerAuth()
@@ -37,6 +39,26 @@ export class AdminOrdersController {
     })
     findAll(@Query() query: OrderQueryDto) {
         return this.ordersService.findAllOrders(query);
+    }
+
+    @Get('statistics')
+    @ApiOperation({
+        summary: 'Consultar las estadísticas generales de pedidos',
+    })
+    @ApiOkResponse({
+        type: OrderStatisticsDto,
+    })
+    @ApiBadRequestResponse({
+        description: 'Periodo de consulta inválido.',
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Usuario no autenticado.',
+    })
+    @ApiForbiddenResponse({
+        description: 'Acceso exclusivo para administradores.',
+    })
+    getStatistics(@Query() query: StatisticsQueryDto): Promise<OrderStatisticsDto> {
+        return this.ordersService.getStatistics(query);
     }
 
     @Get(':orderId')

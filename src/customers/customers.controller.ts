@@ -1,9 +1,6 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import {
-    ApiTags, ApiOperation, ApiBody, ApiCreatedResponse, ApiOkResponse, ApiBadRequestResponse, ApiConflictResponse, ApiForbiddenResponse, ApiNotFoundResponse,
-    ApiParam,
-    ApiBearerAuth,
-    ApiUnauthorizedResponse
+    ApiTags, ApiOperation, ApiBody, ApiCreatedResponse, ApiOkResponse, ApiBadRequestResponse, ApiConflictResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse
 } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
@@ -15,6 +12,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles/roles.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
+import { CustomerGreenFootprintDto } from 'src/dto/customer-green-footprint.dto';
 
 @ApiTags('Customers')
 @Controller('customers')
@@ -64,6 +62,66 @@ export class CustomersController {
     })
     findAll(@Query() pagination: PaginationDto) {
         return this.customersService.findAll(pagination)
+    }
+
+    @Get(':customerId/green-footprint')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.CUSTOMER)
+    @ApiOperation({
+        summary: 'Consultar el CO2e evitado acumulado del cliente',
+    })
+    @ApiParam({
+        name: 'customerId',
+        example: 6,
+    })
+    @ApiOkResponse({
+        type: CustomerGreenFootprintDto,
+    })
+    @ApiBadRequestResponse({
+        description: 'Identificador inválido.',
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Usuario no autenticado.',
+    })
+    @ApiForbiddenResponse({
+        description: 'Acceso no autorizado.',
+    })
+    @ApiNotFoundResponse({
+        description: 'Cliente no encontrado.',
+    })
+    getGreenFootprint(@Param('customerId', ParseIntPipe) customerId: number, @CurrentUser() user: { id: number; role: UserRole }): Promise<CustomerGreenFootprintDto> {
+        return this.customersService.getGreenFootprint(customerId, user.id);
+    }
+
+    @Get(':customerId/green-points/movements')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.CUSTOMER)
+    @ApiOperation({
+        summary: 'Consultar los movimientos de puntos verdes del cliente',
+    })
+    @ApiParam({
+        name: 'customerId',
+        example: 6,
+    })
+    @ApiOkResponse({
+        description: 'Listado paginado de movimientos de puntos verdes.',
+    })
+    @ApiBadRequestResponse({
+        description: 'Parámetros de consulta inválidos.',
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Usuario no autenticado.',
+    })
+    @ApiForbiddenResponse({
+        description: 'Acceso no autorizado.',
+    })
+    @ApiNotFoundResponse({
+        description: 'Cliente no encontrado.',
+    })
+    findGreenPointMovements(@Param('customerId', ParseIntPipe) customerId: number,@Query() pagination: PaginationDto,@CurrentUser() user: { id: number; role: UserRole }) {
+        return this.customersService.findGreenPointMovements(customerId,pagination,user.id);
     }
 
     @ApiBearerAuth()
