@@ -13,6 +13,8 @@ import { PaginationDto } from '../dto/pagination.dto';
 import { CustomerNotFoundError } from '../common/errors/customer-not-found.error';
 import { DuplicateEmailError } from '../common/errors/duplicate-email.error';
 import { CustomerMapper } from './customer.mapper';
+import { CustomerGreenFootprintDto } from 'src/dto/customer-green-footprint.dto';
+import { GreenPointMovementDto } from 'src/dto/green-point-movement.dto';
 
 @Injectable()
 export class CustomersService {
@@ -160,7 +162,7 @@ export class CustomersService {
     );
   }
 
-  async validateOwnership(customerId: number, userId: number, requireActive: boolean = false, manager?: EntityManager ): Promise<void> {
+  async validateOwnership(customerId: number, userId: number, requireActive: boolean = false, manager?: EntityManager): Promise<void> {
 
     const customer = await this.findCustomer(customerId, manager);
 
@@ -177,7 +179,7 @@ export class CustomersService {
     }
   }
 
-  async getGreenPointsBalance(customerId: number,manager?: EntityManager): Promise<number> {
+  async getGreenPointsBalance(customerId: number, manager?: EntityManager): Promise<number> {
 
     const points = await this.getGreenPoints(
       [customerId],
@@ -185,6 +187,116 @@ export class CustomersService {
     );
 
     return points.get(customerId) ?? 0;
+  }
+
+  async getGreenFootprint(customerId: number, userId: number): Promise<CustomerGreenFootprintDto> {
+
+    await this.validateOwnership(customerId, userId, true);
+
+    const result = await this.dataSource.query(
+      `
+        SELECT
+            COALESCE(
+                SUM(
+                    (oi.quantity - COALESCE(returned.quantity, 0))
+                    * oi.unit_co2_avoided
+                ),
+                0
+            ) AS "co2Avoided"
+        FROM order_items oi
+        JOIN orders o ON o.id = oi.order_id
+        LEFT JOIN (
+            SELECT
+                ri.order_item_id,
+                SUM(ri.quantity) AS quantity
+            FROM return_items ri
+            JOIN returns r ON r.id = ri.return_id
+            WHERE r.status = 'COMPLETED'
+            GROUP BY ri.order_item_id
+        ) returned ON returned.order_item_id = oi.id
+        WHERE o.customer_id = $1
+          AND o.status = 'DELIVERED'
+        `,
+      [customerId],
+    );
+
+    return {
+      customerId,
+      co2Avoided: Number(result[0].co2Avoided),
+    };
+  }
+
+  async findGreenPointMovements(customerId: number,pagination: PaginationDto,userId: number) {
+
+    await this.validateOwnership(
+      customerId,
+      userId,
+      true,
+    );
+
+    const {
+      page,
+      size,
+      sortBy,
+      sortDirection,
+    } = pagination;
+
+    const allowedSortFields = [
+      'id',
+      'type',
+      'points',
+      'createdAt',
+    ];
+
+    if (!allowedSortFields.includes(sortBy)) {
+      throw new BadRequestException(
+        'Campo de ordenamiento inválido.',
+      );
+    }
+
+    const query = this.greenPointRepository
+      .createQueryBuilder('movement')
+      .where('movement.customerId = :customerId', {
+        customerId,
+      });
+
+    const totalElements = await query.getCount();
+
+    query.orderBy(
+      `movement.${sortBy}`,
+      sortDirection,
+    );
+
+    if (sortBy !== 'id') {
+      query.addOrderBy('movement.id', 'ASC');
+    }
+
+    const movements = await query
+      .skip(page * size)
+      .take(size)
+      .getMany();
+
+    const content: GreenPointMovementDto[] =
+      movements.map(movement => ({
+        id: movement.id,
+        type: movement.type,
+        points: movement.points,
+        orderId: movement.orderId,
+        returnId: movement.returnId,
+        reviewId: movement.reviewId,
+        description: movement.description,
+        createdAt: movement.createdAt,
+      }));
+
+    return {
+      content,
+      page,
+      size,
+      totalElements,
+      totalPages: Math.ceil(totalElements / size),
+      sortBy,
+      sortDirection,
+    };
   }
 
   async update(customerId: number, dto: UpdateCustomerDto): Promise<CustomerResponseDto> {
