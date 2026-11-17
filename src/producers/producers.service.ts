@@ -19,6 +19,7 @@ import { CreateProducerDto } from '../dto/create-producer.dto';
 import { ProducerProfileDto } from '../dto/producer-profile.dto';
 import { DuplicateEmailError } from '../common/errors/duplicate-email.error';
 import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
+import { UpdateProducerDto } from '../dto/update-producer.dto';
 
 @Injectable()
 export class ProducersService {
@@ -172,11 +173,102 @@ export class ProducersService {
         return ProducerMapper.toDetailDto(producer);
     }
 
+    async updateProfile(producerId: number, dto: UpdateProducerDto, userId: number): Promise<ProducerProfileDto> {
+
+        if (!Object.values(dto).some(value => value !== undefined)) {
+            throw new BadRequestException('Debe proporcionar al menos un atributo para actualizar.');
+        }
+
+        await this.dataSource.transaction(async manager => {
+            await this.validateOwnership(producerId, userId, manager);
+
+            const producer = await this.findProducer(producerId, manager);
+            const user = producer.user;
+
+            if (dto.email !== undefined) {
+                const email = dto.email.trim().toLowerCase();
+                await this.validateEmail(email, user.id);
+                user.email = email;
+            }
+
+            if (dto.firstName !== undefined) {
+                const firstName = dto.firstName.trim();
+
+                if (!firstName) {
+                    throw new BadRequestException('El nombre es obligatorio.');
+                }
+
+                user.firstName = firstName;
+            }
+
+            if (dto.lastName !== undefined) {
+                user.lastName = dto.lastName?.trim() || null;
+            }
+
+            if (dto.phone !== undefined) {
+                user.phone = dto.phone?.trim() || null;
+            }
+
+            if (dto.password !== undefined) {
+                user.passwordHash = await argon2.hash(dto.password, { type: argon2.argon2id });
+            }
+
+            if (dto.businessName !== undefined) {
+                const businessName = dto.businessName.trim();
+
+                if (!businessName) {
+                    throw new BadRequestException('El nombre comercial es obligatorio.');
+                }
+
+                producer.businessName = businessName;
+            }
+
+            if (dto.description !== undefined) {
+                producer.description = dto.description?.trim() || null;
+            }
+
+            if (dto.location !== undefined) {
+                producer.location = dto.location?.trim() || null;
+            }
+
+            if (dto.websiteUrl !== undefined) {
+                producer.websiteUrl = dto.websiteUrl?.trim() || null;
+            }
+
+            user.updatedAt = new Date();
+            producer.updatedAt = new Date();
+
+            await manager.update(UserEntity, user.id, {
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                phone: user.phone,
+                passwordHash: user.passwordHash,
+                updatedAt: user.updatedAt,
+            });
+
+            await manager.update(ProducerEntity, producer.id, {
+                businessName: producer.businessName,
+                description: producer.description,
+                location: producer.location,
+                websiteUrl: producer.websiteUrl,
+                updatedAt: producer.updatedAt,
+            });
+        });
+
+        return this.findProfile(producerId, userId);
+    }
+
     async findProductsByProducer(producerId: number, pagination: PaginationDto) {
 
         await this.findProducer(producerId);
 
         return this.productsService.findProductsByProducer(producerId, pagination);
+    }
+
+    async findProfile(producerId: number, userId: number): Promise<ProducerProfileDto> {
+        await this.validateOwnership(producerId, userId);
+        return this.findManagedProducer(producerId);
     }
 
     async getStatistics(producerId: number, query: StatisticsQueryDto, userId: number): Promise<ProducerStatisticsDto> {
