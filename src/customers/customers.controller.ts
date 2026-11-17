@@ -13,6 +13,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles/roles.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
 import { CustomerGreenFootprintDto } from 'src/dto/customer-green-footprint.dto';
+import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
 
 @ApiTags('Customers')
 @Controller('customers')
@@ -120,8 +121,8 @@ export class CustomersController {
     @ApiNotFoundResponse({
         description: 'Cliente no encontrado.',
     })
-    findGreenPointMovements(@Param('customerId', ParseIntPipe) customerId: number,@Query() pagination: PaginationDto,@CurrentUser() user: { id: number; role: UserRole }) {
-        return this.customersService.findGreenPointMovements(customerId,pagination,user.id);
+    findGreenPointMovements(@Param('customerId', ParseIntPipe) customerId: number, @Query() pagination: PaginationDto, @CurrentUser() user: { id: number; role: UserRole }) {
+        return this.customersService.findGreenPointMovements(customerId, pagination, user.id);
     }
 
     @ApiBearerAuth()
@@ -207,5 +208,36 @@ export class CustomersController {
         }
 
         return this.customersService.update(id, dto);
+    }
+
+    @Patch(':id/status')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.ADMIN)
+    @ApiOperation({
+        summary: 'Activar o desactivar la cuenta de un cliente'
+    })
+    @ApiParam({
+        name: 'id',
+        type: Number,
+        example: 6
+    })
+    @ApiOkResponse({
+        type: CustomerResponseDto
+    })
+    @ApiBadRequestResponse({
+        description: 'Datos inválidos.'
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Usuario no autenticado.'
+    })
+    @ApiForbiddenResponse({
+        description: 'Acceso no autorizado.'
+    })
+    @ApiNotFoundResponse({
+        description: 'Cliente no encontrado.'
+    })
+    updateStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateUserStatusDto): Promise<CustomerResponseDto> {
+        return this.customersService.updateStatus(id, dto);
     }
 }

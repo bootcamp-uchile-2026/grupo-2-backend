@@ -14,6 +14,10 @@ import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { ManagedProductDto } from '../dto/managed-product.dto';
 import { CategoryExistsPipe } from '../common/pipes/category-exists.pipe';
+import { CreateProducerDto } from '../dto/create-producer.dto';
+import { UpdateProducerDto } from '../dto/update-producer.dto';
+import { ProducerProfileDto } from '../dto/producer-profile.dto';
+import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
 
 @ApiTags('Producers')
 @Controller('producers')
@@ -22,6 +26,31 @@ export class ProducersController {
   constructor(
     private readonly producersService: ProducersService) { }
 
+  @Post()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Registrar un nuevo emprendedor'
+  })
+  @ApiCreatedResponse({
+    type: ProducerProfileDto
+  })
+  @ApiBadRequestResponse({
+    description: 'Datos del emprendedor inválidos.'
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Usuario no autenticado.'
+  })
+  @ApiForbiddenResponse({
+    description: 'Acceso no autorizado.'
+  })
+  @ApiConflictResponse({
+    description: 'El correo electrónico ya está registrado.'
+  })
+  create(@Body() dto: CreateProducerDto): Promise<ProducerProfileDto> {
+    return this.producersService.create(dto);
+  }
 
   @Post(':producerId/products')
   @ApiBearerAuth()
@@ -68,6 +97,29 @@ export class ProducersController {
     return this.producersService.findAll(pagination);
   }
 
+  @Get('manage')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Consultar emprendedores activos e inactivos'
+  })
+  @ApiOkResponse({
+    description: 'Listado paginado de emprendedores.'
+  })
+  @ApiBadRequestResponse({
+    description: 'Parámetros de paginación inválidos.'
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Usuario no autenticado.'
+  })
+  @ApiForbiddenResponse({
+    description: 'Acceso no autorizado.'
+  })
+  findManagedProducers(@Query() pagination: PaginationDto) {
+    return this.producersService.findManagedProducers(pagination);
+  }
+
   @Get(':producerId')
   @ApiOperation({
     summary: 'Obtener perfil público de un productor',
@@ -88,6 +140,37 @@ export class ProducersController {
   })
   findOne(@Param('producerId', ParseIntPipe) producerId: number): Promise<ProducerDetailDto> {
     return this.producersService.findOne(producerId);
+  }
+
+  @Get(':producerId/manage')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Consultar información administrativa de un emprendedor'
+  })
+  @ApiParam({
+    name: 'producerId',
+    type: Number,
+    example: 12
+  })
+  @ApiOkResponse({
+    type: ProducerProfileDto
+  })
+  @ApiBadRequestResponse({
+    description: 'Identificador inválido.'
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Usuario no autenticado.'
+  })
+  @ApiForbiddenResponse({
+    description: 'Acceso no autorizado.'
+  })
+  @ApiNotFoundResponse({
+    description: 'Emprendedor no encontrado.'
+  })
+  findManagedProducer(@Param('producerId', ParseIntPipe) producerId: number): Promise<ProducerProfileDto> {
+    return this.producersService.findManagedProducer(producerId);
   }
 
   @Get(':producerId/products')
@@ -175,6 +258,37 @@ export class ProducersController {
     return this.producersService.findManagedProduct(producerId, productId, user.id);
   }
 
+  @Get(':producerId/profile')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PRODUCER)
+  @ApiOperation({
+    summary: 'Consultar perfil propio del emprendedor'
+  })
+  @ApiParam({
+    name: 'producerId',
+    type: Number,
+    example: 12
+  })
+  @ApiOkResponse({
+    type: ProducerProfileDto
+  })
+  @ApiBadRequestResponse({
+    description: 'Identificador inválido.'
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Usuario no autenticado.'
+  })
+  @ApiForbiddenResponse({
+    description: 'Acceso no autorizado.'
+  })
+  @ApiNotFoundResponse({
+    description: 'Emprendedor no encontrado.'
+  })
+  findProfile(@Param('producerId', ParseIntPipe) producerId: number, @CurrentUser() user: { id: number; role: UserRole }): Promise<ProducerProfileDto> {
+    return this.producersService.findProfile(producerId, user.id);
+  }
+
   @Get(':producerId/statistics')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -203,6 +317,71 @@ export class ProducersController {
   })
   getStatistics(@Param('producerId', ParseIntPipe) producerId: number, @Query() query: StatisticsQueryDto, @CurrentUser() user: { id: number; role: UserRole }): Promise<ProducerStatisticsDto> {
     return this.producersService.getStatistics(producerId, query, user.id);
+  }
+
+  @Patch(':producerId/profile')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PRODUCER)
+  @ApiOperation({
+    summary: 'Actualizar perfil personal y comercial del emprendedor'
+  })
+  @ApiParam({
+    name: 'producerId',
+    type: Number,
+    example: 12
+  })
+  @ApiOkResponse({
+    type: ProducerProfileDto
+  })
+  @ApiBadRequestResponse({
+    description: 'Datos de actualización inválidos.'
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Usuario no autenticado.'
+  })
+  @ApiForbiddenResponse({
+    description: 'Acceso no autorizado.'
+  })
+  @ApiNotFoundResponse({
+    description: 'Emprendedor no encontrado.'
+  })
+  @ApiConflictResponse({
+    description: 'El correo electrónico ya está registrado.'
+  })
+  updateProfile(@Param('producerId', ParseIntPipe) producerId: number, @Body() dto: UpdateProducerDto, @CurrentUser() user: { id: number; role: UserRole }): Promise<ProducerProfileDto> {
+    return this.producersService.updateProfile(producerId, dto, user.id);
+  }
+
+  @Patch(':producerId/status')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Activar o desactivar la cuenta de un emprendedor'
+  })
+  @ApiParam({
+    name: 'producerId',
+    type: Number,
+    example: 12
+  })
+  @ApiOkResponse({
+    type: ProducerProfileDto
+  })
+  @ApiBadRequestResponse({
+    description: 'Datos inválidos.'
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Usuario no autenticado.'
+  })
+  @ApiForbiddenResponse({
+    description: 'Acceso no autorizado.'
+  })
+  @ApiNotFoundResponse({
+    description: 'Emprendedor no encontrado.'
+  })
+  updateStatus(@Param('producerId', ParseIntPipe) producerId: number, @Body() dto: UpdateUserStatusDto): Promise<ProducerProfileDto> {
+    return this.producersService.updateStatus(producerId, dto);
   }
 
   @Patch(':producerId/products/:productId')
