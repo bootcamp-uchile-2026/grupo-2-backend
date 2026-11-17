@@ -303,10 +303,11 @@ export class ProductsService {
     return this.toDetailDto(product);
   }
 
-  private async toDetailDto(product: ProductEntity): Promise<ProductDetailDto> {
+  private async toDetailDto(product: ProductEntity, productImages?: ProductImageEntity[]): Promise<ProductDetailDto> {
+
     const [summary] = await this.toSummaryDtos([product], new Date());
 
-    const images = await this.productImagesRepository.find({
+    const images = productImages ?? await this.productImagesRepository.find({
       where: { productId: product.id },
       order: { displayOrder: 'ASC' },
     });
@@ -323,7 +324,13 @@ export class ProductsService {
   }
 
   private async toManagedProductDto(product: ProductEntity): Promise<ManagedProductDto> {
-    const detail = await this.toDetailDto(product);
+
+    const images = await this.productImagesRepository.find({
+      where: { productId: product.id },
+      order: { displayOrder: 'ASC' },
+    });
+
+    const detail = await this.toDetailDto(product, images);
 
     const attributes = await this.sustainabilityRepository.find({
       where: { productId: product.id },
@@ -337,6 +344,13 @@ export class ProductsService {
       offerStartAt: product.offerStartAt,
       offerEndAt: product.offerEndAt,
       sustainabilityAttributeIds: attributes.map(item => item.sustainabilityAttributeId),
+      images: images.map(image => ({
+        id: image.id,
+        productId: image.productId,
+        fileId: image.fileId,
+        displayOrder: image.displayOrder,
+        isPrimary: image.isPrimary,
+      })),
     };
   }
 

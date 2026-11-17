@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ProductDetailDto } from './product-detail.dto';
+import { ProductImageDto } from './product-image.dto';
 
 export class ManagedProductDto extends ProductDetailDto {
 
@@ -32,4 +33,10 @@ export class ManagedProductDto extends ProductDetailDto {
         example: [11, 12],
     })
     sustainabilityAttributeIds: number[];
+
+    @ApiProperty({
+        type: [ProductImageDto],
+        description: 'Imágenes asociadas al producto',
+    })
+    images: ProductImageDto[];
 }

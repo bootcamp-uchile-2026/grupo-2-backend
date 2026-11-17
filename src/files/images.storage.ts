@@ -9,7 +9,7 @@ export class ImagesStorage {
 
     constructor(private readonly configService: ConfigService) { }
 
-    async saveImage(archivo: Express.Multer.File, domain: 'productos' | 'perfiles' | 'logos' | 'banners' | 'articulos'): Promise<string> {
+    async saveImage(archivo: Express.Multer.File, domain: 'productos' | 'perfiles' | 'logos' | 'banners' | 'articulos' | 'categorias'): Promise<string> {
         const baseArchivos = resolve(this.configService.getOrThrow<string>('BASE_ARCHIVOS'));
 
         const extensions: Record<string, string> = {

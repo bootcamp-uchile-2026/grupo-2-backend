@@ -41,7 +41,7 @@ export class FilesService {
         const file = await this.findExistingFile(fileId);
         const domain = file.storageKey.split('/')[0];
 
-        if (['productos', 'logos', 'banners'].includes(domain)) {
+        if (['productos', 'logos', 'banners', 'categorias'].includes(domain)) {
             return {
                 id: file.id,
                 url: `/public/${file.storageKey}`,
@@ -142,7 +142,7 @@ export class FilesService {
         };
     }
 
-    async saveImage(archivo: Express.Multer.File, domain: 'productos' | 'perfiles' | 'logos' | 'banners' | 'articulos', manager: EntityManager): Promise<FileEntity> {
+    async saveImage(archivo: Express.Multer.File, domain: 'productos' | 'perfiles' | 'logos' | 'banners' | 'articulos' | 'categorias', manager: EntityManager): Promise<FileEntity> {
 
         this.validateImage(archivo);
         let storageKey: string | undefined;

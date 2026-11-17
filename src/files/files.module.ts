@@ -15,7 +15,7 @@ import { FilesController } from './files.controller';
         TypeOrmModule.forFeature([FileEntity, UserEntity, ArticleEntity]),
         ServeStaticModule.forRootAsync({
             inject: [ConfigService],
-            useFactory: (configService: ConfigService) => ['productos', 'logos', 'banners'].map(domain => ({
+            useFactory: (configService: ConfigService) => ['productos', 'logos', 'banners', 'categorias'].map(domain => ({
                 rootPath: resolve(configService.getOrThrow<string>('BASE_ARCHIVOS'), domain),
                 serveRoot: `/public/${domain}`,
                 serveStaticOptions: {
