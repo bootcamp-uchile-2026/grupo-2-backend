@@ -10,5 +10,20 @@ services:
     volumes:
       - db-postgres-data:/var/lib/postgresql
 
+  backend:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db-postgres
+      DB_PORT: 5432
+      BASE_ARCHIVOS: /app/ARCHIVOS
+    volumes:
+      - ./ARCHIVOS:/app/ARCHIVOS
+    depends_on:
+      - db-postgres
+
 volumes:
   db-postgres-data:
