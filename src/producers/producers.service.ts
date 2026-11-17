@@ -432,6 +432,20 @@ export class ProducersService {
         return this.productsService.addImage(producerId, productId, archivo);
     }
 
+    async setPrimaryProductImage(producerId: number, productId: number, imageId: number, userId: number): Promise<ProductImageDto> {
+
+        await this.validateOwnership(producerId, userId);
+
+        return this.productsService.setPrimaryImage(producerId, productId, imageId);
+    }
+
+    async deleteProductImage(producerId: number, productId: number, imageId: number, userId: number): Promise<void> {
+
+        await this.validateOwnership(producerId, userId);
+
+        return this.productsService.deleteImage(producerId, productId, imageId);
+    }
+
     async findManagedProducts(producerId: number, pagination: PaginationDto, userId: number) {
 
         await this.validateOwnership(producerId, userId);

@@ -1,14 +1,37 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
-import { EntityManager } from 'typeorm';
+import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { FileEntity } from '../models/file.entity';
 import { ImagesStorage } from './images.storage';
+import { FileResponseDto } from '../dto/file-response.dto';
 
 @Injectable()
 export class FilesService {
 
     private readonly logger = new Logger(FilesService.name);
 
-    constructor(private readonly imagesStorage: ImagesStorage) { }
+    constructor(
+        private readonly imagesStorage: ImagesStorage,
+        @InjectRepository(FileEntity)
+        private readonly fileRepository: Repository<FileEntity>,
+    ) { }
+
+    async findPublicFile(fileId: string): Promise<FileResponseDto> {
+
+        const file = await this.fileRepository.findOne({
+            where: { id: fileId },
+        });
+
+        if (!file || !file.storageKey.startsWith('productos/')) {
+            throw new NotFoundException('Imagen no encontrada.');
+        }
+
+        return {
+            id: file.id,
+            url: `/public/${file.storageKey}`,
+            mimeType: file.mimeType,
+        };
+    }
 
     async saveImage(archivo: Express.Multer.File, domain: 'productos' | 'perfiles' | 'logos' | 'banners' | 'articulos', manager: EntityManager): Promise<FileEntity> {
         let storageKey: string | undefined;

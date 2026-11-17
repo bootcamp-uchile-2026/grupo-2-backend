@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Patch, Body, Param, ParseIntPipe, Query, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiBearerAuth, ApiUnauthorizedResponse, ApiForbiddenResponse, ApiCreatedResponse, ApiConflictResponse, ApiConsumes, ApiBody, ApiResponse } from '@nestjs/swagger'; import { ProducersService } from './producers.service';
+import { Controller, Get, Post, Patch, Body, Param, ParseIntPipe, Query, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Delete, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiBearerAuth, ApiUnauthorizedResponse, ApiForbiddenResponse, ApiCreatedResponse, ApiConflictResponse, ApiConsumes, ApiBody, ApiResponse, ApiNoContentResponse } from '@nestjs/swagger';
+import { ProducersService } from './producers.service';
 import { ProducerDetailDto } from '../dto/producer-detail.dto';
 import { PaginationDto } from '../dto/pagination.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
@@ -137,8 +138,80 @@ export class ProducersController {
       new FileTypeValidator({ fileType: /^image\/(jpeg|png|webp)$/ }),
     ],
   })) archivo: Express.Multer.File, @CurrentUser() user: { id: number; role: UserRole }): Promise<ProductImageDto> {
-
     return this.producersService.addProductImage(producerId, productId, archivo, user.id);
+  }
+
+  @Patch(':producerId/products/:productId/images/:imageId/primary')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PRODUCER)
+  @ApiOperation({
+    summary: 'Establecer imagen principal de un producto'
+  })
+  @ApiParam({
+    name: 'producerId', example: 12
+  })
+  @ApiParam({
+    name: 'productId', example: 65
+  })
+  @ApiParam({
+    name: 'imageId', example: 2
+  })
+  @ApiOkResponse({
+    type: ProductImageDto
+  })
+  @ApiBadRequestResponse({
+    description: 'Identificadores inválidos.'
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Usuario no autenticado.'
+  })
+  @ApiForbiddenResponse({
+    description: 'Acceso no autorizado.'
+  })
+  @ApiNotFoundResponse({
+    description: 'Productor, producto o imagen no encontrada.'
+  })
+  setPrimaryProductImage(@Param('producerId', ParseIntPipe) producerId: number, @Param('productId', ParseIntPipe) productId: number, @Param('imageId', ParseIntPipe) imageId: number, @CurrentUser() user: { id: number; role: UserRole }): Promise<ProductImageDto> {
+
+    return this.producersService.setPrimaryProductImage(producerId, productId, imageId, user.id);
+  }
+
+  @Delete(':producerId/products/:productId/images/:imageId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PRODUCER)
+  @ApiOperation({
+    summary: 'Eliminar una imagen de un producto'
+  })
+  @ApiParam({
+    name: 'producerId', example: 12
+  })
+  @ApiParam({
+    name: 'productId', example: 65
+  })
+  @ApiParam({
+    name: 'imageId', example: 1
+  })
+  @ApiNoContentResponse({
+    description: 'Imagen eliminada correctamente.'
+  })
+  @ApiBadRequestResponse({
+    description: 'Identificadores inválidos.'
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Usuario no autenticado.'
+  })
+  @ApiForbiddenResponse({
+    description: 'Acceso no autorizado.'
+  })
+  @ApiNotFoundResponse({
+    description: 'Productor, producto o imagen no encontrada.'
+  })
+  deleteProductImage(@Param('producerId', ParseIntPipe) producerId: number, @Param('productId', ParseIntPipe) productId: number, @Param('imageId', ParseIntPipe) imageId: number, @CurrentUser() user: { id: number; role: UserRole }): Promise<void> {
+    
+    return this.producersService.deleteProductImage(producerId, productId, imageId, user.id);
   }
 
   @Get()

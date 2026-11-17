@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder, In, EntityManager, DataSource } from 'typeorm';
 import { ProductEntity } from '../models/product.entity';
@@ -35,6 +35,7 @@ import { InvalidProductError } from '../common/errors/invalid-product.error';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { FilesService } from '../files/files.service';
 import { ProductImageDto } from '../dto/product-image.dto';
+import { FileEntity } from 'src/models/file.entity';
 
 @Injectable()
 export class ProductsService {
@@ -413,6 +414,95 @@ export class ProductsService {
 
       throw error;
     }
+  }
+
+  async setPrimaryImage(producerId: number, productId: number, imageId: number): Promise<ProductImageDto> {
+
+    await this.findManagedProduct(producerId, productId);
+
+    return this.dataSource.transaction(async manager => {
+
+      const product = await manager.findOne(ProductEntity, {
+        where: { id: productId, producerId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!product) {
+        throw new ProductNotFoundError();
+      }
+
+      const image = await manager.findOne(ProductImageEntity, {
+        where: { id: imageId, productId },
+      });
+
+      if (!image) {
+        throw new NotFoundException('Imagen no encontrada.');
+      }
+
+      await manager.update(ProductImageEntity, { productId, isPrimary: true }, { isPrimary: false });
+
+      image.isPrimary = true;
+
+      const savedImage = await manager.save(image);
+
+      return {
+        id: savedImage.id,
+        productId: savedImage.productId,
+        fileId: savedImage.fileId,
+        displayOrder: savedImage.displayOrder,
+        isPrimary: savedImage.isPrimary,
+      };
+    });
+  }
+
+  async deleteImage(producerId: number, productId: number, imageId: number): Promise<void> {
+
+    await this.findManagedProduct(producerId, productId);
+
+    const storageKey = await this.dataSource.transaction(async manager => {
+
+      const product = await manager.findOne(ProductEntity, {
+        where: { id: productId, producerId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!product) {
+        throw new ProductNotFoundError();
+      }
+
+      const image = await manager.findOne(ProductImageEntity, {
+        where: { id: imageId, productId },
+        relations: { file: true },
+      });
+
+      if (!image) {
+        throw new NotFoundException('Imagen no encontrada.');
+      }
+
+      const file = image.file;
+      const wasPrimary = image.isPrimary;
+
+      await manager.delete(ProductImageEntity, image.id);
+      await manager.delete(FileEntity, file.id);
+
+      if (wasPrimary) {
+
+        const remainingImages = await manager.find(ProductImageEntity, {
+          where: { productId },
+          order: { displayOrder: 'ASC' },
+          take: 1,
+        });
+
+        if (remainingImages.length > 0) {
+          remainingImages[0].isPrimary = true;
+          await manager.save(remainingImages[0]);
+        }
+      }
+
+      return file.storageKey;
+    });
+
+    await this.filesService.deletePhysicalImage(storageKey);
   }
 
   async update(producerId: number, productId: number, dto: UpdateProductDto): Promise<ManagedProductDto> {
