@@ -1,7 +1,7 @@
 
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThanOrEqual, Repository } from 'typeorm';
+import { LessThanOrEqual, Repository, DataSource } from 'typeorm';
 import { ArticleEntity, ArticleStatus } from '../models/article.entity';
 import { ArticleDetailDto } from '../dto/article-detail.dto';
 import { PaginationDto } from '../dto/pagination.dto';
@@ -11,13 +11,17 @@ import { CreateArticleDto } from 'src/dto/create-article.dto';
 import { ManagedArticleDto } from 'src/dto/managed-article.dto';
 import { UpdateArticleDto } from 'src/dto/update-article.dto';
 import { UpdateArticleStatusDto } from 'src/dto/update-article-status.dto';
+import { FilesService } from '../files/files.service';
+import { FileEntity } from '../models/file.entity';
 
 @Injectable()
 export class ArticlesService {
 
     constructor(
         @InjectRepository(ArticleEntity)
-        private readonly articleRepository: Repository<ArticleEntity>) { }
+        private readonly articleRepository: Repository<ArticleEntity>,
+        private readonly dataSource: DataSource,
+        private readonly filesService: FilesService) { }
 
     async create(dto: CreateArticleDto, authorId: number): Promise<ManagedArticleDto> {
 
@@ -214,6 +218,66 @@ export class ArticlesService {
             publishedAt: dto.status === ArticleStatus.PUBLISHED ? now : dto.status === ArticleStatus.DRAFT ? null : article.publishedAt ? new Date(article.publishedAt) : null,
             updatedAt: now,
         });
+
+        return this.findManagedArticle(articleId);
+    }
+
+    async uploadCover(articleId: number, archivo: Express.Multer.File): Promise<ManagedArticleDto> {
+
+        await this.findManagedArticle(articleId);
+
+        let storageKey: string | undefined;
+
+        try {
+            const previousStorageKey = await this.dataSource.transaction(async manager => {
+
+                const article = await manager.findOne(ArticleEntity, {
+                    where: { id: articleId },
+                    lock: { mode: 'pessimistic_write' },
+                });
+
+                if (!article) {
+                    throw new ArticleNotFoundError();
+                }
+
+                const previousFileId = article.coverFileId;
+
+                const file = await this.filesService.saveImage(archivo, 'articulos', manager);
+
+                storageKey = file.storageKey;
+
+                await manager.update(ArticleEntity, article.id, {
+                    coverFileId: file.id,
+                    updatedAt: new Date(),
+                });
+
+                if (previousFileId) {
+
+                    const previousFile = await manager.findOne(FileEntity, {
+                        where: { id: previousFileId },
+                    });
+
+                    if (previousFile) {
+                        await manager.delete(FileEntity, previousFile.id);
+
+                        return previousFile.storageKey;
+                    }
+                }
+
+                return undefined;
+            });
+
+            if (previousStorageKey) {
+                await this.filesService.deletePhysicalImage(previousStorageKey);
+            }
+
+        } catch (error) {
+            if (storageKey) {
+                await this.filesService.deletePhysicalImage(storageKey);
+            }
+
+            throw error;
+        }
 
         return this.findManagedArticle(articleId);
     }

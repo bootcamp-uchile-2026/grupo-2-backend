@@ -16,6 +16,8 @@ import { CustomerMapper } from './customer.mapper';
 import { CustomerGreenFootprintDto } from 'src/dto/customer-green-footprint.dto';
 import { GreenPointMovementDto } from 'src/dto/green-point-movement.dto';
 import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
+import { FilesService } from 'src/files/files.service';
+import { FileEntity } from 'src/models/file.entity';
 
 @Injectable()
 export class CustomersService {
@@ -30,7 +32,8 @@ export class CustomersService {
     @InjectRepository(GreenPointMovementEntity)
     private readonly greenPointRepository: Repository<GreenPointMovementEntity>,
 
-    private readonly dataSource: DataSource) { }
+    private readonly dataSource: DataSource,
+    private readonly filesService: FilesService) { }
 
   async create(dto: CreateCustomerDto): Promise<CustomerResponseDto> {
 
@@ -179,7 +182,7 @@ export class CustomersService {
       );
     }
   }
-  
+
   async updateStatus(customerId: number, dto: UpdateUserStatusDto): Promise<CustomerResponseDto> {
     const customer = await this.findCustomer(customerId);
 
@@ -357,6 +360,66 @@ export class CustomersService {
       customer,
       points.get(customer.id) ?? 0,
     );
+  }
+
+  async uploadProfileImage(customerId: number, archivo: Express.Multer.File, userId: number): Promise<CustomerResponseDto> {
+
+    let storageKey: string | undefined;
+
+    try {
+      const previousStorageKey = await this.dataSource.transaction(async manager => {
+
+        await this.validateOwnership(customerId, userId, true, manager);
+
+        const user = await manager.findOne(UserEntity, {
+          where: { id: userId, isActive: true },
+          lock: { mode: 'pessimistic_write' },
+        });
+
+        if (!user) {
+          throw new ForbiddenException('Usuario no autorizado.');
+        }
+
+        const previousFileId = user.profileFileId;
+
+        const file = await this.filesService.saveImage(archivo, 'perfiles', manager);
+
+        storageKey = file.storageKey;
+
+        await manager.update(UserEntity, user.id, {
+          profileFileId: file.id,
+          updatedAt: new Date(),
+        });
+
+        if (previousFileId) {
+
+          const previousFile = await manager.findOne(FileEntity, {
+            where: { id: previousFileId },
+          });
+
+          if (previousFile) {
+            await manager.delete(FileEntity, previousFile.id);
+
+            return previousFile.storageKey;
+          }
+        }
+
+        return undefined;
+      });
+
+      if (previousStorageKey) {
+        await this.filesService.deletePhysicalImage(previousStorageKey);
+      }
+
+    } catch (error) {
+      if (storageKey) {
+        await this.filesService.deletePhysicalImage(storageKey);
+      }
+
+      throw error;
+    }
+
+    return this.findOne(customerId);
   }
 
   private async findCustomer(customerId: number, manager?: EntityManager): Promise<CustomerEntity> {

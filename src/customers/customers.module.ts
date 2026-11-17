@@ -6,6 +6,7 @@ import { UserEntity } from '../models/user.entity';
 import { CustomerEntity } from '../models/customer.entity';
 import { CartEntity } from '../models/cart.entity';
 import { GreenPointMovementEntity } from '../models/green-point-movement.entity';
+import { FilesModule } from '../files/files.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { GreenPointMovementEntity } from '../models/green-point-movement.entity'
       CartEntity,
       GreenPointMovementEntity,
     ]),
+    FilesModule,
   ],
   controllers: [CustomersController],
   providers: [CustomersService],

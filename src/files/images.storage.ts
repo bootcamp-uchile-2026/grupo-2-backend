@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
@@ -36,6 +36,36 @@ export class ImagesStorage {
         await fs.writeFile(rutaArchivo, archivo.buffer, { flag: 'wx' });
 
         return storageKey;
+    }
+
+    async readImage(storageKey: string): Promise<Buffer> {
+
+        const baseArchivos = resolve(this.configService.getOrThrow<string>('BASE_ARCHIVOS'));
+
+        try {
+            return await fs.readFile(join(baseArchivos, storageKey));
+        } catch (error) {
+            if (error.code === 'ENOENT') {
+                throw new NotFoundException('Imagen no encontrada.');
+            }
+
+            throw error;
+        }
+    }
+
+    async existsImage(storageKey: string): Promise<boolean> {
+        const baseArchivos = resolve(this.configService.getOrThrow<string>('BASE_ARCHIVOS'));
+
+        try {
+            const archivo = await fs.stat(join(baseArchivos, storageKey));
+            return archivo.isFile();
+        } catch (error) {
+            if (error.code === 'ENOENT') {
+                return false;
+            }
+
+            throw error;
+        }
     }
 
     async deleteImage(storageKey: string): Promise<void> {

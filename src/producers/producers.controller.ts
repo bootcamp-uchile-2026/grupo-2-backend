@@ -210,8 +210,141 @@ export class ProducersController {
     description: 'Productor, producto o imagen no encontrada.'
   })
   deleteProductImage(@Param('producerId', ParseIntPipe) producerId: number, @Param('productId', ParseIntPipe) productId: number, @Param('imageId', ParseIntPipe) imageId: number, @CurrentUser() user: { id: number; role: UserRole }): Promise<void> {
-    
+
     return this.producersService.deleteProductImage(producerId, productId, imageId, user.id);
+  }
+
+  @Post(':producerId/profile/image')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PRODUCER)
+  @ApiOperation({ summary: 'Cargar o reemplazar foto de perfil del emprendedor' })
+  @ApiParam({ name: 'producerId', example: 12 })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    type: UploadImageDto
+  })
+  @ApiCreatedResponse({
+    type: ProducerProfileDto
+  })
+  @ApiBadRequestResponse({
+    description: 'Archivo o identificador inválido.'
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Usuario no autenticado.'
+  })
+  @ApiForbiddenResponse({
+    description: 'Acceso no autorizado.'
+  })
+  @ApiNotFoundResponse({
+    description: 'Emprendedor no encontrado.'
+  })
+  @ApiResponse({
+    status: 413,
+    description: 'El archivo supera el tamaño permitido.'
+  })
+  @UseInterceptors(FileInterceptor('file', {
+    storage: memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  }))
+  uploadProfileImage(@Param('producerId', ParseIntPipe) producerId: number, @UploadedFile(new ParseFilePipe({
+    validators: [
+      new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 + 1 }),
+      new FileTypeValidator({ fileType: /^image\/(jpeg|png|webp)$/ }),
+    ],
+  })) archivo: Express.Multer.File, @CurrentUser() user: { id: number; role: UserRole }): Promise<ProducerProfileDto> {
+
+    return this.producersService.uploadImage(producerId, archivo, user.id, 'perfiles');
+  }
+
+  @Post(':producerId/logo')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PRODUCER)
+  @ApiOperation({
+    summary: 'Cargar o reemplazar logo del emprendedor'
+  })
+  @ApiParam({
+    name: 'producerId', example: 12
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    type: UploadImageDto
+  })
+  @ApiCreatedResponse({
+    type: ProducerProfileDto
+  })
+  @ApiBadRequestResponse({
+    description: 'Archivo o identificador inválido.'
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Usuario no autenticado.'
+  })
+  @ApiForbiddenResponse({
+    description: 'Acceso no autorizado.'
+  })
+  @ApiNotFoundResponse({
+    description: 'Emprendedor no encontrado.'
+  })
+  @ApiResponse({
+    status: 413,
+    description: 'El archivo supera el tamaño permitido.'
+  })
+  @UseInterceptors(FileInterceptor('file', {
+    storage: memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  }))
+  uploadLogo(@Param('producerId', ParseIntPipe) producerId: number, @UploadedFile(new ParseFilePipe({
+    validators: [
+      new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 + 1 }),
+      new FileTypeValidator({ fileType: /^image\/(jpeg|png|webp)$/ }),
+    ],
+  })) archivo: Express.Multer.File, @CurrentUser() user: { id: number; role: UserRole }): Promise<ProducerProfileDto> {
+
+    return this.producersService.uploadImage(producerId, archivo, user.id, 'logos');
+  }
+
+  @Post(':producerId/banner')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PRODUCER)
+  @ApiOperation({ summary: 'Cargar o reemplazar banner del emprendedor' })
+  @ApiParam({ name: 'producerId', example: 12 })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    type: UploadImageDto
+  })
+  @ApiCreatedResponse({
+    type: ProducerProfileDto
+  })
+  @ApiBadRequestResponse({
+    description: 'Archivo o identificador inválido.'
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Usuario no autenticado.'
+  })
+  @ApiForbiddenResponse({
+    description: 'Acceso no autorizado.'
+  })
+  @ApiNotFoundResponse({
+    description: 'Emprendedor no encontrado.'
+  })
+  @ApiResponse({
+    status: 413,
+    description: 'El archivo supera el tamaño permitido.'
+  })
+  @UseInterceptors(FileInterceptor('file', {
+    storage: memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  }))
+  uploadBanner(@Param('producerId', ParseIntPipe) producerId: number, @UploadedFile(new ParseFilePipe({
+    validators: [
+      new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 + 1 }),
+      new FileTypeValidator({ fileType: /^image\/(jpeg|png|webp)$/ }),
+    ],
+  })) archivo: Express.Multer.File, @CurrentUser() user: { id: number; role: UserRole }): Promise<ProducerProfileDto> {
+
+    return this.producersService.uploadImage(producerId, archivo, user.id, 'banners');
   }
 
   @Get()

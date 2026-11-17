@@ -354,16 +354,6 @@ export class ProductsService {
 
     await this.findManagedProduct(producerId, productId);
 
-    const mimeType = archivo.mimetype;
-
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
-      throw new BadRequestException('Formato de imagen no permitido.');
-    }
-
-    if (archivo.size <= 0 || archivo.size > 5 * 1024 * 1024 || archivo.originalname.length > 255) {
-      throw new BadRequestException('Tamaño o nombre de archivo inválido.');
-    }
-
     let storageKey: string | undefined;
 
     try {

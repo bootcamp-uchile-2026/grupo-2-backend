@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
 import {
-    ApiTags, ApiOperation, ApiBody, ApiCreatedResponse, ApiOkResponse, ApiBadRequestResponse, ApiConflictResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse
+    ApiTags, ApiOperation, ApiBody, ApiCreatedResponse, ApiOkResponse, ApiBadRequestResponse, ApiConflictResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiParam, ApiBearerAuth,
+    ApiUnauthorizedResponse, ApiConsumes, ApiResponse
 } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
@@ -14,6 +15,9 @@ import { RolesGuard } from '../common/guards/roles/roles.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
 import { CustomerGreenFootprintDto } from 'src/dto/customer-green-footprint.dto';
 import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { UploadImageDto } from '../dto/upload-image.dto';
 
 @ApiTags('Customers')
 @Controller('customers')
@@ -208,6 +212,54 @@ export class CustomersController {
         }
 
         return this.customersService.update(id, dto);
+    }
+
+    @Post(':customerId/profile/image')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.CUSTOMER)
+    @ApiOperation({
+        summary: 'Cargar o reemplazar la foto de perfil del cliente'
+    })
+    @ApiParam({
+        name: 'customerId',
+        example: 6
+    })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        type: UploadImageDto
+    })
+    @ApiCreatedResponse({
+        type: CustomerResponseDto
+    })
+    @ApiBadRequestResponse({
+        description: 'Archivo o identificador inválido.'
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Usuario no autenticado.'
+    })
+    @ApiForbiddenResponse({
+        description: 'Acceso no autorizado.'
+    })
+    @ApiNotFoundResponse({
+        description: 'Cliente no encontrado.'
+    })
+    @ApiResponse({
+        status: 413,
+        description: 'El archivo supera el tamaño permitido.'
+    })
+    @UseInterceptors(FileInterceptor('file', {
+        storage: memoryStorage(),
+        limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+    }))
+    uploadProfileImage(@Param('customerId', ParseIntPipe) customerId: number, @UploadedFile(new ParseFilePipe({
+        validators: [
+            new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 + 1 }),
+            new FileTypeValidator({ fileType: /^image\/(jpeg|png|webp)$/ }),
+        ],
+    })) archivo: Express.Multer.File, @CurrentUser() user: { id: number; role: UserRole }): Promise<CustomerResponseDto> {
+
+        return this.customersService.uploadProfileImage(customerId, archivo, user.id);
     }
 
     @Patch(':id/status')

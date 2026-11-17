@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiOkResponse, ApiParam, ApiBadRequestResponse, ApiNotFoundResponse, ApiBearerAuth, ApiCreatedResponse, ApiUnauthorizedResponse, ApiForbiddenResponse, ApiBody } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiOkResponse, ApiParam, ApiBadRequestResponse, ApiNotFoundResponse, ApiBearerAuth, ApiCreatedResponse, ApiUnauthorizedResponse, ApiForbiddenResponse, ApiBody, ApiConsumes, ApiResponse } from '@nestjs/swagger';
 import { ArticlesService } from './articles.service';
 import { ArticleDetailDto } from '../dto/article-detail.dto';
 import { PaginationDto } from '../dto/pagination.dto';
@@ -12,6 +12,9 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles/roles.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { UploadImageDto } from '../dto/upload-image.dto';
 
 @ApiTags('Articles')
 @Controller('articles')
@@ -58,6 +61,53 @@ export class ArticlesController {
     })
     create(@Body() dto: CreateArticleDto, @CurrentUser() user: { id: number; role: UserRole }): Promise<ManagedArticleDto> {
         return this.articlesService.create(dto, user.id);
+    }
+
+    @Post(':articleId/cover')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.ADMIN)
+    @ApiOperation({
+        summary: 'Cargar o reemplazar la portada de un artículo'
+    })
+    @ApiParam({
+        name: 'articleId', example: 11
+    })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        type: UploadImageDto
+    })
+    @ApiCreatedResponse({
+        type: ManagedArticleDto
+    })
+    @ApiBadRequestResponse({
+        description: 'Archivo o identificador inválido.'
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Usuario no autenticado.'
+    })
+    @ApiForbiddenResponse({
+        description: 'Acceso no autorizado.'
+    })
+    @ApiNotFoundResponse({
+        description: 'Artículo no encontrado.'
+    })
+    @ApiResponse({
+        status: 413,
+        description: 'El archivo supera el tamaño permitido.'
+    })
+    @UseInterceptors(FileInterceptor('file', {
+        storage: memoryStorage(),
+        limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+    }))
+    uploadCover(@Param('articleId', ParseIntPipe) articleId: number, @UploadedFile(new ParseFilePipe({
+        validators: [
+            new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 + 1 }),
+            new FileTypeValidator({ fileType: /^image\/(jpeg|png|webp)$/ }),
+        ],
+    })) archivo: Express.Multer.File): Promise<ManagedArticleDto> {
+
+        return this.articlesService.uploadCover(articleId, archivo);
     }
 
     @Get('manage')
