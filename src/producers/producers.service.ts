@@ -18,6 +18,7 @@ import * as argon2 from 'argon2';
 import { CreateProducerDto } from '../dto/create-producer.dto';
 import { ProducerProfileDto } from '../dto/producer-profile.dto';
 import { DuplicateEmailError } from '../common/errors/duplicate-email.error';
+import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
 
 @Injectable()
 export class ProducersService {
@@ -121,6 +122,42 @@ export class ProducersService {
 
         return {
             content,
+            page,
+            size,
+            totalElements,
+            totalPages: Math.ceil(totalElements / size),
+            sortBy,
+            sortDirection,
+        };
+    }
+
+    async findManagedProducers(pagination: PaginationDto) {
+        const { page, size, sortBy, sortDirection } = pagination;
+        const allowedSortFields = ['id', 'businessName', 'location', 'createdAt', 'firstName', 'lastName', 'email', 'isActive'];
+
+        if (!allowedSortFields.includes(sortBy)) {
+            throw new BadRequestException('Campo de ordenamiento inválido.');
+        }
+
+        const userFields = ['firstName', 'lastName', 'email', 'isActive'];
+        const sortField = userFields.includes(sortBy) ? `user.${sortBy}` : `producer.${sortBy}`;
+
+        const query = this.producersRepository.createQueryBuilder('producer')
+            .innerJoinAndSelect('producer.user', 'user')
+            .where('user.role = :role', { role: UserRole.PRODUCER });
+
+        const totalElements = await query.getCount();
+
+        query.orderBy(sortField, sortDirection);
+
+        if (sortBy !== 'id') {
+            query.addOrderBy('producer.id', 'ASC');
+        }
+
+        const producers = await query.skip(page * size).take(size).getMany();
+
+        return {
+            content: producers.map(producer => ProducerMapper.toProfileDto(producer)),
             page,
             size,
             totalElements,
@@ -302,6 +339,22 @@ export class ProducersService {
         return this.productsService.findManagedProducts(producerId, pagination);
     }
 
+    async findManagedProducer(producerId: number): Promise<ProducerProfileDto> {
+        const producer = await this.findProducer(producerId, undefined, false);
+        return ProducerMapper.toProfileDto(producer);
+    }
+
+    async updateStatus(producerId: number, dto: UpdateUserStatusDto): Promise<ProducerProfileDto> {
+        const producer = await this.findProducer(producerId, undefined, false);
+
+        await this.dataSource.getRepository(UserEntity).update(producer.userId, {
+            isActive: dto.isActive,
+            updatedAt: new Date(),
+        });
+
+        return this.findManagedProducer(producerId);
+    }
+
     private async validateEmail(email: string, userId?: number): Promise<void> {
         const existingUser = await this.dataSource.getRepository(UserEntity)
             .createQueryBuilder('user')
@@ -313,30 +366,28 @@ export class ProducersService {
         }
     }
 
-    private async findProducer(producerId: number, manager?: EntityManager): Promise<ProducerEntity> {
-
+    private async findProducer(producerId: number, manager?: EntityManager, requireActive: boolean = true): Promise<ProducerEntity> {
         if (!Number.isInteger(producerId) || producerId <= 0) {
-            throw new BadRequestException(
-                'El identificador debe ser un número entero positivo.',
-            );
+            throw new BadRequestException('El identificador debe ser un número entero positivo.');
         }
-        const repository = manager
-            ? manager.getRepository(ProducerEntity)
-            : this.producersRepository;
+
+        const repository = manager ? manager.getRepository(ProducerEntity) : this.producersRepository;
 
         const producer = await repository.findOne({
             where: {
                 id: producerId,
                 user: {
-                    isActive: true,
                     role: UserRole.PRODUCER,
+                    ...(requireActive ? { isActive: true } : {}),
                 },
             },
+            relations: { user: true },
         });
 
         if (!producer) {
             throw new ProducerNotFoundError();
         }
+
         return producer;
     }
 }

@@ -15,6 +15,7 @@ import { DuplicateEmailError } from '../common/errors/duplicate-email.error';
 import { CustomerMapper } from './customer.mapper';
 import { CustomerGreenFootprintDto } from 'src/dto/customer-green-footprint.dto';
 import { GreenPointMovementDto } from 'src/dto/green-point-movement.dto';
+import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
 
 @Injectable()
 export class CustomersService {
@@ -178,6 +179,17 @@ export class CustomersService {
       );
     }
   }
+  
+  async updateStatus(customerId: number, dto: UpdateUserStatusDto): Promise<CustomerResponseDto> {
+    const customer = await this.findCustomer(customerId);
+
+    await this.userRepository.update(customer.userId, {
+      isActive: dto.isActive,
+      updatedAt: new Date(),
+    });
+
+    return this.findOne(customerId);
+  }
 
   async getGreenPointsBalance(customerId: number, manager?: EntityManager): Promise<number> {
 
@@ -226,7 +238,7 @@ export class CustomersService {
     };
   }
 
-  async findGreenPointMovements(customerId: number,pagination: PaginationDto,userId: number) {
+  async findGreenPointMovements(customerId: number, pagination: PaginationDto, userId: number) {
 
     await this.validateOwnership(
       customerId,
