@@ -20,6 +20,7 @@ import { ProducerProfileDto } from '../dto/producer-profile.dto';
 import { DuplicateEmailError } from '../common/errors/duplicate-email.error';
 import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
 import { UpdateProducerDto } from '../dto/update-producer.dto';
+import { ProductImageDto } from '../dto/product-image.dto';
 
 @Injectable()
 export class ProducersService {
@@ -422,6 +423,13 @@ export class ProducersService {
         await this.validateOwnership(producerId, userId);
 
         return this.productsService.update(producerId, productId, dto);
+    }
+
+    async addProductImage(producerId: number, productId: number, archivo: Express.Multer.File, userId: number): Promise<ProductImageDto> {
+
+        await this.validateOwnership(producerId, userId);
+
+        return this.productsService.addImage(producerId, productId, archivo);
     }
 
     async findManagedProducts(producerId: number, pagination: PaginationDto, userId: number) {

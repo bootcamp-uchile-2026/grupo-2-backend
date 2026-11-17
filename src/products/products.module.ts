@@ -16,6 +16,7 @@ import { WellnessDetailEntity } from '../models/wellness-detail.entity';
 import { ClothingDetailEntity } from '../models/clothing-detail.entity';
 import { PetDetailEntity } from '../models/pet-detail.entity';
 import { CraftDetailEntity } from '../models/craft-detail.entity';
+import { FilesModule } from '../files/files.module';
 
 @Module({
     imports: [
@@ -35,6 +36,7 @@ import { CraftDetailEntity } from '../models/craft-detail.entity';
             PetDetailEntity,
             CraftDetailEntity,
         ]),
+        FilesModule,
     ],
     controllers: [ProductsController],
     providers: [ProductsService],

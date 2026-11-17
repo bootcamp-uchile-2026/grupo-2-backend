@@ -33,6 +33,8 @@ import { ProductSpecializedDetailsDto } from '../dto/product-specialized-details
 import { CategoryNotFoundError } from '../common/errors/category-not-found.error';
 import { InvalidProductError } from '../common/errors/invalid-product.error';
 import { UpdateProductDto } from '../dto/update-product.dto';
+import { FilesService } from '../files/files.service';
+import { ProductImageDto } from '../dto/product-image.dto';
 
 @Injectable()
 export class ProductsService {
@@ -75,7 +77,8 @@ export class ProductsService {
     private readonly craftDetailsRepository: Repository<CraftDetailEntity>,
 
     private readonly dataSource: DataSource,
-  ) { }
+
+    private readonly filesService: FilesService) { }
 
   async findAll(query: ProductQueryDto) {
     const now = new Date();
@@ -344,6 +347,72 @@ export class ProductsService {
       .where('product.producerId = :producerId', { producerId });
 
     return this.paginateProducts(queryBuilder, pagination, new Date(), true);
+  }
+
+  async addImage(producerId: number, productId: number, archivo: Express.Multer.File): Promise<ProductImageDto> {
+
+    await this.findManagedProduct(producerId, productId);
+
+    const mimeType = archivo.mimetype;
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
+      throw new BadRequestException('Formato de imagen no permitido.');
+    }
+
+    if (archivo.size <= 0 || archivo.size > 5 * 1024 * 1024 || archivo.originalname.length > 255) {
+      throw new BadRequestException('Tamaño o nombre de archivo inválido.');
+    }
+
+    let storageKey: string | undefined;
+
+    try {
+      return await this.dataSource.transaction(async manager => {
+
+        const product = await manager.findOne(ProductEntity, {
+          where: { id: productId, producerId },
+          lock: { mode: 'pessimistic_write' },
+        });
+
+        if (!product) {
+          throw new ProductNotFoundError();
+        }
+
+        const images = await manager.find(ProductImageEntity, {
+          where: { productId },
+          order: { displayOrder: 'DESC' },
+        });
+
+        const displayOrder = images.length > 0 ? images[0].displayOrder + 1 : 1;
+
+        const file = await this.filesService.saveImage(archivo, 'productos', manager);
+
+        storageKey = file.storageKey;
+
+        const image = manager.create(ProductImageEntity, {
+          productId,
+          fileId: file.id,
+          displayOrder,
+          isPrimary: images.length === 0,
+        });
+
+        const savedImage = await manager.save(image);
+
+        return {
+          id: savedImage.id,
+          productId: savedImage.productId,
+          fileId: savedImage.fileId,
+          displayOrder: savedImage.displayOrder,
+          isPrimary: savedImage.isPrimary,
+        };
+      });
+
+    } catch (error) {
+      if (storageKey) {
+        await this.filesService.deletePhysicalImage(storageKey);
+      }
+
+      throw error;
+    }
   }
 
   async update(producerId: number, productId: number, dto: UpdateProductDto): Promise<ManagedProductDto> {
