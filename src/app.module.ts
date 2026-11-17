@@ -13,8 +13,8 @@ import { AuthModule } from './auth/auth.module';
 import { OrdersModule } from './orders/orders.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { ReturnsModule } from './returns/returns.module';
+import { FilesModule } from './files/files.module';
 import { RequestTracingMiddleware } from './common/middleware/request-tracing.middleware';
-import { FileEntity } from './models/file.entity';
 import { SustainabilityAttributeEntity } from './models/sustainability-attribute.entity';
 import { ReturnEntity } from './models/return.entity';
 
@@ -34,7 +34,6 @@ import { ReturnEntity } from './models/return.entity';
       synchronize: false,
     }),
     TypeOrmModule.forFeature([
-      FileEntity,
       SustainabilityAttributeEntity,
       ReturnEntity,
     ]),
@@ -49,9 +48,8 @@ import { ReturnEntity } from './models/return.entity';
     AuthModule,
     OrdersModule,
     ReviewsModule,
-    OrdersModule,
-    ReviewsModule,
     ReturnsModule,
+    FilesModule,
   ],
   controllers: [],
   providers: [],
@@ -59,8 +57,6 @@ import { ReturnEntity } from './models/return.entity';
 export class AppModule implements NestModule {
 
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(RequestTracingMiddleware)
-      .forRoutes('*');
+    consumer.apply(RequestTracingMiddleware).forRoutes('*');
   }
 }
