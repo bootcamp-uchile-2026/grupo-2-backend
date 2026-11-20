@@ -1,0 +1,49 @@
+services:
+  db-postgres:
+    image: postgres:18.6
+    container_name: ecotienda-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ecotienda-postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecotienda-net
+
+  backend:
+    image: ecotienda-backend:3.0.0
+    container_name: ecotienda-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: db-postgres
+      DB_PORT: 5432
+      BASE_ARCHIVOS: /app/ARCHIVOS
+    volumes:
+      - /home/bootcamp/storage/ecotienda:/app/ARCHIVOS
+    ports:
+      - "3004:3000"
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+    networks:
+      - ecotienda-net
+
+volumes:
+  ecotienda-postgres-data:
+
+networks:
+  ecotienda-net:
+    name: ecotienda-net
+
