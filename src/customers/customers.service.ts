@@ -1,85 +1,491 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
+import * as argon2 from 'argon2';
+import { UserEntity, UserRole } from '../models/user.entity';
+import { CustomerEntity } from '../models/customer.entity';
+import { CartEntity } from '../models/cart.entity';
+import { GreenPointMovementEntity, GreenPointMovementType } from '../models/green-point-movement.entity';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
 import { UpdateCustomerDto } from '../dto/update-customer.dto';
 import { CustomerResponseDto } from '../dto/customer-response.dto';
-import { Customer } from '../models/customer.model';
+import { PaginationDto } from '../dto/pagination.dto';
 import { CustomerNotFoundError } from '../common/errors/customer-not-found.error';
-import { DuplicateEmailError } from 'src/common/errors/duplicate-email.error';
+import { DuplicateEmailError } from '../common/errors/duplicate-email.error';
+import { CustomerMapper } from './customer.mapper';
+import { CustomerGreenFootprintDto } from 'src/dto/customer-green-footprint.dto';
+import { GreenPointMovementDto } from 'src/dto/green-point-movement.dto';
+import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
+import { FilesService } from 'src/files/files.service';
+import { FileEntity } from 'src/models/file.entity';
 
 @Injectable()
 export class CustomersService {
 
-  private readonly customers: Customer[] = [];
-  private nextId = 1;
+  constructor(
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
 
-  private toResponse(customer: Customer): CustomerResponseDto {
+    @InjectRepository(CustomerEntity)
+    private readonly customerRepository: Repository<CustomerEntity>,
+
+    @InjectRepository(GreenPointMovementEntity)
+    private readonly greenPointRepository: Repository<GreenPointMovementEntity>,
+
+    private readonly dataSource: DataSource,
+    private readonly filesService: FilesService) { }
+
+  async create(dto: CreateCustomerDto): Promise<CustomerResponseDto> {
+
+    const email = dto.email.trim().toLowerCase();
+    const firstName = dto.firstName.trim();
+
+    if (!firstName) {
+      throw new BadRequestException('El nombre del cliente es obligatorio.');
+    }
+
+    if (dto.privacyAccepted !== true) {
+      throw new BadRequestException('Debe aceptar la política de privacidad.');
+    }
+
+    await this.validateEmail(email);
+
+    const passwordHash = await argon2.hash(dto.password, {
+      type: argon2.argon2id,
+    });
+
+    return this.dataSource.transaction(async manager => {
+
+      const user = manager.create(UserEntity, {
+        email,
+        passwordHash,
+        firstName,
+        lastName: dto.lastName?.trim() || null,
+        phone: dto.phone?.trim() || null,
+        profileFileId: null,
+        role: UserRole.CUSTOMER,
+        isActive: true,
+        privacyAcceptedAt: new Date(),
+      });
+
+      const savedUser = await manager.save(user);
+
+      const customer = manager.create(CustomerEntity, {
+        userId: savedUser.id,
+      });
+
+      const savedCustomer = await manager.save(customer);
+
+      const cart = manager.create(CartEntity, {
+        customerId: savedCustomer.id,
+      });
+
+      await manager.save(cart);
+
+      const welcomeMovement = manager.create(GreenPointMovementEntity, {
+        customerId: savedCustomer.id,
+        type: GreenPointMovementType.WELCOME,
+        points: 80,
+        orderId: null,
+        returnId: null,
+        reviewId: null,
+        description: 'Puntos verdes de bienvenida',
+      });
+
+      await manager.save(welcomeMovement);
+
+      savedCustomer.user = savedUser;
+
+      return CustomerMapper.toResponseDto(savedCustomer, 80);
+    });
+  }
+
+  async findAll(pagination: PaginationDto) {
+    const { page, size, sortBy, sortDirection } = pagination;
+
+    const allowedSortFields = [
+      'id', 'firstName', 'lastName',
+      'email', 'createdAt', 'isActive',
+    ];
+
+    if (!allowedSortFields.includes(sortBy)) {
+      throw new BadRequestException('Campo de ordenamiento inválido.');
+    }
+
+    let sortField = `user.${sortBy}`;
+
+    if (sortBy === 'id' || sortBy === 'createdAt') {
+      sortField = `customer.${sortBy}`;
+    }
+
+    const query = this.customerRepository
+      .createQueryBuilder('customer')
+      .innerJoinAndSelect('customer.user', 'user')
+      .where('user.role = :role', { role: UserRole.CUSTOMER });
+
+    const totalElements = await query.getCount();
+
+    query.orderBy(sortField, sortDirection);
+
+    if (sortBy !== 'id') {
+      query.addOrderBy('customer.id', 'ASC');
+    }
+
+    const customers = await query
+      .skip(page * size)
+      .take(size)
+      .getMany();
+
+    const points = await this.getGreenPoints(
+      customers.map(customer => customer.id),
+    );
+
     return {
-      id: customer.id,
-      email: customer.email,
-      greenPoints: customer.greenPoints,
+      content: customers.map(customer =>
+        CustomerMapper.toResponseDto(
+          customer,
+          points.get(customer.id) ?? 0,
+        ),
+      ),
+      page,
+      size,
+      totalElements,
+      totalPages: Math.ceil(totalElements / size),
+      sortBy,
+      sortDirection,
     };
   }
 
-  create(createCustomerDto: CreateCustomerDto): CustomerResponseDto {
-    const existingCustomer = this.customers.find(
-      (customer) =>
-        customer.email.toLowerCase() === createCustomerDto.email.toLowerCase(),
+  async findOne(customerId: number): Promise<CustomerResponseDto> {
+    const customer = await this.findCustomer(customerId);
+    const points = await this.getGreenPoints([customer.id]);
+
+    return CustomerMapper.toResponseDto(
+      customer,
+      points.get(customer.id) ?? 0,
+    );
+  }
+
+  async validateOwnership(customerId: number, userId: number, requireActive: boolean = false, manager?: EntityManager): Promise<void> {
+
+    const customer = await this.findCustomer(customerId, manager);
+
+    if (customer.userId !== userId) {
+      throw new ForbiddenException(
+        'No tienes permisos para acceder a este perfil.',
+      );
+    }
+
+    if (requireActive && !customer.user.isActive) {
+      throw new ForbiddenException(
+        'El cliente se encuentra inactivo.',
+      );
+    }
+  }
+
+  async updateStatus(customerId: number, dto: UpdateUserStatusDto): Promise<CustomerResponseDto> {
+    const customer = await this.findCustomer(customerId);
+
+    await this.userRepository.update(customer.userId, {
+      isActive: dto.isActive,
+      updatedAt: new Date(),
+    });
+
+    return this.findOne(customerId);
+  }
+
+  async getGreenPointsBalance(customerId: number, manager?: EntityManager): Promise<number> {
+
+    const points = await this.getGreenPoints(
+      [customerId],
+      manager,
     );
 
-    if (existingCustomer) {
+    return points.get(customerId) ?? 0;
+  }
+
+  async getGreenFootprint(customerId: number, userId: number): Promise<CustomerGreenFootprintDto> {
+
+    await this.validateOwnership(customerId, userId, true);
+
+    const result = await this.dataSource.query(
+      `
+        SELECT
+            COALESCE(
+                SUM(
+                    (oi.quantity - COALESCE(returned.quantity, 0))
+                    * oi.unit_co2_avoided
+                ),
+                0
+            ) AS "co2Avoided"
+        FROM order_items oi
+        JOIN orders o ON o.id = oi.order_id
+        LEFT JOIN (
+            SELECT
+                ri.order_item_id,
+                SUM(ri.quantity) AS quantity
+            FROM return_items ri
+            JOIN returns r ON r.id = ri.return_id
+            WHERE r.status = 'COMPLETED'
+            GROUP BY ri.order_item_id
+        ) returned ON returned.order_item_id = oi.id
+        WHERE o.customer_id = $1
+          AND o.status = 'DELIVERED'
+        `,
+      [customerId],
+    );
+
+    return {
+      customerId,
+      co2Avoided: Number(result[0].co2Avoided),
+    };
+  }
+
+  async findGreenPointMovements(customerId: number, pagination: PaginationDto, userId: number) {
+
+    await this.validateOwnership(
+      customerId,
+      userId,
+      true,
+    );
+
+    const {
+      page,
+      size,
+      sortBy,
+      sortDirection,
+    } = pagination;
+
+    const allowedSortFields = [
+      'id',
+      'type',
+      'points',
+      'createdAt',
+    ];
+
+    if (!allowedSortFields.includes(sortBy)) {
+      throw new BadRequestException(
+        'Campo de ordenamiento inválido.',
+      );
+    }
+
+    const query = this.greenPointRepository
+      .createQueryBuilder('movement')
+      .where('movement.customerId = :customerId', {
+        customerId,
+      });
+
+    const totalElements = await query.getCount();
+
+    query.orderBy(
+      `movement.${sortBy}`,
+      sortDirection,
+    );
+
+    if (sortBy !== 'id') {
+      query.addOrderBy('movement.id', 'ASC');
+    }
+
+    const movements = await query
+      .skip(page * size)
+      .take(size)
+      .getMany();
+
+    const content: GreenPointMovementDto[] =
+      movements.map(movement => ({
+        id: movement.id,
+        type: movement.type,
+        points: movement.points,
+        orderId: movement.orderId,
+        returnId: movement.returnId,
+        reviewId: movement.reviewId,
+        description: movement.description,
+        createdAt: movement.createdAt,
+      }));
+
+    return {
+      content,
+      page,
+      size,
+      totalElements,
+      totalPages: Math.ceil(totalElements / size),
+      sortBy,
+      sortDirection,
+    };
+  }
+
+  async update(customerId: number, dto: UpdateCustomerDto): Promise<CustomerResponseDto> {
+    const customer = await this.findCustomer(customerId);
+    const user = customer.user;
+
+    if (dto.email !== undefined) {
+      const email = dto.email.trim().toLowerCase();
+
+      await this.validateEmail(email, user.id);
+
+      user.email = email;
+    }
+
+    if (dto.firstName !== undefined) {
+      const firstName = dto.firstName.trim();
+
+      if (!firstName) {
+        throw new BadRequestException('El nombre del cliente es obligatorio.');
+      }
+
+      user.firstName = firstName;
+    }
+
+    if (dto.lastName !== undefined) {
+      user.lastName = dto.lastName?.trim() || null;
+    }
+
+    if (dto.phone !== undefined) {
+      user.phone = dto.phone?.trim() || null;
+    }
+
+    if (dto.password !== undefined) {
+      user.passwordHash = await argon2.hash(dto.password, {
+        type: argon2.argon2id,
+      });
+    }
+
+    user.updatedAt = new Date();
+
+    customer.user = await this.userRepository.save(user);
+
+    const points = await this.getGreenPoints([customer.id]);
+
+    return CustomerMapper.toResponseDto(
+      customer,
+      points.get(customer.id) ?? 0,
+    );
+  }
+
+  async uploadProfileImage(customerId: number, archivo: Express.Multer.File, userId: number): Promise<CustomerResponseDto> {
+
+    let storageKey: string | undefined;
+
+    try {
+      const previousStorageKey = await this.dataSource.transaction(async manager => {
+
+        await this.validateOwnership(customerId, userId, true, manager);
+
+        const user = await manager.findOne(UserEntity, {
+          where: { id: userId, isActive: true },
+          lock: { mode: 'pessimistic_write' },
+        });
+
+        if (!user) {
+          throw new ForbiddenException('Usuario no autorizado.');
+        }
+
+        const previousFileId = user.profileFileId;
+
+        const file = await this.filesService.saveImage(archivo, 'perfiles', manager);
+
+        storageKey = file.storageKey;
+
+        await manager.update(UserEntity, user.id, {
+          profileFileId: file.id,
+          updatedAt: new Date(),
+        });
+
+        if (previousFileId) {
+
+          const previousFile = await manager.findOne(FileEntity, {
+            where: { id: previousFileId },
+          });
+
+          if (previousFile) {
+            await manager.delete(FileEntity, previousFile.id);
+
+            return previousFile.storageKey;
+          }
+        }
+
+        return undefined;
+      });
+
+      if (previousStorageKey) {
+        await this.filesService.deletePhysicalImage(previousStorageKey);
+      }
+
+    } catch (error) {
+      if (storageKey) {
+        await this.filesService.deletePhysicalImage(storageKey);
+      }
+
+      throw error;
+    }
+
+    return this.findOne(customerId);
+  }
+
+  private async findCustomer(customerId: number, manager?: EntityManager): Promise<CustomerEntity> {
+
+    if (!Number.isInteger(customerId) || customerId <= 0) {
+      throw new BadRequestException(
+        'El identificador debe ser un número entero positivo.');
+    }
+
+    const repository = manager
+      ? manager.getRepository(CustomerEntity)
+      : this.customerRepository;
+
+    const customer = await repository.findOne({
+      where: {
+        id: customerId,
+        user: {
+          role: UserRole.CUSTOMER,
+        },
+      },
+      relations: {
+        user: true,
+      },
+    });
+
+    if (!customer) {
+      throw new CustomerNotFoundError();
+    }
+
+    return customer;
+  }
+
+  private async validateEmail(email: string, userId?: number): Promise<void> {
+    const existingUser = await this.userRepository
+      .createQueryBuilder('user')
+      .where('LOWER(user.email) = :email', { email })
+      .getOne();
+
+    if (existingUser && existingUser.id !== userId) {
       throw new DuplicateEmailError();
     }
-    const newCustomer = new Customer();
-
-    newCustomer.id = this.nextId++;
-    newCustomer.email = createCustomerDto.email;
-    newCustomer.password = createCustomerDto.password;
-    newCustomer.greenPoints = 0;
-    newCustomer.addresses = [];
-    newCustomer.paymentMethods = [];
-    newCustomer.orders = [];
-
-    this.customers.push(newCustomer);
-
-    return this.toResponse(newCustomer);
   }
 
-  findAll(): CustomerResponseDto[] {
-    return this.customers.map((customer) => this.toResponse(customer));
-  }
+  private async getGreenPoints(customerIds: number[], manager?: EntityManager): Promise<Map<number, number>> {
 
-  findOne(id: number): CustomerResponseDto {
-    const customer = this.customers.find((customer) => customer.id === id);
-
-    if (!customer) {
-      throw new CustomerNotFoundError();
+    if (customerIds.length === 0) {
+      return new Map();
     }
 
-    return this.toResponse(customer);
-  }
+    const repository = manager
+      ? manager.getRepository(GreenPointMovementEntity)
+      : this.greenPointRepository;
 
-  update(id: number, updateCustomerDto: UpdateCustomerDto): CustomerResponseDto {
-    const customer = this.customers.find((customer) => customer.id === id);
+    const results = await repository
+      .createQueryBuilder('movement')
+      .select('movement.customerId', 'customerId')
+      .addSelect('SUM(movement.points)', 'greenPoints')
+      .where('movement.customerId IN (:...customerIds)', { customerIds })
+      .groupBy('movement.customerId')
+      .getRawMany();
 
-    if (!customer) {
-      throw new CustomerNotFoundError();
-    }
-
-    if (updateCustomerDto.email) {
-      const existingCustomer = this.customers.find(
-        (otherCustomer) =>
-          otherCustomer.email.toLowerCase() ===
-          updateCustomerDto.email!.toLowerCase() &&
-          otherCustomer.id !== id,
-      );
-
-      if (existingCustomer) {
-        throw new DuplicateEmailError();
-      }
-    }
-
-    Object.assign(customer, updateCustomerDto);
-
-    return this.toResponse(customer);
+    return new Map<number, number>(
+      results.map(result => [
+        Number(result.customerId),
+        Number(result.greenPoints),
+      ]),
+    );
   }
 }

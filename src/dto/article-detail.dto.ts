@@ -10,8 +10,8 @@ export class ArticleDetailDto extends ArticleSummaryDto {
     content: string;
 
     @ApiProperty({
-        example: 'Equipo BuenOrigen',
-        description: 'Autor del artículo.',
+        example: 'Administrador BuenOrigen',
+        description: 'Nombre del autor del artículo.',
     })
     author: string;
 }

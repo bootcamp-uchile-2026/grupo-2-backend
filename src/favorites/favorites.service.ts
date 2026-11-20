@@ -1,85 +1,77 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { FavoriteEntity } from '../models/favorite.entity';
+import { FavoriteProductDto } from '../dto/favorite-product.dto';
+import { CustomersService } from '../customers/customers.service';
+import { ProductsService } from '../products/products.service';
 import { FavoriteAlreadyExistsError } from '../common/errors/favorite-already-exists.error';
 import { FavoriteNotFoundError } from '../common/errors/favorite-not-found.error';
-import { CustomersService } from '../customers/customers.service';
-import { ProductsService } from '../productos/productos.service';
-import { FavoriteProductDto } from '../dto/favorite-product.dto';
-import { Favorite } from '../models/favorite.model';
 
 @Injectable()
 export class FavoritesService {
-  constructor(
-    private readonly customersService: CustomersService,
-    private readonly productsService: ProductsService,
-  ) {}
 
-    private readonly favorites: Favorite[] = [];
+    constructor(
+        @InjectRepository(FavoriteEntity)
+        private readonly favoriteRepository: Repository<FavoriteEntity>,
+        private readonly customersService: CustomersService,
+        private readonly productsService: ProductsService) {}
 
+    async findAll(customerId: number, userId: number): Promise<FavoriteProductDto[]> {
 
-  findAll(customerId: number): FavoriteProductDto[] {
-    this.validateId(customerId);
-    this.customersService.findOne(customerId);
+        await this.customersService.validateOwnership(
+            customerId, userId, true,
+        );
 
-    const customerFavorites = this.favorites.filter(
-      (favorite) => favorite.customerId === customerId,
-    );
-
-    return customerFavorites.map((favorite) =>
-      this.productsService.findFavoriteProduct(favorite.productId),
-    );
-  }
-
-  add(customerId: number, productId: number): FavoriteProductDto {
-    this.validateId(customerId);
-    this.validateId(productId);
-    this.customersService.findOne(customerId);
-
-    const product = this.productsService.findFavoriteProduct(productId);
-
-    const existingFavorite = this.favorites.find(
-      (favorite) =>
-        favorite.customerId === customerId &&
-        favorite.productId === productId,
-    );
-
-    if (existingFavorite) {
-      throw new FavoriteAlreadyExistsError();
+        return this.productsService.findFavoriteProducts(customerId);
     }
 
-    const newFavorite: Favorite = {
-      customerId: customerId,
-      productId: productId,
-    };
+    async add(customerId: number, productId: number, userId: number): Promise<FavoriteProductDto> {
 
-    this.favorites.push(newFavorite);
+        await this.customersService.validateOwnership(
+            customerId, userId, true,
+        );
 
-    return product;
-  }
+        const product = await this.productsService.findFavoriteProduct(productId);
 
-  remove(customerId: number, productId: number): void {
-    this.validateId(customerId);
-    this.validateId(productId);
-    this.customersService.findOne(customerId);
-    this.productsService.findFavoriteProduct(productId);
+        const existingFavorite = await this.favoriteRepository.findOne({
+            where: {
+                customerId,
+                productId,
+            },
+        });
 
-    const favoriteIndex = this.favorites.findIndex(
-      (favorite) =>
-        favorite.customerId === customerId &&
-        favorite.productId === productId,
-    );
+        if (existingFavorite) {
+            throw new FavoriteAlreadyExistsError();
+        }
 
-    if (favoriteIndex === -1) {
-      throw new FavoriteNotFoundError();
+        await this.favoriteRepository.insert({
+            customerId,
+            productId,
+        });
+
+        return product;
     }
 
-    this.favorites.splice(favoriteIndex, 1);
-  }
+    async remove(customerId: number, productId: number, userId: number): Promise<void> {
 
-  private validateId(id: number): void {
-    if (id <= 0) {
-      throw new BadRequestException(
-        'El identificador debe ser un número entero positivo.',
-      );
+        if (!Number.isInteger(productId) || productId <= 0) {
+            throw new BadRequestException(
+                'El identificador debe ser un número entero positivo.',
+            );
+        }
+
+        await this.customersService.validateOwnership(
+            customerId, userId, true,
+        );
+
+        const result = await this.favoriteRepository.delete({
+            customerId,
+            productId,
+        });
+
+        if (result.affected === 0) {
+            throw new FavoriteNotFoundError();
+        }
     }
-  }
 }

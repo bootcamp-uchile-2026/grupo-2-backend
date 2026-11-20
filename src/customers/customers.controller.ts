@@ -1,136 +1,295 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
 import {
-  ApiBadRequestResponse, ApiBody, ApiConflictResponse, ApiCreatedResponse, ApiForbiddenResponse, ApiHeader, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam,
-  ApiTags
+    ApiTags, ApiOperation, ApiBody, ApiCreatedResponse, ApiOkResponse, ApiBadRequestResponse, ApiConflictResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiParam, ApiBearerAuth,
+    ApiUnauthorizedResponse, ApiConsumes, ApiResponse
 } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
 import { UpdateCustomerDto } from '../dto/update-customer.dto';
 import { CustomerResponseDto } from '../dto/customer-response.dto';
-import { AdminGuard } from '../common/guards/admin-access/admin.guard';
+import { PaginationDto } from '../dto/pagination.dto';
+import { UserRole } from '../models/user.entity';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles/roles.guard';
+import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
+import { CustomerGreenFootprintDto } from 'src/dto/customer-green-footprint.dto';
+import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { UploadImageDto } from '../dto/upload-image.dto';
 
 @ApiTags('Customers')
 @Controller('customers')
 export class CustomersController {
-  constructor(private readonly customersService: CustomersService) { }
 
-  @Post()
-  @ApiOperation({
-    summary: 'Crear cliente',
-    description: 'Registra un nuevo cliente en BuenOrigen.',
-  })
-  @ApiBody({ type: CreateCustomerDto })
-  @ApiCreatedResponse({
-    description: 'Cliente creado correctamente.',
-    type: CustomerResponseDto,
-  })
-  @ApiBadRequestResponse({
-    description: 'Los datos del cliente no son válidos.',
-  })
-  @ApiConflictResponse({
-    description: 'El correo electrónico ya está registrado.',
-  })
-  create(@Body() createCustomerDto: CreateCustomerDto) {
-    return this.customersService.create(createCustomerDto);
-  }
+    constructor(private readonly customersService: CustomersService) { }
 
-  @Get()
-  @UseGuards(AdminGuard)
-  @ApiOperation({
-    summary: 'Obtener todos los clientes',
-    description:
-      'Consulta el listado de clientes. Requiere API Key de administrador.',
-  })
-  @ApiHeader({
-    name: 'x-api-key',
-    description: 'API Key de administrador.',
-    required: true,
-  })
-  @ApiOkResponse({
-    description: 'Listado de clientes obtenido correctamente.',
-    type: CustomerResponseDto,
-    isArray: true,
-  })
-  @ApiForbiddenResponse({
-    description: 'Acceso denegado.',
-  })
-  findAll() {
-    return this.customersService.findAll();
-  }
+    @Post()
+    @ApiOperation({
+        summary: 'Crear cliente',
+        description: 'Registra un nuevo cliente en BuenOrigen.',
+    })
+    @ApiBody({ type: CreateCustomerDto })
+    @ApiCreatedResponse({
+        description: 'Cliente creado correctamente.',
+        type: CustomerResponseDto,
+    })
+    @ApiBadRequestResponse({
+        description: 'Los datos del cliente no son válidos.',
+    })
+    @ApiConflictResponse({
+        description: 'El correo electrónico ya está registrado.',
+    })
+    create(@Body() dto: CreateCustomerDto): Promise<CustomerResponseDto> {
+        return this.customersService.create(dto);
+    }
 
-  @Get(':id')
-  @UseGuards(AdminGuard)
-  @ApiOperation({
-    summary: 'Consultar cliente por ID',
-    description: 'Consulta un cliente mediante su identificador numérico.',
-  })
-  @ApiParam({
-    name: 'id',
-    type: Number,
-    example: 1,
-    description: 'Identificador del cliente.',
-  })
-  @ApiHeader({
-    name: 'x-api-key',
-    description: 'API Key de administrador.',
-    required: true,
-  })
-  @ApiOkResponse({
-    description: 'Cliente obtenido correctamente.',
-    type: CustomerResponseDto,
-  })
-  @ApiBadRequestResponse({
-    description: 'El identificador debe ser un número entero.',
-  })
-  @ApiNotFoundResponse({
-    description: 'Cliente no encontrado.',
-  })
-  @ApiForbiddenResponse({
-    description: 'Acceso denegado.',
-  })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.customersService.findOne(id);
-  }
 
-  @Patch(':id')
-  @UseGuards(AdminGuard)
-  @ApiOperation({
-    summary: 'Actualizar cliente por ID',
-    description:
-      'Actualiza los datos de un cliente mediante su identificador.',
-  })
-  @ApiParam({
-    name: 'id',
-    type: Number,
-    example: 1,
-    description: 'Identificador del cliente.',
-  })
-  @ApiHeader({
-    name: 'x-api-key',
-    description: 'API Key de administrador.',
-    required: true,
-  })
-  @ApiBody({ type: UpdateCustomerDto })
-  @ApiOkResponse({
-    description: 'Cliente actualizado correctamente.',
-    type: CustomerResponseDto,
-  })
-  @ApiBadRequestResponse({
-    description: 'Identificador o datos de actualización inválidos.',
-  })
-  @ApiForbiddenResponse({
-    description: 'Acceso denegado.',
-  })
-  @ApiNotFoundResponse({
-    description: 'Cliente no encontrado.',
-  })
-  @ApiConflictResponse({
-    description: 'El correo electrónico ya está registrado.',
-  })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateCustomerDto: UpdateCustomerDto,
-  ) {
-    return this.customersService.update(id, updateCustomerDto);
-  }
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.ADMIN)
+    @Get()
+    @ApiOperation({
+        summary: 'Obtener listado paginado de clientes',
+    })
+    @ApiOkResponse({
+        description: 'Listado paginado de clientes.',
+    })
+    @ApiBadRequestResponse({
+        description: 'Parámetros de paginación inválidos.',
+    })
+    @ApiForbiddenResponse({
+        description: 'Acceso denegado.',
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Token inválido o inexistente.',
+    })
+    findAll(@Query() pagination: PaginationDto) {
+        return this.customersService.findAll(pagination)
+    }
+
+    @Get(':customerId/green-footprint')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.CUSTOMER)
+    @ApiOperation({
+        summary: 'Consultar el CO2e evitado acumulado del cliente',
+    })
+    @ApiParam({
+        name: 'customerId',
+        example: 6,
+    })
+    @ApiOkResponse({
+        type: CustomerGreenFootprintDto,
+    })
+    @ApiBadRequestResponse({
+        description: 'Identificador inválido.',
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Usuario no autenticado.',
+    })
+    @ApiForbiddenResponse({
+        description: 'Acceso no autorizado.',
+    })
+    @ApiNotFoundResponse({
+        description: 'Cliente no encontrado.',
+    })
+    getGreenFootprint(@Param('customerId', ParseIntPipe) customerId: number, @CurrentUser() user: { id: number; role: UserRole }): Promise<CustomerGreenFootprintDto> {
+        return this.customersService.getGreenFootprint(customerId, user.id);
+    }
+
+    @Get(':customerId/green-points/movements')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.CUSTOMER)
+    @ApiOperation({
+        summary: 'Consultar los movimientos de puntos verdes del cliente',
+    })
+    @ApiParam({
+        name: 'customerId',
+        example: 6,
+    })
+    @ApiOkResponse({
+        description: 'Listado paginado de movimientos de puntos verdes.',
+    })
+    @ApiBadRequestResponse({
+        description: 'Parámetros de consulta inválidos.',
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Usuario no autenticado.',
+    })
+    @ApiForbiddenResponse({
+        description: 'Acceso no autorizado.',
+    })
+    @ApiNotFoundResponse({
+        description: 'Cliente no encontrado.',
+    })
+    findGreenPointMovements(@Param('customerId', ParseIntPipe) customerId: number, @Query() pagination: PaginationDto, @CurrentUser() user: { id: number; role: UserRole }) {
+        return this.customersService.findGreenPointMovements(customerId, pagination, user.id);
+    }
+
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.CUSTOMER, UserRole.ADMIN)
+    @Get(':id')
+    @ApiOperation({
+        summary: 'Consultar cliente por ID',
+    })
+    @ApiParam({
+        name: 'id',
+        type: Number,
+        example: 6,
+    })
+    @ApiOkResponse({
+        description: 'Cliente obtenido correctamente.',
+        type: CustomerResponseDto,
+    })
+    @ApiBadRequestResponse({
+        description: 'Identificador inválido.',
+    })
+    @ApiNotFoundResponse({
+        description: 'Cliente no encontrado.',
+    })
+    @ApiForbiddenResponse({
+        description: 'No tienes permisos para consultar este perfil.',
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Token inválido o inexistente.',
+    })
+    async findOne(
+        @Param('id', ParseIntPipe) id: number,
+        @CurrentUser() user: { id: number; role: UserRole },
+    ): Promise<CustomerResponseDto> {
+
+        if (user.role === UserRole.CUSTOMER) {
+            await this.customersService.validateOwnership(id, user.id);
+        }
+
+        return this.customersService.findOne(id);
+    }
+
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.CUSTOMER, UserRole.ADMIN)
+    @Patch(':id')
+    @ApiOperation({
+        summary: 'Actualizar cliente por ID',
+    })
+    @ApiParam({
+        name: 'id',
+        type: Number,
+        example: 6,
+    })
+    @ApiBody({ type: UpdateCustomerDto })
+    @ApiOkResponse({
+        description: 'Cliente actualizado correctamente.',
+        type: CustomerResponseDto,
+    })
+    @ApiBadRequestResponse({
+        description: 'Datos de actualización inválidos.',
+    })
+    @ApiNotFoundResponse({
+        description: 'Cliente no encontrado.',
+    })
+    @ApiConflictResponse({
+        description: 'El correo electrónico ya está registrado.',
+    })
+    @ApiForbiddenResponse({
+        description: 'No tienes permisos para actualizar este perfil.',
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Token inválido o inexistente.',
+    })
+    async update(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() dto: UpdateCustomerDto,
+        @CurrentUser() user: { id: number; role: UserRole },
+    ): Promise<CustomerResponseDto> {
+
+        if (user.role === UserRole.CUSTOMER) {
+            await this.customersService.validateOwnership(id, user.id);
+        }
+
+        return this.customersService.update(id, dto);
+    }
+
+    @Post(':customerId/profile/image')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.CUSTOMER)
+    @ApiOperation({
+        summary: 'Cargar o reemplazar la foto de perfil del cliente'
+    })
+    @ApiParam({
+        name: 'customerId',
+        example: 6
+    })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        type: UploadImageDto
+    })
+    @ApiCreatedResponse({
+        type: CustomerResponseDto
+    })
+    @ApiBadRequestResponse({
+        description: 'Archivo o identificador inválido.'
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Usuario no autenticado.'
+    })
+    @ApiForbiddenResponse({
+        description: 'Acceso no autorizado.'
+    })
+    @ApiNotFoundResponse({
+        description: 'Cliente no encontrado.'
+    })
+    @ApiResponse({
+        status: 413,
+        description: 'El archivo supera el tamaño permitido.'
+    })
+    @UseInterceptors(FileInterceptor('file', {
+        storage: memoryStorage(),
+        limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+    }))
+    uploadProfileImage(@Param('customerId', ParseIntPipe) customerId: number, @UploadedFile(new ParseFilePipe({
+        validators: [
+            new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 + 1 }),
+            new FileTypeValidator({ fileType: /^image\/(jpeg|png|webp)$/ }),
+        ],
+    })) archivo: Express.Multer.File, @CurrentUser() user: { id: number; role: UserRole }): Promise<CustomerResponseDto> {
+
+        return this.customersService.uploadProfileImage(customerId, archivo, user.id);
+    }
+
+    @Patch(':id/status')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.ADMIN)
+    @ApiOperation({
+        summary: 'Activar o desactivar la cuenta de un cliente'
+    })
+    @ApiParam({
+        name: 'id',
+        type: Number,
+        example: 6
+    })
+    @ApiOkResponse({
+        type: CustomerResponseDto
+    })
+    @ApiBadRequestResponse({
+        description: 'Datos inválidos.'
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Usuario no autenticado.'
+    })
+    @ApiForbiddenResponse({
+        description: 'Acceso no autorizado.'
+    })
+    @ApiNotFoundResponse({
+        description: 'Cliente no encontrado.'
+    })
+    updateStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateUserStatusDto): Promise<CustomerResponseDto> {
+        return this.customersService.updateStatus(id, dto);
+    }
 }

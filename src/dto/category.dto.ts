@@ -1,17 +1,24 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CategoryDto {
-  @ApiProperty({ example: 1 })
-  id: number;
 
-  @ApiProperty({ example: 'Alimentos' })
-  name: string;
+    @ApiProperty({ example: 1 })
+    id: number;
 
-  @ApiProperty({ example: 'alimentos' })
-  slug: string;
+    @ApiProperty({ example: 'Alimentos' })
+    name: string;
 
-  @ApiPropertyOptional({
-    example: 'https://ejemplo.cl/imagenes/categorias/alimentos.jpg',
-  })
-  imageUrl?: string;
+    @ApiProperty({
+        example: 'Productos alimenticios artesanales y sustentables.',
+        type: String,
+        nullable: true,
+    })
+    description: string | null;
+
+    @ApiProperty({
+        type: String,
+        format: 'uuid',
+        nullable: true,
+    })
+    imageFileId: string | null;
 }

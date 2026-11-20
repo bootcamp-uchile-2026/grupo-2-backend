@@ -1,32 +1,62 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { CategoriesModule } from './categories/categories.module';
-import { ProductsModule } from './productos/productos.module';
-import { EntrepreneursModule } from './emprendedores/emprendedores.module';
-import { CustomersModule } from './customers/customers.module';
-import { ArticlesModule } from './articulos/articulos.module';
-import { FavoritesModule } from './favorites/favorites.module';
-import { RequestTracingMiddleware } from './common/middleware/request-tracing.middleware';
 import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { CategoriesModule } from './categories/categories.module';
+import { ProductsModule } from './products/products.module';
+import { ProducersModule } from './producers/producers.module';
+import { CustomersModule } from './customers/customers.module';
+import { ArticlesModule } from './articles/articles.module';
+import { FavoritesModule } from './favorites/favorites.module';
+import { CartsModule } from './carts/carts.module';
+import { AddressesModule } from './addresses/addresses.module';
+import { AuthModule } from './auth/auth.module';
+import { OrdersModule } from './orders/orders.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { ReturnsModule } from './returns/returns.module';
+import { FilesModule } from './files/files.module';
+import { RequestTracingMiddleware } from './common/middleware/request-tracing.middleware';
+import { SustainabilityAttributeEntity } from './models/sustainability-attribute.entity';
+import { ReturnEntity } from './models/return.entity';
 
 @Module({
   imports: [
-    FavoritesModule,
-    CategoriesModule,
-    ProductsModule,
-    EntrepreneursModule,
-    CustomersModule,
-    ArticlesModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT),
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_DATABASE,
+      autoLoadEntities: true,
+      synchronize: false,
+    }),
+    TypeOrmModule.forFeature([
+      SustainabilityAttributeEntity,
+      ReturnEntity,
+    ]),
+    FavoritesModule,
+    CategoriesModule,
+    ProductsModule,
+    ProducersModule,
+    CustomersModule,
+    ArticlesModule,
+    CartsModule,
+    AddressesModule,
+    AuthModule,
+    OrdersModule,
+    ReviewsModule,
+    ReturnsModule,
+    FilesModule,
   ],
   controllers: [],
   providers: [],
 })
 export class AppModule implements NestModule {
+
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(RequestTracingMiddleware)
-      .forRoutes('*');
+    consumer.apply(RequestTracingMiddleware).forRoutes('*');
   }
 }

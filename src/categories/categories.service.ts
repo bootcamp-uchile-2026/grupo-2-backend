@@ -1,40 +1,137 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
+import { CategoryEntity } from '../models/category.entity';
 import { CategoryNotFoundError } from '../common/errors/category-not-found.error';
-import { Category } from '../models/category.model';
 import { CategoryDto } from '../dto/category.dto';
-import { BadRequestException } from '@nestjs/common';
+import { PaginationDto } from '../dto/pagination.dto';
+import { FilesService } from '../files/files.service';
+import { FileEntity } from '../models/file.entity';
 
 @Injectable()
 export class CategoriesService {
 
-    private readonly categories: Category[] = [
-        { id: 1, name: 'Alimentos', slug: 'alimentos' },
-        { id: 2, name: 'Cuidado personal', slug: 'cuidado-personal' },
-        { id: 3, name: 'Huerto y jardinería', slug: 'huerto-jardineria' },
-        { id: 4, name: 'Limpieza del hogar', slug: 'limpieza-hogar' },
-        { id: 5, name: 'Aromas y bienestar', slug: 'aromas-bienestar' },
-        { id: 6, name: 'Ropa y accesorios', slug: 'ropa-accesorios' },
-        { id: 7, name: 'Mascotas', slug: 'mascotas' },
-        { id: 8, name: 'Decoración y artesanías', slug: 'decoracion-artesanias' },
-    ];
+    constructor(
+        @InjectRepository(CategoryEntity)
+        private readonly categoriesRepository: Repository<CategoryEntity>,
+        private readonly dataSource: DataSource,
+        private readonly filesService: FilesService) { }
 
-    findAll(): CategoryDto[] {
-        return this.categories.map((category) => ({ ...category }));
+    async findAll(pagination: PaginationDto) {
+
+        const { page, size, sortBy, sortDirection } = pagination;
+
+        const allowedSortFields = ['id', 'name', 'description'];
+
+        if (!allowedSortFields.includes(sortBy)) {
+            throw new BadRequestException('Campo de ordenamiento inválido.');
+        }
+
+        const categories = await this.categoriesRepository.find({
+            skip: page * size,
+            take: size,
+            order: {
+                [sortBy]: sortDirection,
+                id: sortBy === 'id' ? sortDirection : 'ASC',
+            },
+        });
+
+        const totalElements = await this.categoriesRepository.count();
+
+        const content: CategoryDto[] = categories.map(category => ({
+            id: category.id,
+            name: category.name,
+            description: category.description,
+            imageFileId: category.imageFileId,
+        }));
+
+        return {
+            content,
+            page,
+            size,
+            totalElements,
+            totalPages: Math.ceil(totalElements / size),
+            sortBy,
+            sortDirection,
+        };
     }
 
-    findOne(categoryId: number): CategoryDto {
+    async findOne(categoryId: number): Promise<CategoryDto> {
         if (categoryId <= 0) {
             throw new BadRequestException(
-                'El identificador debe ser un número entero positivo.',
-            );
+                'El identificador debe ser un número entero positivo.');
         }
 
-        const category = this.categories.find((item) => item.id === categoryId);
+        const category = await this.categoriesRepository.findOne({
+            where: { id: categoryId }
+        });
 
-        if (!category) {
-            throw new CategoryNotFoundError();
+        if (!category) { throw new CategoryNotFoundError() }
+
+        return {
+            id: category.id,
+            name: category.name,
+            description: category.description,
+            imageFileId: category.imageFileId,
+        };
+    }
+
+    async uploadImage(categoryId: number, archivo: Express.Multer.File): Promise<CategoryDto> {
+
+        await this.findOne(categoryId);
+
+        let storageKey: string | undefined;
+
+        try {
+            const previousStorageKey = await this.dataSource.transaction(async manager => {
+
+                const category = await manager.findOne(CategoryEntity, {
+                    where: { id: categoryId },
+                    lock: { mode: 'pessimistic_write' },
+                });
+
+                if (!category) {
+                    throw new CategoryNotFoundError();
+                }
+
+                const previousFileId = category.imageFileId;
+
+                const file = await this.filesService.saveImage(archivo, 'categorias', manager);
+
+                storageKey = file.storageKey;
+
+                await manager.update(CategoryEntity, category.id, {
+                    imageFileId: file.id,
+                });
+
+                if (previousFileId) {
+
+                    const previousFile = await manager.findOne(FileEntity, {
+                        where: { id: previousFileId },
+                    });
+
+                    if (previousFile) {
+                        await manager.delete(FileEntity, previousFile.id);
+
+                        return previousFile.storageKey;
+                    }
+                }
+
+                return undefined;
+            });
+
+            if (previousStorageKey) {
+                await this.filesService.deletePhysicalImage(previousStorageKey);
+            }
+
+        } catch (error) {
+            if (storageKey) {
+                await this.filesService.deletePhysicalImage(storageKey);
+            }
+
+            throw error;
         }
 
-        return { ...category };
+        return this.findOne(categoryId);
     }
 }

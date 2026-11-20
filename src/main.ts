@@ -7,6 +7,7 @@ import { ConflictFilter } from './common/filters/conflict.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableCors();
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -22,8 +23,9 @@ async function bootstrap() {
   );
   const config = new DocumentBuilder()
     .setTitle('BuenOrigen API')
-    .setDescription('API de BuenOrigen')
-    .setVersion('1.0')
+    .setDescription('Backend API for BuenOrigen')
+    .setVersion('3.0')
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
