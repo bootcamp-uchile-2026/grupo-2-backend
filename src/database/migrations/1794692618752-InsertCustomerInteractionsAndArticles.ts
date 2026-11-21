@@ -13,12 +13,6 @@ export class InsertCustomerInteractionsAndArticles1794692618752
 
     public async up(queryRunner: QueryRunner): Promise<void> {
 
-        if (process.env.NODE_ENV === 'production') {
-            throw new Error(
-                'Los datos de prueba no pueden cargarse en produccion.',
-            );
-        }
-
         // Verificar que no existan datos previos
 
         const existingData = await queryRunner.query(`
@@ -545,12 +539,6 @@ export class InsertCustomerInteractionsAndArticles1794692618752
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-
-        if (process.env.NODE_ENV === 'production') {
-            throw new Error(
-                'Esta migracion no debe revertirse en produccion.',
-            );
-        }
 
         // Eliminar movimientos de puntos verdes.
         // Conservar los puntos de bienvenida.

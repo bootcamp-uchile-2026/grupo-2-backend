@@ -24,7 +24,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('BuenOrigen API')
     .setDescription('Backend API for BuenOrigen')
-    .setVersion('3.0')
+    .setVersion('3.0.1')
     .addBearerAuth()
     .build();
 

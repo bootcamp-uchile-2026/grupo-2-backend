@@ -37,12 +37,6 @@ export class InsertCartsOrdersAndReturns1794692131915
 
     public async up(queryRunner: QueryRunner): Promise<void> {
 
-        if (process.env.NODE_ENV === 'production') {
-            throw new Error(
-                'Los datos de prueba no pueden cargarse en produccion.',
-            );
-        }
-
         // Verificar que las tablas no tengan datos anteriores
 
         const existingData = await queryRunner.query(`
@@ -952,15 +946,6 @@ export class InsertCartsOrdersAndReturns1794692131915
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-
-        if (process.env.NODE_ENV === 'production') {
-            throw new Error(
-                'Esta migracion no debe revertirse en produccion.',
-            );
-        }
-
-        // Deshacer las reposiciones de stock
-        // correspondientes a devoluciones completadas.
 
         await queryRunner.query(`
             UPDATE products p
