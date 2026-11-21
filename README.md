@@ -1,431 +1,359 @@
+
 # BuenOrigen Backend
 
 ![Logo BuenOrigen](https://drive.google.com/thumbnail?id=10uSzFualz9I89UUehPdV6E7CJ81EpDZj&sz=w1000)
 
 **API REST desarrollada con NestJS y TypeScript para la plataforma de comercio electrónico BuenOrigen.**
 
----
-
 ## Descripción
 
-**BuenOrigen** es una plataforma orientada a la comercialización de productos sustentables de distintos emprendedores. Este repositorio contiene su backend, organizado mediante módulos, controladores, servicios y objetos de transferencia de datos (DTO).
+**BuenOrigen** es una plataforma de comercio electrónico orientada a la comercialización de productos sustentables de distintos emprendedores.
 
-La API permite consultar el catálogo, explorar categorías y subcategorías, obtener información de emprendedores y artículos, registrar clientes y administrar productos favoritos. Sus interfaces HTTP se documentan mediante Swagger / OpenAPI.
+Este repositorio contiene el Backend de la plataforma, encargado de gestionar los datos, aplicar las reglas de negocio y proporcionar los servicios necesarios para las aplicaciones Web y Mobile.
 
-> **Estado de implementación:** se utilizan datos de prueba almacenados en memoria. Algunas comprobaciones de acceso funcionan mediante claves compartidas de prueba; no constituyen un sistema completo de autenticación, sesiones o autorización individual. Al reiniciar la aplicación, los cambios realizados sobre las colecciones en memoria no se conservan.
+El proyecto utiliza PostgreSQL y TypeORM para la persistencia de información, autenticación mediante JWT y documentación de servicios mediante Swagger / OpenAPI.
 
-## Tecnologías
+## Tecnologías utilizadas
 
-- Node.js, TypeScript y NestJS 11.
-- Swagger / OpenAPI para documentación de la API.
-- `class-validator` y `ValidationPipe` para validaciones de entrada.
-- `@nestjs/config` para configuración por variables de entorno.
-- Git para el control de versiones.
+- Node.js 22
+- TypeScript
+- NestJS 11
+- PostgreSQL 18.6
+- TypeORM
+- JWT
+- Swagger / OpenAPI
+- Docker y Docker Compose
+- Jest
 
-## Requisitos e instalación
+## Funcionalidades principales
 
-Se requiere **Node.js**, **npm** y una terminal. Git es necesario para clonar el repositorio.
+El Backend incorpora servicios para las siguientes funcionalidades:
+
+| Módulo | Descripción |
+|---|---|
+| Autenticación | Inicio de sesión y autenticación mediante JWT. |
+| Clientes | Registro, consulta y actualización de información de clientes. |
+| Productos | Catálogo, búsqueda, filtros y administración de productos. |
+| Categorías | Organización de productos por categorías. |
+| Productores | Gestión de información y productos de emprendedores. |
+| Carrito | Administración de productos seleccionados para comprar. |
+| Checkout | Validación del carrito y generación de pedidos. |
+| Pedidos | Consulta y gestión de pedidos según los permisos del usuario. |
+| Devoluciones | Solicitudes y administración de devoluciones. |
+| Valoraciones | Registro y consulta de opiniones sobre productos. |
+| Favoritos | Administración de productos favoritos. |
+| Direcciones | Gestión de direcciones de clientes. |
+| Artículos | Consulta y administración de contenidos. |
+| Archivos | Almacenamiento y consulta de imágenes. |
+
+La API incorpora validaciones de entrada, manejo de errores HTTP y autorización según los roles definidos para la aplicación.
+
+### Puntos Verdes y sustentabilidad
+
+BuenOrigen contempla un sistema de beneficios asociado a la compra de productos sustentables.
+
+Entre las principales reglas de negocio se encuentran:
+
+- Asignación de 80 Puntos Verdes de bienvenida.
+- Acumulación de 100 Puntos Verdes por kilogramo de CO₂e evitado, acreditados cuando el pedido se encuentra entregado.
+- Equivalencia de 1 Punto Verde a $1 CLP.
+- Canje máximo del 20 % del subtotal elegible.
+- Consulta de información de sustentabilidad de los productos.
+
+## Requisitos
+
+Para ejecutar el proyecto se requiere:
+
+- Node.js 22 y npm.
+- Git.
+- PostgreSQL 18.6 para ejecución local.
+- Docker y Docker Compose para ejecución mediante contenedores.
+
+## Instalación
+
+Clonar el repositorio:
 
 ```bash
-node -v
-npm -v
 git clone https://github.com/bootcamp-uchile-2026/grupo-2-backend.git
 cd grupo-2-backend
+```
+
+Instalar las dependencias:
+
+```bash
 npm install
 ```
 
-También es posible obtener una copia mediante **Code → Download ZIP** desde GitHub y ejecutar `npm install` dentro de la carpeta extraída.
+## Configuración
 
-## Configuración local
+El repositorio incluye un archivo `.env.example` con las variables de entorno necesarias.
 
-El repositorio dispone de un archivo `.env.example` que sirve como plantilla de configuración. Crea un archivo `.env` local antes de iniciar la API:
+Crear el archivo `.env`:
 
 ```bash
-# Git Bash
 cp .env.example .env
 ```
 
-```cmd
-:: CMD de Windows
-copy .env.example .env
-```
+Configurar las variables correspondientes a PostgreSQL, JWT y almacenamiento de archivos.
 
-Las variables de entorno permiten configurar el puerto HTTP, la conexión a PostgreSQL y la autenticación mediante JWT. Utiliza el archivo `.env.example` como referencia para configurar el entorno local. **No publiques el archivo `.env` ni credenciales reales.**
+| Variable | Descripción |
+|---|---|
+| `PORT` | Puerto de la aplicación. |
+| `DB_HOST` | Servidor de PostgreSQL. |
+| `DB_PORT` | Puerto de PostgreSQL. |
+| `DB_USERNAME` | Usuario de la base de datos. |
+| `DB_PASSWORD` | Contraseña de PostgreSQL. |
+| `DB_DATABASE` | Nombre de la base de datos. |
+| `JWT_SECRET` | Clave utilizada para firmar los tokens JWT. |
+| `JWT_EXPIRES_IN` | Tiempo de expiración del token. |
+| `BASE_ARCHIVOS` | Directorio de almacenamiento de archivos. |
 
-La aplicación carga esta configuración mediante `ConfigModule.forRoot({ isGlobal: true })` y accede a ella mediante `process.env`. No se incluye aquí un procedimiento de autenticación individual porque no está implementado como tal.
+**Importante:** no publicar archivos `.env` ni credenciales reales en GitHub.
 
-## Ejecución
+## Ejecución local
 
-**Desarrollo**, con recarga ante cambios:
+Con PostgreSQL disponible y las variables de entorno configuradas, iniciar el servidor:
 
 ```bash
 npm run start:dev
 ```
 
-**Compilación:**
+La API estará disponible en:
+
+http://localhost:3000
+
+## Scripts disponibles
+
+Los siguientes comandos están definidos en `package.json`.
+
+### Desarrollo y compilación
+
+| Comando | Descripción |
+|---|---|
+| `npm run start` | Inicia la aplicación. |
+| `npm run start:dev` | Inicia el servidor en desarrollo con recarga automática. |
+| `npm run start:debug` | Inicia la aplicación en modo depuración. |
+| `npm run build` | Compila el proyecto. |
+| `npm run start:prod` | Ejecuta la versión compilada. |
+
+### Calidad y pruebas
+
+| Comando | Descripción |
+|---|---|
+| `npm run format` | Aplica formato al código mediante Prettier. |
+| `npm run lint` | Ejecuta ESLint con corrección automática. |
+| `npm run test` | Ejecuta las pruebas unitarias. |
+| `npm run test:watch` | Ejecuta las pruebas en modo observación. |
+| `npm run test:cov` | Genera un reporte de cobertura. |
+| `npm run test:e2e` | Ejecuta las pruebas end-to-end. |
+
+### Base de datos y migraciones
+
+| Comando | Descripción |
+|---|---|
+| `npm run migration:show` | Consulta el estado de las migraciones. |
+| `npm run migration:run` | Ejecuta las migraciones pendientes. |
+| `npm run migration:revert` | Revierte la última migración ejecutada. |
+| `npm run migration:show:prod` | Consulta las migraciones de la versión compilada. |
+| `npm run migration:run:prod` | Ejecuta las migraciones de la versión compilada. |
+| `npm run migration:generate -- <ruta>` | Genera una migración a partir de cambios en las entidades. |
+
+Los comandos de migraciones requieren una conexión válida con PostgreSQL. Los scripts de producción requieren los archivos compilados y la configuración correspondiente.
+
+## Base de datos
+
+BuenOrigen utiliza **PostgreSQL y TypeORM** para administrar las entidades, relaciones y persistencia de información.
+
+El modelo de datos contempla usuarios, clientes, productores, productos, categorías, carritos, pedidos, devoluciones, valoraciones y otros componentes del comercio electrónico.
+
+Las migraciones se encuentran en:
+
+`src/database/migrations`
+
+La versión `3.0.1` contiene 11 migraciones de TypeORM, incluyendo la creación de las tablas, la incorporación de datos iniciales y ajustes posteriores del modelo.
+
+Para consultar el estado de las migraciones:
 
 ```bash
-npm run build
+npm run migration:show
 ```
 
-**Ejecución de la versión compilada:**
+Para ejecutar las migraciones pendientes:
 
 ```bash
-npm run start:prod
+npm run migration:run
 ```
 
-Con el puerto predeterminado, la API escucha en `http://localhost:3000`.
+Antes de ejecutar las migraciones, PostgreSQL debe estar disponible y las variables de entorno deben estar configuradas.
 
-## Swagger / OpenAPI
+La ejecución sobre una base de datos existente debe considerar la conservación de los datos almacenados.
 
-Con la aplicación en ejecución:
+## Modelo Entidad-Relación
 
-- Interfaz Swagger: **http://localhost:3000/api**
-- Especificación OpenAPI JSON: **http://localhost:3000/api-json**
+El modelo de datos de BuenOrigen se encuentra implementado mediante entidades TypeORM y migraciones de PostgreSQL.
 
-Swagger describe las operaciones disponibles, parámetros, cuerpos de solicitud, DTO de respuesta y códigos HTTP. Para conocer los ejemplos y parámetros exactos de cada operación, consulta esta documentación interactiva.
+Las migraciones estructurales de la versión `3.0.1` contemplan **28 tablas**, organizadas para gestionar usuarios, productos, compras, devoluciones, valoraciones y sustentabilidad.
 
-## Arquitectura y módulos
-
-La aplicación sigue la organización habitual de NestJS:
-
-- **Controllers:** reciben las solicitudes HTTP, extraen parámetros y delegan en los servicios.
-- **Services:** administran las colecciones en memoria, aplican las reglas y construyen las respuestas.
-- **DTO:** establecen los contratos de entrada y salida, junto con sus validaciones y documentación.
-- **Models:** representan las estructuras de datos del dominio.
-- **Componentes comunes:** middleware de trazabilidad, interceptor, guards, errores personalizados y filtros de excepciones.
-
-| Dominio | Organización y responsabilidad |
-|---|---|
-| **Customers** | Registro, consulta y actualización de clientes. |
-| **Productos** | Búsqueda, ofertas, novedades, más vendidos, detalle, valoraciones, huella verde y productos relacionados. |
-| **Categories** | Categorías y subcategorías, con controladores y servicios independientes dentro de `CategoriesModule`. |
-| **Emprendedores** | Directorio, información pública y productos asociados a cada emprendedor. |
-| **Artículos** | Listado y detalle de artículos del blog. |
-| **Favoritos** | Consulta, incorporación y eliminación de productos favoritos de clientes. |
-
-`ProductsService` mantiene la colección principal de productos; los servicios que necesitan esa información la reutilizan en lugar de mantener copias independientes. Los datos actuales se almacenan en arreglos en memoria.
-
-### Flujo de una solicitud
-
-```mermaid
-flowchart LR
-    A[Cliente HTTP] --> B[Middleware de trazabilidad]
-    B --> C[Guard cuando corresponde]
-    C --> D[Controller]
-    D --> E[Validación y Service]
-    E --> F[Datos en memoria]
-    F --> E
-    E --> G[Respuesta JSON]
-    G --> A
-```
-
-Los pipes de validación y los filtros de excepciones intervienen en los puntos correspondientes del ciclo de vida de NestJS. Este esquema resume el recorrido general y no pretende representar todas las etapas internas del framework.
-
-## Endpoints principales
-
-Las rutas que utilizan parámetros de consulta o de ruta aparecen con ejemplos ilustrativos. **`buscar` es obligatorio en `GET /productos`; una solicitud sin ese parámetro responde HTTP 400.**
-
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/productos?buscar=polera` | Buscar productos. |
-| GET | `/productos/ofertas` | Productos en oferta. |
-| GET | `/productos/mas-vendidos?cantidad=5` | Productos más vendidos. |
-| GET | `/productos/nuevos` | Productos nuevos. |
-| GET | `/productos/:productoId` | Detalle de un producto. |
-| GET | `/productos/:productoId/huella-verde` | Huella verde del producto. |
-| GET | `/productos/:productoId/valoraciones` | Valoraciones. |
-| GET | `/productos/:productoId/relacionados` | Productos relacionados. |
-| GET | `/categorias` | Listado de categorías. |
-| GET | `/categorias/:categoriaId` | Detalle de categoría. |
-| GET | `/categorias/:categoriaId/subcategorias` | Subcategorías de una categoría. |
-| GET | `/subcategorias/:subcategoriaId/productos` | Productos de una subcategoría. |
-| GET | `/subcategorias/:subcategoriaId/productos/populares` | Productos populares de una subcategoría. |
-| GET | `/emprendedores?cantidad=2` | Listado de emprendedores. |
-| GET | `/emprendedores/:emprendedorId` | Detalle de emprendedor. |
-| GET | `/emprendedores/:emprendedorId/productos` | Productos del emprendedor. |
-| GET | `/articulos` | Listado de artículos. |
-| GET | `/articulos/:articleId` | Detalle de un artículo. |
-| POST | `/customers` | Registro de cliente. |
-| GET | `/customers` | Listado de clientes (acceso restringido de prueba). |
-| GET | `/customers/:id` | Consulta de cliente (acceso restringido de prueba). |
-| PATCH | `/customers/:id` | Actualización de cliente (acceso restringido de prueba). |
-| GET | `/customers/:customerId/favoritos` | Listado de favoritos. |
-| POST | `/customers/:customerId/favoritos` | Añadir favorito. |
-| DELETE | `/customers/:customerId/favoritos/:productId` | Eliminar favorito. |
-
-Los requisitos de encabezados, cuerpos y respuestas se encuentran documentados en Swagger. Los endpoints protegidos utilizan autenticación mediante JWT y autorización basada en los roles CUSTOMER, PRODUCER y ADMIN, según corresponda.
-## Validaciones, errores y trazabilidad
-
-El backend utiliza validaciones de DTO y una `ValidationPipe` global con `whitelist`, `forbidNonWhitelisted` y `transform`. Los servicios incorporan validaciones adicionales para reglas del dominio. Los errores personalizados se procesan mediante filtros comunes.
-
-Entre las respuestas documentadas y verificadas se encuentran:
-
-| HTTP | Uso |
-|---|---|
-| `200 OK` | Consulta exitosa. |
-| `201 Created` | Creación exitosa. |
-| `204 No Content` | Eliminación de favorito, sin cuerpo de respuesta. |
-| `400 Bad Request` | Entrada o parámetro inválido. |
-| `403 Forbidden` | Acceso denegado por un guard. |
-| `404 Not Found` | Recurso inexistente. |
-| `409 Conflict` | Conflicto como correo duplicado o favorito existente. |
-
-La trazabilidad registra un identificador de solicitud (`x-request-id`), método, ruta, código HTTP, duración y fecha. Cuando corresponde, se registra el cuerpo de la petición con protección de datos sensibles, como contraseñas. **No deben incorporarse secretos a logs ni a ejemplos públicos.**
-
-## Modelo de datos — diagrama entidad-relación de referencia
-
-El diagrama siguiente representa **14 modelos TypeScript** definidos en `src/models`. Es una vista conceptual de sus asociaciones: no representa tablas SQL creadas ni claves foráneas impuestas por una base de datos. Algunas asociaciones se expresan mediante propiedades de tipo objeto o arreglos, sin campos de identificación explícitos en la clase.
-
-`FAVORITE` relaciona clientes y productos mediante `customerId` y `productId`. `ARTICLE` no declara asociaciones directas con otros modelos. Los modelos de direcciones, métodos de pago y órdenes forman parte de la estructura del dominio, aunque no corresponden a módulos REST operativos en el código descrito.
+El siguiente diagrama Mermaid presenta una vista general de las tablas y sus principales relaciones, utilizando cardinalidades simplificadas para facilitar la lectura.
 
 ```mermaid
 erDiagram
-    CUSTOMER ||--o| PROFILE : tiene
-    CUSTOMER ||--o{ ADDRESS : registra
-    CUSTOMER ||--o{ PAYMENT_METHOD : registra
-    CUSTOMER ||--o{ ORDER : realiza
-    CUSTOMER ||--o{ FAVORITE : guarda
+    users ||--o| customers : tiene
+    users ||--o| producers : tiene
+    users ||--o{ articles : escribe
+    users ||--o{ returns : procesa
 
-    CATEGORY ||--o{ SUBCATEGORY : contiene
-    SUBCATEGORY ||--o{ PRODUCT : agrupa
-    ENTREPRENEUR ||--o{ PRODUCT : publica
+    files ||--o{ users : perfil
+    files ||--o{ producers : imagenes
+    files ||--o{ categories : imagen
+    files ||--o{ articles : portada
+    files ||--o| product_images : archivo
 
-    PRODUCT ||--o{ FAVORITE : aparece_en
-    PRODUCT ||--o{ REVIEW : recibe
-    PRODUCT ||--o| GREEN_FOOTPRINT : posee
-    PRODUCT ||--o{ ORDER_ITEM : incluido_en
+    producers ||--o{ products : publica
+    categories ||--o{ products : clasifica
+    products ||--o{ product_images : imagenes
 
-    ORDER ||--o{ ORDER_ITEM : contiene
-    PAYMENT_METHOD ||--o{ ORDER : utilizado_en
+    products ||--o| food_details : alimentos
+    products ||--o| personal_care_details : cuidado_personal
+    products ||--o| garden_details : jardin
+    products ||--o| home_cleaning_details : limpieza
+    products ||--o| wellness_details : bienestar
+    products ||--o| clothing_details : ropa
+    products ||--o| pet_details : mascotas
+    products ||--o| craft_details : artesania
 
-    CUSTOMER {
-        int id PK
-        string email
-        string password
-        int greenPoints
-    }
-    PROFILE {
-        string name
-        string lastName
-        string phoneNumber
-        string profileImageUrl
-    }
-    ADDRESS {
-        int id PK
-        string street
-        string number
-        string department
-        string commune
-        string city
-    }
-    PAYMENT_METHOD {
-        int id PK
-        string cardType
-        string cardHolder
-        string cardNumber
-        string expirationDate
-    }
-    CATEGORY {
-        int id PK
-        string name
-        string slug
-        string imageUrl
-    }
-    SUBCATEGORY {
-        int id PK
-        int categoryId FK
-        string name
-        string slug
-        string imageUrl
-    }
-    ENTREPRENEUR {
-        int id PK
-        string name
-        string description
-        string imageUrl
-        string story
-    }
-    PRODUCT {
-        int id PK
-        int subcategoryId FK
-        int entrepreneurId FK
-        string brand
-        string name
-        string description
-        float price
-        float salePrice
-        string imageUrl
-        string_array images
-        int stock
-        float rating
-        int salesLastMonth
-        datetime createdAt
-        string_array colors
-        string_array sizes
-    }
-    FAVORITE {
-        int customerId FK
-        int productId FK
-    }
-    REVIEW {
-        int id PK
-        int productId FK
-        string author
-        string comment
-        float rating
-        boolean published
-    }
-    GREEN_FOOTPRINT {
-        int productId FK
-        float sustainabilityRating
-        string_array materials
-        string productionProcess
-    }
-    ARTICLE {
-        int id PK
-        string title
-        string summary
-        string content
-        string imageUrl
-        string author
-        datetime publishedAt
-    }
-    ORDER {
-        int id PK
-        int customerId FK
-        datetime orderDate
-        float totalAmount
-    }
-    ORDER_ITEM {
-        int quantity
-        float unitPrice
-    }
+    products ||--o{ product_sustainability_attributes : tiene
+    sustainability_attributes ||--o{ product_sustainability_attributes : define
+
+    customers ||--o| carts : posee
+    customers ||--o{ addresses : registra
+    customers ||--o{ orders : realiza
+    customers ||--o{ reviews : escribe
+    customers ||--o{ favorites : guarda
+    customers ||--o{ green_point_movements : registra
+
+    carts ||--o{ cart_items : contiene
+    products ||--o{ cart_items : seleccionado
+
+    addresses ||--o{ orders : utilizada
+    orders ||--o{ order_items : contiene
+    products ||--o{ order_items : vendido
+
+    orders ||--o{ returns : genera
+    returns ||--o{ return_items : contiene
+    order_items ||--o{ return_items : devuelto
+
+    products ||--o{ reviews : recibe
+    products ||--o{ favorites : favorito
+
+    orders ||--o{ green_point_movements : movimientos
+    returns ||--o{ green_point_movements : movimientos
+    reviews ||--o{ green_point_movements : movimientos
 ```
 
-## Docker
+### Organización del modelo
 
-La aplicación BuenOrigen Backend puede ejecutarse dentro de un contenedor Docker. El proyecto incluye un `Dockerfile` que permite construir una imagen utilizando Node.js 22 sobre Alpine Linux.
+El modelo permite:
 
-El proceso de construcción utiliza dos etapas:
+- Relacionar usuarios con clientes y productores.
+- Asociar productos a sus categorías y productores.
+- Administrar carritos, pedidos y sus respectivos productos.
+- Registrar solicitudes de devolución y valoraciones.
+- Gestionar movimientos de Puntos Verdes.
+- Asociar productos con características de sustentabilidad.
+- Gestionar imágenes y archivos vinculados a los distintos registros.
+- Almacenar información específica según el tipo de producto.
 
-- **Construcción (`builder`):** instala las dependencias, copia el código fuente y compila la aplicación mediante `npm run build`.
-- **Producción (`production`):** instala únicamente las dependencias de producción y copia los archivos compilados desde la etapa anterior.
+Las entidades se encuentran en `src/models` y las migraciones de la base de datos en `src/database/migrations`.
 
-### Requisitos
+Para revisar los atributos, claves primarias, claves foráneas y restricciones exactas del modelo, se deben consultar las entidades y migraciones del repositorio.
 
-- Docker instalado y en ejecución.
-- Acceso al repositorio del proyecto.
-- Configuración necesaria para ejecutar la aplicación en el entorno correspondiente.
+## Ejecución con Docker
 
-### Construir la imagen
+El proyecto incluye un `Dockerfile` y archivos Docker Compose para ejecutar los servicios.
 
-Desde la raíz del repositorio, donde se encuentra el `Dockerfile`, ejecutar:
+### Iniciar los servicios
+
+Desde la raíz del proyecto, con el archivo `.env` configurado:
 
 ```bash
-docker build -t buenorigen-backend:qa .
+docker compose up -d --build
 ```
 
-Este comando construye una imagen Docker denominada `buenorigen-backend` con la etiqueta `qa`.
+Este comando construye la imagen local del Backend e inicia PostgreSQL y la API.
 
-Para comprobar que la imagen se creó correctamente:
+### Revisar los contenedores
 
 ```bash
-docker images
+docker compose ps
 ```
 
-### Ejecutar un contenedor
-
-Para iniciar la aplicación a partir de la imagen construida, se puede utilizar el siguiente comando en un entorno donde el nombre del contenedor esté disponible:
+### Consultar los registros
 
 ```bash
-docker run -d \
-  --name buenorigen-qa \
-  -p 3003:3000 \
-  --env-file .env \
-  buenorigen-backend:qa
+docker compose logs -f backend
 ```
 
-El comando ejecuta la aplicación en segundo plano y establece la correspondencia entre el puerto `3003` del equipo anfitrión y el puerto `3000` del contenedor.
-
-El archivo `.env` debe existir en el equipo donde se ejecuta Docker y contener la configuración requerida por la aplicación. No debe incorporarse al repositorio si contiene credenciales o información sensible.
-
-**Importante:** el comando anterior es una referencia para crear un contenedor nuevo. Si ya existe un contenedor con el nombre `buenorigen-qa`, debe revisarse su estado antes de intentar crear otro.
-
-### Verificar el contenedor
-
-Consultar los contenedores en ejecución:
+### Detener los servicios
 
 ```bash
-docker ps
+docker compose down
 ```
 
-Revisar los registros de la aplicación:
+La configuración utiliza un volumen para conservar los datos de PostgreSQL y un directorio para almacenar archivos.
 
-```bash
-docker logs buenorigen-qa
-```
+Las migraciones de TypeORM deben ejecutarse por separado, utilizando el procedimiento correspondiente al entorno configurado.
 
-Para comprobar el acceso local a Swagger, abrir:
+## Swagger / OpenAPI
 
-http://localhost:3003/api
+La API utiliza Swagger para documentar sus endpoints, parámetros, DTO, mecanismos de autenticación y respuestas HTTP.
 
-La disponibilidad de Swagger confirma que la aplicación responde en esa ruta.
+Con el Backend ejecutándose localmente:
 
----
+- **Swagger UI:** http://localhost:3000/api
+- **OpenAPI JSON:** http://localhost:3000/api-json
 
-## Despliegue en Oracle Cloud
+Desde Swagger es posible consultar los servicios disponibles y probar las operaciones de la API.
 
-El backend BuenOrigen se desplegó en una máquina virtual de Oracle Cloud con Ubuntu. Para ejecutar la aplicación se utilizó Docker, construyendo una imagen a partir del código del repositorio.
+Para utilizar endpoints protegidos se requiere autenticación JWT y los permisos correspondientes.
 
-### Procedimiento de despliegue
+## Versionado y Docker Hub
 
-1. **Acceso a la máquina virtual:** conexión remota mediante SSH utilizando la clave privada y las credenciales configuradas para la instancia.
-2. **Acceso al repositorio:** ingreso al directorio del proyecto y utilización de la rama `qa`.
-3. **Construcción de la imagen:** ejecución de `docker build` para generar la imagen `buenorigen-backend:qa`.
-4. **Ejecución del contenedor:** inicio de la aplicación mediante Docker, publicando el puerto `3000` del contenedor en el puerto `3003` de la máquina virtual.
-5. **Configuración de red:** habilitación del puerto `3003` en las reglas de ingreso de Oracle Cloud para permitir el acceso externo.
-6. **Verificación:** comprobación de la respuesta HTTP de Swagger desde la máquina virtual y posterior acceso mediante la dirección pública.
+El proyecto utiliza versionado semántico para identificar sus versiones estables.
 
-### Imagen y contenedor de QA
+### Versión Hito 3
 
-| Elemento | Configuración |
+| Elemento | Referencia |
 |---|---|
-| Plataforma | Oracle Cloud VM |
-| Sistema operativo | Ubuntu |
-| Rama utilizada | `qa` |
-| Imagen Docker | `buenorigen-backend:qa` |
-| Puerto del contenedor | `3000` |
-| Puerto publicado en la VM | `3003` |
-| Documentación Swagger | `/api` |
+| Versión de la aplicación | `3.0.1` |
+| Tag Git | `v3.0.1` |
+| Commit de entrega | `ff7e7ecc18e2b4a9dce57fc59b6f97272ce50749` |
+| Imagen Docker | `sebackend/ecotienda-backend:v3.0.1` |
 
-### Acceso a la aplicación
+La imagen versionada está publicada en Docker Hub.
 
-La documentación de la API se encuentra disponible en:
+Para descargarla:
 
-[Swagger — BuenOrigen QA](http://159.112.150.143:3003/api)
+```bash
+docker pull sebackend/ecotienda-backend:v3.0.1
+```
 
-### Verificación del despliegue
+El repositorio incluye el archivo `docker-compose.oracle.yml` para configurar el despliegue en servidor mediante la imagen publicada.
 
-Durante las pruebas se comprobó que el contenedor de QA se encontraba ejecutándose y que la ruta `/api` respondía con un código HTTP `200 OK` desde la máquina virtual. También se habilitó el puerto `3003` en Oracle Cloud y se confirmó el acceso externo a la aplicación.
-
-Estas comprobaciones validan la ejecución del contenedor y la disponibilidad de Swagger.
-
-### Consideraciones de seguridad
-
-- No publicar claves privadas SSH, credenciales ni archivos `.env` con información sensible.
-- Revisar las reglas de ingreso de Oracle Cloud y limitar el acceso al puerto publicado cuando corresponda.
-- La URL documentada corresponde al ambiente QA
-
-
-## Integración con aplicaciones cliente
-
-Las aplicaciones cliente consumen la API mediante HTTP y reciben respuestas JSON. Los contratos de integración se describen en Swagger; los consumidores deben respetar los parámetros obligatorios, DTO y códigos de respuesta publicados.
+La configuración del entorno, PostgreSQL y las migraciones deben verificarse antes de iniciar la aplicación.
 
 ## Documentación técnica
 
-La documentación complementaria se encuentra en la [Wiki del repositorio](https://github.com/bootcamp-uchile-2026/grupo-2-backend/wiki). Para los contratos HTTP vigentes, se recomienda consultar también el Swagger generado directamente por la versión en ejecución.
+La documentación complementaria se encuentra disponible en la Wiki del repositorio:
+
+[Wiki de BuenOrigen Backend](https://github.com/bootcamp-uchile-2026/grupo-2-backend/wiki)
+
+La Wiki contiene información sobre la implementación, configuración, funcionalidades y decisiones técnicas del proyecto.
+
+Los contratos HTTP y las operaciones disponibles se documentan mediante Swagger / OpenAPI.
 
 ## Equipo
 
-Proyecto desarrollado por el equipo **BuenOrigen**, en el contexto del Bootcamp de Desarrollo Backend del DCC de la Universidad de Chile.
+Proyecto desarrollado por el equipo **BuenOrigen**, en el marco del Bootcamp de Desarrollo Backend del Departamento de Ciencias de la Computación de la Universidad de Chile.
+
+**Repositorio:** https://github.com/bootcamp-uchile-2026/grupo-2-backend
