@@ -19,7 +19,7 @@ services:
       - ecotienda-net
 
   backend:
-    image: ecotienda-backend:3.0.0
+    image: sebackend/ecotienda-backend:v3.0.1
     container_name: ecotienda-api
     restart: unless-stopped
     env_file:
