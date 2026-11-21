@@ -6,12 +6,6 @@ export class InsertUsersAndMasterData1794690677838
 
     public async up(queryRunner: QueryRunner): Promise<void> {
 
-        if (process.env.NODE_ENV === 'production') {
-            throw new Error(
-                'Los datos de prueba no pueden cargarse en produccion.',
-            );
-        }
-
         // Usuarios de prueba
 
         const users = [

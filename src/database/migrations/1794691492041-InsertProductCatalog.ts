@@ -704,11 +704,7 @@ export class InsertProductCatalog1794691492041
 
     public async up(queryRunner: QueryRunner): Promise<void> {
 
-        if (process.env.NODE_ENV === 'production') {
-            throw new Error(
-                'Los datos de prueba no pueden cargarse en produccion.',
-            );
-        }
+
 
         const existingProducts = await queryRunner.query(`
             SELECT COUNT(*)::int AS total
@@ -858,12 +854,6 @@ export class InsertProductCatalog1794691492041
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-
-        if (process.env.NODE_ENV === 'production') {
-            throw new Error(
-                'Esta migracion de prueba no debe revertirse en produccion.',
-            );
-        }
 
         for (const group of this.catalog) {
 
